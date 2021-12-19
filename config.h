@@ -1,0 +1,88 @@
+#pragma once
+#include "settings.h"
+
+// const int org_image_width = 540;
+// const int org_image_height = 360;
+const int org_image_width = 30;
+const int org_image_height = 40;
+
+// const int test_image_width = 320;
+// const int test_image_height = 256;
+const int test_image_width = 10;
+const int test_image_height = 20;
+const int test_distortion_crop = 0;
+const bool test_perform_crop = false;
+const bool test_visualize = true;
+const int test_n_measurement_frames = 2;
+const int test_keyframe_buffer_size = 30;
+const float test_keyframe_pose_distance = 0.1;
+const float test_optimal_t_measure = 0.15;
+const float test_optimal_R_measure = 0.0;
+
+const int warp_grid_width = test_image_width / 2;
+const int warp_grid_height = test_image_height / 2;
+// const int warp_grid_size = warp_grid_width * warp_grid_height;
+
+// SET THESE: TRAINING FOLDER LOCATIONS
+const string dataset = "/home/nhsmt1123/master-thesis/deep-video-mvs/data/7scenes";
+const string train_run_directory = "/home/nhsmt1123/master-thesis/deep-video-mvs/training-runs";
+
+const string fusionnet_train_weights = "weights";
+const string fusionnet_test_weights = "weights";
+
+// SET THESE: TESTING FOLDER LOCATIONS
+// for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
+const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
+
+const string dataset_name = "hololens-dataset";
+const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_image_width) + "_" + to_string(test_image_height) + "_" + to_string(test_n_measurement_frames) + "_dvmvs_fusionnet_online";
+
+const string scene_folder = test_online_scene_path;
+const string scene = "000";
+
+const int n_test_frames = 100;
+
+const float scale_rgb = 255.0;
+const float mean_rgb[3] = {0.485, 0.456, 0.406};
+const float std_rgb[3] = {0.229, 0.224, 0.225};
+
+// utils
+void pose_distance(float reference_pose[4][4], float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
+void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]);
+bool is_pose_available(float pose[4][4]);
+
+// keyframe_buffer
+class KeyframeBuffer{
+public:
+    int try_new_keyframe(float pose[4][4], float image[org_image_height][org_image_width][3]);
+    void get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]);
+
+private:
+    // self.buffer = deque([], maxlen=buffer_size)
+    deque<pair<float[4][4], float[org_image_height][org_image_width][3]>> buffer;
+    float optimal_R_score = test_optimal_R_measure;
+    float optimal_t_score = test_optimal_t_measure;
+    float keyframe_pose_distance = test_keyframe_pose_distance;
+    int __tracking_lost_counter = 0;
+    float calculate_penalty(float t_score, float R_score);
+};
+
+// dataset_loader
+void load_image(string image_filename, float reference_image[org_image_height][org_image_width][3]);
+
+class PreprocessImage{
+public:
+    PreprocessImage(float K[3][3]) {
+        float factor_x = (float) test_image_width / (float) org_image_width;
+        float factor_y = (float) test_image_height / (float) org_image_height;
+        fx = K[0][0] * factor_x;
+        fy = K[1][1] * factor_y;
+        cx = K[0][2] * factor_x;
+        cy = K[1][2] * factor_y;
+    }
+    void apply_rgb(float image[org_image_height][org_image_width][3], float resized_image[1][3][test_image_height][test_image_width]);
+    void get_updated_intrinsics(float updated_intrinsic[1][3][3]);
+
+private:
+    float fx, fy, cx, cy;
+};
