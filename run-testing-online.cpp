@@ -140,20 +140,26 @@ void predict() {
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_frames[m].first[i][j];
         }
 
+
+        float measurement_feature_halfs[test_n_measurement_frames][fe1_out_channel][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+
         float layer1[fe1_out_channel][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float layer2[fe2_out_channel][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
         float layer3[fe3_out_channel][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
         float layer4[fe4_out_channel][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
         float layer5[fe5_out_channel][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
+        float measurement_feature_quarter[fe2_out_channel][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float measurement_feature_one_eight[fe3_out_channel][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float measurement_feature_one_sixteen[fe4_out_channel][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
 
         FeatureExtractor<3, test_image_height, test_image_width> feature_extractor("params/0_feature_extractor");
+        const int fpn_output_channels = 32;
+        FeatureShrinker<test_image_height, test_image_width, fpn_output_channels> feature_shrinker("params/1_feature_pyramid");
+
         for (int m = 0; m < test_n_measurement_frames; m++) {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
+            feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
-        // measurement_feature_halfs = []
-        // for measurement_image_torch in measurement_images_torch:
-        //     measurement_feature_half, _, _, _ = feature_shrinker(*feature_extractor(measurement_image_torch))
-        //     measurement_feature_halfs.append(measurement_feature_half)
 
     }
 
@@ -184,10 +190,10 @@ int main() {
 //                                              device=device,
 //                                              dot_product=True)
 
-//             skip0, skip1, skip2, skip3, bottom = cost_volume_encoder(features_half=reference_feature_half,
-//                                                                      features_quarter=reference_feature_quarter,
-//                                                                      features_one_eight=reference_feature_one_eight,
-//                                                                      features_one_sixteen=reference_feature_one_sixteen,
+//             skip0, skip1, skip2, skip3, bottom = cost_volume_encoder(feature_half=reference_feature_half,
+//                                                                      feature_quarter=reference_feature_quarter,
+//                                                                      feature_one_eight=reference_feature_one_eight,
+//                                                                      feature_one_sixteen=reference_feature_one_sixteen,
 //                                                                      cost_volume=cost_volume)
 
 //             if previous_depth is not None:

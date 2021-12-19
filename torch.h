@@ -16,6 +16,17 @@ ifstream open_file(string path) {
     return ifs;
 }
 
+template<int channels, int in_height, int in_width, int out_height, int out_width>
+void interpolate(float x[channels][in_height][in_width], float y[channels][out_height][out_width]) {
+    const float fj = (float) in_height / out_height;
+    const float fk = (float) in_width / out_width;
+    for (int i = 0; i < channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
+        const int jj = round(j * fj);
+        const int kk = round(k * fk);
+        y[i][j][k] = x[i][jj][kk];
+    }
+}
+
 // template<int channels, int in_height, int in_width, int padding>
 // void pad_input(float input[channels][in_height][in_width], float output[channels][in_height+2*padding][in_width+2*padding]);
 

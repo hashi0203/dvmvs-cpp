@@ -204,6 +204,104 @@ public:
 
 private:
     string param_path;
+};
 
+
+template <int in_height, int in_width, int out_channels>
+class FeatureShrinker{
+// Module that adds a FPN from on top of a set of feature maps. This is based on
+// `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.
+// The feature maps are currently supposed to be in increasing depth order.
+// The input to the model is expected to be an OrderedDict[Tensor], containing
+// the feature maps on top of which the FPN will be added.
+public:
+    FeatureShrinker(const string param_path) : param_path(param_path) {}
+
+    void forward(float layer1[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float layer2[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float layer3[fe3_out_channel][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float layer4[fe4_out_channel][fe4_out_size(in_height)][fe4_out_size(in_width)],
+                 float layer5[fe5_out_channel][fe5_out_size(in_height)][fe5_out_size(in_width)],
+                 float features_half[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float features_quarter[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float features_one_eight[fe3_out_channel][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float features_one_sixteen[fe4_out_channel][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
+
+        const int stride = 1;
+        const int groups = 1;
+
+        const int inner_kernel_size = 1;
+        const int inner_padding = 0;
+        const int layer_kernel_size = 3;
+        const int layer_padding = 1;
+
+        // layer5
+        Conv2d<fe5_out_channel, fe5_out_size(in_height), fe5_out_size(in_width), out_channels, fe5_out_size(in_height), fe5_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i5_conv(param_path + "/fpn.inner_blocks.4");
+        float inner5[out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)];
+        i5_conv.forward(layer5, inner5);
+
+        Conv2d<out_channels, fe5_out_size(in_height), fe5_out_size(in_width), out_channels, fe5_out_size(in_height), fe5_out_size(in_width), layer_kernel_size, stride, layer_padding, groups> l5_conv(param_path + "/fpn.layer_blocks.4");
+        float features_smallest[out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)];
+        l5_conv.forward(inner5, features_smallest);
+
+
+        // layer4
+        Conv2d<fe4_out_channel, fe4_out_size(in_height), fe4_out_size(in_width), out_channels, fe4_out_size(in_height), fe4_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i4_conv(param_path + "/fpn.inner_blocks.3");
+        float inner4[out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
+        i4_conv.forward(layer4, inner4);
+
+        float top_down4[out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
+        interpolate<out_channels, fe5_out_size(in_height), fe5_out_size(in_width), fe4_out_size(in_height), fe4_out_size(in_width)>(inner5, top_down4);
+        for (int i = 0; i < out_channels; i++) for (int j = 0; j < fe4_out_size(in_height); j++) for (int k = 0; k < fe4_out_size(in_width); k++)
+            inner4[i][j][k] += top_down4[i][j][k];
+
+        Conv2d<out_channels, fe4_out_size(in_height), fe4_out_size(in_width), out_channels, fe4_out_size(in_height), fe4_out_size(in_width), layer_kernel_size, stride, layer_padding, groups> l4_conv(param_path + "/fpn.layer_blocks.3");
+        l4_conv.forward(inner4, features_one_sixteen);
+
+
+        // layer3
+        Conv2d<fe3_out_channel, fe3_out_size(in_height), fe3_out_size(in_width), out_channels, fe3_out_size(in_height), fe3_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i3_conv(param_path + "/fpn.inner_blocks.2");
+        float inner3[out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
+        i3_conv.forward(layer3, inner3);
+
+        float top_down3[out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
+        interpolate<out_channels, fe4_out_size(in_height), fe4_out_size(in_width), fe3_out_size(in_height), fe3_out_size(in_width)>(inner4, top_down3);
+        for (int i = 0; i < out_channels; i++) for (int j = 0; j < fe3_out_size(in_height); j++) for (int k = 0; k < fe3_out_size(in_width); k++)
+            inner3[i][j][k] += top_down3[i][j][k];
+
+        Conv2d<out_channels, fe3_out_size(in_height), fe3_out_size(in_width), out_channels, fe3_out_size(in_height), fe3_out_size(in_width), layer_kernel_size, stride, layer_padding, groups> l3_conv(param_path + "/fpn.layer_blocks.2");
+        l3_conv.forward(inner3, features_one_eight);
+
+
+        // layer2
+        Conv2d<fe2_out_channel, fe2_out_size(in_height), fe2_out_size(in_width), out_channels, fe2_out_size(in_height), fe2_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i2_conv(param_path + "/fpn.inner_blocks.1");
+        float inner2[out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
+        i2_conv.forward(layer2, inner2);
+
+        float top_down2[out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
+        interpolate<out_channels, fe3_out_size(in_height), fe3_out_size(in_width), fe2_out_size(in_height), fe2_out_size(in_width)>(inner3, top_down2);
+        for (int i = 0; i < out_channels; i++) for (int j = 0; j < fe2_out_size(in_height); j++) for (int k = 0; k < fe2_out_size(in_width); k++)
+            inner2[i][j][k] += top_down2[i][j][k];
+
+        Conv2d<out_channels, fe2_out_size(in_height), fe2_out_size(in_width), out_channels, fe2_out_size(in_height), fe2_out_size(in_width), layer_kernel_size, stride, layer_padding, groups> l2_conv(param_path + "/fpn.layer_blocks.1");
+        l2_conv.forward(inner2, features_quarter);
+
+
+        // layer1
+        Conv2d<fe1_out_channel, fe1_out_size(in_height), fe1_out_size(in_width), out_channels, fe1_out_size(in_height), fe1_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i1_conv(param_path + "/fpn.inner_blocks.0");
+        float inner1[out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
+        i1_conv.forward(layer1, inner1);
+
+        float top_down1[out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
+        interpolate<out_channels, fe2_out_size(in_height), fe2_out_size(in_width), fe1_out_size(in_height), fe1_out_size(in_width)>(inner2, top_down1);
+        for (int i = 0; i < out_channels; i++) for (int j = 0; j < fe1_out_size(in_height); j++) for (int k = 0; k < fe1_out_size(in_width); k++)
+            inner1[i][j][k] += top_down1[i][j][k];
+
+        Conv2d<out_channels, fe1_out_size(in_height), fe1_out_size(in_width), out_channels, fe1_out_size(in_height), fe1_out_size(in_width), layer_kernel_size, stride, layer_padding, groups> l1_conv(param_path + "/fpn.layer_blocks.0");
+        l1_conv.forward(inner1, features_half);
+    }
+
+private:
+    string param_path;
 };
 
