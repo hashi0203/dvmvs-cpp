@@ -80,8 +80,8 @@ public:
         cx = K[0][2] * factor_x;
         cy = K[1][2] * factor_y;
     }
-    void apply_rgb(float image[org_image_height][org_image_width][3], float resized_image[1][3][test_image_height][test_image_width]);
-    void get_updated_intrinsics(float updated_intrinsic[1][3][3]);
+    void apply_rgb(float image[org_image_height][org_image_width][3], float resized_image[3][test_image_height][test_image_width]);
+    void get_updated_intrinsics(float updated_intrinsic[3][3]);
 
 private:
     float fx, fy, cx, cy;

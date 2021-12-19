@@ -1,4 +1,5 @@
 #include "config.h"
+#include "model.h"
 
 void predict() {
     printf("Predicting with System: %s\n", system_name.c_str());
@@ -10,33 +11,14 @@ void predict() {
     // lstm_fusion = LSTMFusion();
     // cost_volume_decoder = CostVolumeDecoder();
 
-    // 重みの読み込み
-    // model = [feature_extractor, feature_shrinker, cost_volume_encoder, lstm_fusion, cost_volume_decoder]
-    // for i in range(len(model)):
-    //         try:
-    //             checkpoint = sorted(Path(Config.fusionnet_test_weights).files())[i]
-    //             weights = torch.load(checkpoint)
-    //             model[i].load_state_dict(weights)
-    //             model[i].eval()
-    //             print("Loaded weights for", checkpoint)
-    //         except Exception as e:
-    //             print(e)
-    //             print("Could not find the checkpoint for module", i)
-    //             exit(1)
-    // feature_extractor = model[0]
-    // feature_shrinker = model[1]
-    // cost_volume_encoder = model[2]
-    // lstm_fusion = model[3]
-    // cost_volume_decoder = model[4]
-
     float warp_grid[3][warp_grid_width * warp_grid_height];
     get_warp_grid_for_cost_volume_calculation(warp_grid);
 
     printvii(warp_grid, 3, warp_grid_width * warp_grid_height);
 
-    float min_depth = 0.25;
-    float max_depth = 20.0;
-    int n_depth_levels = 64;
+    const float min_depth = 0.25;
+    const float max_depth = 20.0;
+    const int n_depth_levels = 64;
 
     printf("Predicting for scene:%s\n", scene.c_str());
 
@@ -117,7 +99,7 @@ void predict() {
         load_image(image_filenames[f], reference_image);
 
         // POLL THE KEYFRAME BUFFER
-        int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
+        const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
 
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
         else if (response == 3) {
@@ -129,35 +111,45 @@ void predict() {
 
         PreprocessImage preprocessor(K);
 
-        float reference_image_torch[1][3][test_image_height][test_image_width];
+        float reference_image_torch[3][test_image_height][test_image_width];
         preprocessor.apply_rgb(reference_image, reference_image_torch);
 
-        float reference_pose_torch[1][4][4];
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose_torch[0][i][j] = reference_pose[i][j];
+        float reference_pose_torch[4][4];
+        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose_torch[i][j] = reference_pose[i][j];
 
-        float full_K_torch[1][3][3];
+        float full_K_torch[3][3];
         preprocessor.get_updated_intrinsics(full_K_torch);
 
-        float half_K_torch[1][2][3];
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) half_K_torch[0][i][j] = full_K_torch[0][i][j] / 2.0;
+        float half_K_torch[2][3];
+        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) half_K_torch[i][j] = full_K_torch[i][j] / 2.0;
 
-        float lstm_K_bottom[1][2][3];
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[0][i][j] = full_K_torch[0][i][j] / 32.0;
+        float lstm_K_bottom[2][3];
+        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[i][j] = full_K_torch[i][j] / 32.0;
 
         pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames];
         keyframe_buffer.get_best_measurement_frames(measurement_frames);
 
-        float measurement_images_torch[test_n_measurement_frames][1][3][test_image_height][test_image_width];
-        float measurement_poses_torch[test_n_measurement_frames][1][4][4];
+        float measurement_images_torch[test_n_measurement_frames][3][test_image_height][test_image_width];
+        float measurement_poses_torch[test_n_measurement_frames][4][4];
         for (int m = 0; m < test_n_measurement_frames; m++) {
             float measurement_image[org_image_height][org_image_width][3];
             for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
                 measurement_image[i][j][k] = measurement_frames[m].second[i][j][k];
             preprocessor.apply_rgb(measurement_image, measurement_images_torch[m]);
 
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][0][i][j] = measurement_frames[m].first[i][j];
+            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_frames[m].first[i][j];
         }
 
+        float layer1[fe1_out_channel][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+        float layer2[fe2_out_channel][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float layer3[fe3_out_channel][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float layer4[fe4_out_channel][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
+        float layer5[fe5_out_channel][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
+
+        FeatureExtractor<3, test_image_height, test_image_width> feature_extractor("params/0_feature_extractor");
+        for (int m = 0; m < test_n_measurement_frames; m++) {
+            feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
+        }
         // measurement_feature_halfs = []
         // for measurement_image_torch in measurement_images_torch:
         //     measurement_feature_half, _, _, _ = feature_shrinker(*feature_extractor(measurement_image_torch))

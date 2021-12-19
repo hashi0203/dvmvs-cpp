@@ -20,7 +20,7 @@ void load_image(string image_filename, float reference_image[org_image_height][o
 //     cv::imwrite(fname, opt);
 // }
 
-void PreprocessImage::apply_rgb(float image[org_image_height][org_image_width][3], float image_torch[1][3][test_image_height][test_image_width]) {
+void PreprocessImage::apply_rgb(float image[org_image_height][org_image_width][3], float image_torch[3][test_image_height][test_image_width]) {
     cv::Mat img(org_image_height, org_image_width, CV_8UC3);
     for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
         img.data[org_image_width*3*i + 3*j + k] = image[i][j][k];
@@ -28,19 +28,19 @@ void PreprocessImage::apply_rgb(float image[org_image_height][org_image_width][3
 
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 3; k++) {
         float val = img.data[test_image_width*3*i + 3*j + k];
-        image_torch[0][k][i][j] = ((val / scale_rgb) - mean_rgb[k]) / std_rgb[k];
+        image_torch[k][i][j] = ((val / scale_rgb) - mean_rgb[k]) / std_rgb[k];
     }
 }
 
-void PreprocessImage::get_updated_intrinsics(float updated_intrinsics[1][3][3]) {
-    updated_intrinsics[0][0][0] = fx;
-    updated_intrinsics[0][0][1] = 0;
-    updated_intrinsics[0][0][2] = cx;
-    updated_intrinsics[0][1][0] = 0;
-    updated_intrinsics[0][1][1] = fy;
-    updated_intrinsics[0][1][2] = cy;
-    updated_intrinsics[0][2][0] = 0;
-    updated_intrinsics[0][2][1] = 0;
-    updated_intrinsics[0][2][2] = 1;
+void PreprocessImage::get_updated_intrinsics(float updated_intrinsics[3][3]) {
+    updated_intrinsics[0][0] = fx;
+    updated_intrinsics[0][1] = 0;
+    updated_intrinsics[0][2] = cx;
+    updated_intrinsics[1][0] = 0;
+    updated_intrinsics[1][1] = fy;
+    updated_intrinsics[1][2] = cy;
+    updated_intrinsics[2][0] = 0;
+    updated_intrinsics[2][1] = 0;
+    updated_intrinsics[2][2] = 1;
 }
 
