@@ -7,6 +7,15 @@
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 
+ifstream open_file(string path) {
+    ifstream ifs(path);
+    if (!ifs.is_open()) {
+        cout << "File: " << path << " does not exist.\n";
+        exit(1);
+    }
+    return ifs;
+}
+
 // template<int channels, int in_height, int in_width, int padding>
 // void pad_input(float input[channels][in_height][in_width], float output[channels][in_height+2*padding][in_width+2*padding]);
 

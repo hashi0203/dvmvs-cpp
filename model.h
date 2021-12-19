@@ -21,6 +21,8 @@
 template <int in_channels, int in_height, int in_width>
 class FeatureExtractor{
 public:
+    FeatureExtractor(const string param_path) : param_path(param_path) {}
+
     void forward(float x[in_channels][in_height][in_width],
                  float layer1[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
                  float layer2[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
@@ -38,12 +40,12 @@ public:
         const int l0_out_channels = depths[0];
         const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
         const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
-        Conv2d<in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups> l0_conv;
+        Conv2d<in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups> l0_conv(param_path + "/layer1.0");
 
         const int l1_out_channels = depths[0];
         const int l1_out_height = l0_out_height;
         const int l1_out_width = l0_out_width;
-        BatchNorm2d<l1_out_channels, l1_out_height, l1_out_width> l1_bn;
+        BatchNorm2d<l1_out_channels, l1_out_height, l1_out_width> l1_bn(param_path + "/layer1.1");
 
         const int l2_out_channels = depths[0];
         const int l2_out_height = l1_out_height;
@@ -58,12 +60,12 @@ public:
         const int l3_out_channels = depths[0];
         const int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
         const int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
-        Conv2d<l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups> l3_conv;
+        Conv2d<l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups> l3_conv(param_path + "/layer1.3");
 
         const int l4_out_channels = depths[0];
         const int l4_out_height = l3_out_height;
         const int l4_out_width = l3_out_width;
-        BatchNorm2d<l4_out_channels, l4_out_height, l4_out_width> l4_bn;
+        BatchNorm2d<l4_out_channels, l4_out_height, l4_out_width> l4_bn(param_path + "/layer1.4");
 
         const int l5_out_channels = depths[0];
         const int l5_out_height = l4_out_height;
@@ -77,12 +79,12 @@ public:
         const int l6_out_channels = depths[1];
         const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
         const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
-        Conv2d<l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups> l6_conv;
+        Conv2d<l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups> l6_conv(param_path + "/layer1.6");
 
         const int l7_out_channels = depths[1];
         const int l7_out_height = l6_out_height;
         const int l7_out_width = l6_out_width;
-        BatchNorm2d<l7_out_channels, l7_out_height, l7_out_width> l7_bn;
+        BatchNorm2d<l7_out_channels, l7_out_height, l7_out_width> l7_bn(param_path + "/layer1.7");
 
         // MNASNet blocks: stacks of inverted residuals.
         const int l8_kernel_size = 3;
@@ -92,7 +94,7 @@ public:
         const int l8_out_channels = depths[2];
         const int l8_out_height = stack_out_size(l7_out_height, l8_kernel_size, l8_stride);
         const int l8_out_width = stack_out_size(l7_out_width, l8_kernel_size, l8_stride);
-        _stack<l7_out_channels, l7_out_height, l7_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats> l8_stack;
+        _stack<l7_out_channels, l7_out_height, l7_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats> l8_stack(param_path + "/layer2.0");
 
         const int l9_kernel_size = 5;
         const int l9_stride = 2;
@@ -101,7 +103,7 @@ public:
         const int l9_out_channels = depths[3];
         const int l9_out_height = stack_out_size(l8_out_height, l9_kernel_size, l9_stride);
         const int l9_out_width = stack_out_size(l8_out_width, l9_kernel_size, l9_stride);
-        _stack<l8_out_channels, l8_out_height, l8_out_width, l9_out_channels, l9_out_height, l9_out_width, l9_kernel_size, l9_stride, l9_expansion_factor, l9_repeats> l9_stack;
+        _stack<l8_out_channels, l8_out_height, l8_out_width, l9_out_channels, l9_out_height, l9_out_width, l9_kernel_size, l9_stride, l9_expansion_factor, l9_repeats> l9_stack(param_path + "/layer3.0");
 
         const int l10_kernel_size = 5;
         const int l10_stride = 2;
@@ -110,7 +112,7 @@ public:
         const int l10_out_channels = depths[4];
         const int l10_out_height = stack_out_size(l9_out_height, l10_kernel_size, l10_stride);
         const int l10_out_width = stack_out_size(l9_out_width, l10_kernel_size, l10_stride);
-        _stack<l9_out_channels, l9_out_height, l9_out_width, l10_out_channels, l10_out_height, l10_out_width, l10_kernel_size, l10_stride, l10_expansion_factor, l10_repeats> l10_stack;
+        _stack<l9_out_channels, l9_out_height, l9_out_width, l10_out_channels, l10_out_height, l10_out_width, l10_kernel_size, l10_stride, l10_expansion_factor, l10_repeats> l10_stack(param_path + "/layer4.0");
 
         const int l11_kernel_size = 3;
         const int l11_stride = 1;
@@ -119,7 +121,7 @@ public:
         const int l11_out_channels = depths[5];
         const int l11_out_height = stack_out_size(l10_out_height, l11_kernel_size, l11_stride);
         const int l11_out_width = stack_out_size(l10_out_width, l11_kernel_size, l11_stride);
-        _stack<l10_out_channels, l10_out_height, l10_out_width, l11_out_channels, l11_out_height, l11_out_width, l11_kernel_size, l11_stride, l11_expansion_factor, l11_repeats> l11_stack;
+        _stack<l10_out_channels, l10_out_height, l10_out_width, l11_out_channels, l11_out_height, l11_out_width, l11_kernel_size, l11_stride, l11_expansion_factor, l11_repeats> l11_stack(param_path + "/layer4.1");
 
         const int l12_kernel_size = 5;
         const int l12_stride = 2;
@@ -128,7 +130,7 @@ public:
         const int l12_out_channels = depths[6];
         const int l12_out_height = stack_out_size(l11_out_height, l12_kernel_size, l12_stride);
         const int l12_out_width = stack_out_size(l11_out_width, l12_kernel_size, l12_stride);
-        _stack<l11_out_channels, l11_out_height, l11_out_width, l12_out_channels, l12_out_height, l12_out_width, l12_kernel_size, l12_stride, l12_expansion_factor, l12_repeats> l12_stack;
+        _stack<l11_out_channels, l11_out_height, l11_out_width, l12_out_channels, l12_out_height, l12_out_width, l12_kernel_size, l12_stride, l12_expansion_factor, l12_repeats> l12_stack(param_path + "/layer5.0");
 
         const int l13_kernel_size = 3;
         const int l13_stride = 1;
@@ -137,7 +139,7 @@ public:
         const int l13_out_channels = depths[7];
         const int l13_out_height = stack_out_size(l12_out_height, l13_kernel_size, l13_stride);
         const int l13_out_width = stack_out_size(l12_out_width, l13_kernel_size, l13_stride);
-        _stack<l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats> l13_stack;
+        _stack<l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats> l13_stack(param_path + "/layer5.1");
 
 
         float y0[l0_out_channels][l0_out_height][l0_out_width];
@@ -199,5 +201,9 @@ public:
             layer5[i][j][k] = y13[i][j][k];
 
     }
+
+private:
+    string param_path;
+
 };
 

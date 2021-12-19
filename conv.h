@@ -5,16 +5,21 @@
 template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups>
 class Conv2d{
 public:
-    Conv2d() {
-        kaiming_uniform_<out_channels, in_channels / groups, kernel_size>(sqrt(5), weight);
-        // if self.bias is not None:
-        //     fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
-        //     bound = 1 / math.sqrt(fan_in)
-        //     init.uniform_(self.bias, -bound, bound)
-    }
+    // Conv2d() {
+    //     kaiming_uniform_<out_channels, in_channels / groups, kernel_size>(sqrt(5), weight);
+    //     // if self.bias is not None:
+    //     //     fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+    //     //     bound = 1 / math.sqrt(fan_in)
+    //     //     init.uniform_(self.bias, -bound, bound)
+    // }
 
-    // float weight[out_channels][in_channels][kernel_size][kernel_size];
     float weight[out_channels][in_channels / groups][kernel_size][kernel_size];
+
+    Conv2d(const string param_path) : param_path(param_path) {
+        // load parameters
+        ifstream ifs = open_file(param_path + ".weight");
+        ifs.read((char*) weight, sizeof(float) * out_channels * (in_channels / groups) * kernel_size * kernel_size);
+    }
 
     void forward(float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
         // if self.padding_mode != 'zeros':
@@ -69,7 +74,8 @@ public:
     //     }
     // }
 
-// private:
+private:
+    string param_path;
     // const int in_channels, out_channels, kernel_size, stride, padding;
     // const int dilation, groups, bias, padding_mode;
     // const int out_height = (in_height + 2 * padding - kernel_size) / stride + 1;
