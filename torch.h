@@ -10,7 +10,7 @@ ifstream open_file(const string path);
 // void kaiming_uniform_(float a, float weight[out_channels][in_channels][kernel_size]);
 
 template<int channels, int in_height, int in_width, int padding>
-void pad_input(float input[channels][in_height][in_width], float output[channels][in_height+2*padding][in_width+2*padding]) {
+void pad_input(const float input[channels][in_height][in_width], float output[channels][in_height+2*padding][in_width+2*padding]) {
     for (int i = 0; i < channels; i++) for (int j = 0; j < in_height+2*padding; j++) for (int k = 0; k < in_width+2*padding; k++)
         output[i][j][k] = 0;
     for (int i = 0; i < channels; i++) for (int j = 0; j < in_height; j++) for (int k = 0; k < in_width; k++)
@@ -20,7 +20,7 @@ void pad_input(float input[channels][in_height][in_width], float output[channels
 float calculate_gain(const float a);
 
 template<int out_channels, int in_channels, int kernel_size>
-void kaiming_uniform_(float a, float weight[out_channels][in_channels][kernel_size][kernel_size]) {
+void kaiming_uniform_(const float a, float weight[out_channels][in_channels][kernel_size][kernel_size]) {
     const float fan_in = in_channels * kernel_size * kernel_size; // 4 次元以下ならこれで OK なはず
     const float gain = calculate_gain(a);
     const float std = gain / sqrt(fan_in);

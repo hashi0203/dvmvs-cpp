@@ -21,7 +21,7 @@ public:
         ifs.read((char*) weight, sizeof(float) * out_channels * (in_channels / groups) * kernel_size * kernel_size);
     }
 
-    void forward(float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
+    void forward(const float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
         // if self.padding_mode != 'zeros':
         //     return F.conv2d(F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
         //                     weight, self.bias, self.stride,

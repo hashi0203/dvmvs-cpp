@@ -50,6 +50,9 @@ const float min_depth = 0.25;
 const float max_depth = 20.0;
 const int n_depth_levels = 64;
 
+const int fpn_output_channels = 32;
+const int hyper_channels = 32;
+
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 
 #define fe1_out_size(size) conv_out_size(conv_out_size(conv_out_size((size), 3, 2, 1), 3, 1, 1), 1, 1, 0)
@@ -64,8 +67,12 @@ const int n_depth_levels = 64;
 #define fe4_out_channels 96
 #define fe5_out_channels 320
 
+// #define conv_layer_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), ((kernel_size) - 1) / 2)
+// #define down_conv_out_size(size) conv_layer_out_size((size), (kernel_size), 2)
+// #define eb_out_size(size, kernel_size) down_conv_out_size((size), (kernel_size))
+
 // utils
-void pose_distance(float reference_pose[4][4], float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
+void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]);
 void cost_volume_fusion(const float image1[fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                         const float image2s[test_n_measurement_frames][fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
@@ -75,22 +82,26 @@ void cost_volume_fusion(const float image1[fe1_out_channels][fe1_out_size(test_i
                         const float warp_grid[3][warp_grid_width * warp_grid_height],
                         const int n_measurement_frames,
                         float fused_cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)]);
-bool is_pose_available(float pose[4][4]);
+bool is_pose_available(const float pose[4][4]);
 
 // keyframe_buffer
 class KeyframeBuffer{
 public:
-    int try_new_keyframe(float pose[4][4], float image[org_image_height][org_image_width][3]);
-    int get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]);
+    int try_new_keyframe(const float pose[4][4], const float image[org_image_height][org_image_width][3]);
+    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4],
+                                    float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3]);
 
 private:
-    // self.buffer = deque([], maxlen=buffer_size)
-    deque<pair<float[4][4], float[org_image_height][org_image_width][3]>> buffer;
+    const int buffer_size = test_keyframe_buffer_size;
+    int buffer_idx = 0;
+    int buffer_cnt = 0;
+    float buffer_poses[test_keyframe_buffer_size][4][4];
+    float buffer_images[test_keyframe_buffer_size][org_image_height][org_image_width][3];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
     const float keyframe_pose_distance = test_keyframe_pose_distance;
     int __tracking_lost_counter = 0;
-    float calculate_penalty(float t_score, float R_score);
+    float calculate_penalty(const float t_score, const float R_score);
 };
 
 // dataset_loader

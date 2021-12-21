@@ -13,7 +13,7 @@ public:
 
     _InvertedResidual(const string param_path) : param_path(param_path) {}
 
-    void forward(float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
+    void forward(const float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
         const int mid_channels = in_channels * expansion_factor;
 
         // Pointwise
@@ -74,35 +74,39 @@ public:
         float y0[l0_out_channels][l0_out_height][l0_out_width];
         l0_conv.forward(x, y0);
 
-        float y1[l1_out_channels][l1_out_height][l1_out_width];
-        l1_bn.forward(y0, y1);
+        // float y1[l1_out_channels][l1_out_height][l1_out_width];
+        l1_bn.forward(y0, y0);
 
-        float y2[l2_out_channels][l2_out_height][l2_out_width];
-        l2_relu.forward(y1, y2);
+        // float y2[l2_out_channels][l2_out_height][l2_out_width];
+        l2_relu.forward(y0, y0);
 
         float y3[l3_out_channels][l3_out_height][l3_out_width];
-        l3_conv.forward(y2, y3);
+        l3_conv.forward(y0, y3);
 
-        float y4[l4_out_channels][l4_out_height][l4_out_width];
-        l4_bn.forward(y3, y4);
+        // float y4[l4_out_channels][l4_out_height][l4_out_width];
+        l4_bn.forward(y3, y3);
 
-        float y5[l5_out_channels][l5_out_height][l5_out_width];
-        l5_relu.forward(y4, y5);
+        // float y5[l5_out_channels][l5_out_height][l5_out_width];
+        l5_relu.forward(y3, y3);
 
         float y6[l6_out_channels][l6_out_height][l6_out_width];
-        l6_conv.forward(y5, y6);
+        l6_conv.forward(y3, y6);
 
-        float y7[l7_out_channels][l7_out_height][l7_out_width];
-        l7_bn.forward(y6, y7);
+        // float y7[l7_out_channels][l7_out_height][l7_out_width];
+        l7_bn.forward(y6, y);
 
         // if x.shape == y.shape
         if (in_channels == out_channels && stride == 1) {
             for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-                y[i][j][k] = y7[i][j][k] + x[i][j][k];
-        } else {
-            for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-                y[i][j][k] = y7[i][j][k];
+                y[i][j][k] += x[i][j][k];
         }
+        // if (in_channels == out_channels && stride == 1) {
+        //     for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
+        //         y[i][j][k] = y7[i][j][k] + x[i][j][k];
+        // } else {
+        //     for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
+        //         y[i][j][k] = y7[i][j][k];
+        // }
     }
 
 private:

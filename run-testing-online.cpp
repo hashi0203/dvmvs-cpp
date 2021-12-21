@@ -115,18 +115,19 @@ void predict() {
         for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[i][j] = full_K_torch[i][j] / 32.0;
         for (int j = 0; j < 3; j++) lstm_K_bottom[2][j] = full_K_torch[2][j];
 
-        pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames];
-        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_frames);
+        float measurement_poses[test_n_measurement_frames][4][4];
+        float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3];
+        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, measurement_images);
 
         float measurement_images_torch[test_n_measurement_frames][3][test_image_height][test_image_width];
         float measurement_poses_torch[test_n_measurement_frames][4][4];
         for (int m = 0; m < n_measurement_frames; m++) {
             float measurement_image[org_image_height][org_image_width][3];
             for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
-                measurement_image[i][j][k] = measurement_frames[m].second[i][j][k];
+                measurement_image[i][j][k] = measurement_images[m][i][j][k];
             preprocessor.apply_rgb(measurement_image, measurement_images_torch[m]);
 
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_frames[m].first[i][j];
+            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_poses[m][i][j];
         }
 
 
@@ -137,8 +138,7 @@ void predict() {
         float layer4[fe4_out_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
         float layer5[fe5_out_channels][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
 
-        const int fpn_output_channels = 32;
-        FeatureShrinker<test_image_height, test_image_width, fpn_output_channels> feature_shrinker("params/1_feature_pyramid");
+        FeatureShrinker<test_image_height, test_image_width> feature_shrinker("params/1_feature_pyramid");
         float measurement_feature_halfs[test_n_measurement_frames][fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float measurement_feature_quarter[fe2_out_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
         float measurement_feature_one_eight[fe3_out_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
@@ -159,6 +159,16 @@ void predict() {
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
 
+        float skip0[n_depth_levels + fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+        float skip1[hyper_channels * 2 + fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float skip2[hyper_channels * 4 + fpn_output_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float skip3[hyper_channels * 8 + fpn_output_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
+        float bottom[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
+        CostVolumeEncoder<test_image_height, test_image_width> cost_volume_encoder("params/2_encoder");
+        cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
+                                    skip0, skip1, skip2, skip3, bottom);
+        // if (f == 1) break;
+
     }
 
 }
@@ -168,12 +178,6 @@ int main() {
     return 0;
 }
 
-
-//             skip0, skip1, skip2, skip3, bottom = cost_volume_encoder(feature_half=reference_feature_half,
-//                                                                      feature_quarter=reference_feature_quarter,
-//                                                                      feature_one_eight=reference_feature_one_eight,
-//                                                                      feature_one_sixteen=reference_feature_one_sixteen,
-//                                                                      cost_volume=cost_volume)
 
 //             if previous_depth is not None:
 //                 depth_estimation = get_non_differentiable_rectangle_depth_estimation(reference_pose_torch=reference_pose_torch,

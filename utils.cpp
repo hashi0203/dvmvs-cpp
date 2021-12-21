@@ -6,7 +6,7 @@
 using namespace Eigen;
 
 // GEOMETRIC UTILS
-void pose_distance(float reference_pose[4][4], float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure) {
+void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure) {
     // :param reference_pose: 4x4 numpy array, reference frame camera-to-world pose (not extrinsic matrix!)
     // :param measurement_pose: 4x4 numpy array, measurement frame camera-to-world pose (not extrinsic matrix!)
     // :return combined_measure: float, combined pose distance measure
@@ -150,7 +150,7 @@ void cost_volume_fusion(const float image1[fe1_out_channels][fe1_out_size(test_i
 
 }
 
-bool is_pose_available(float pose[4][4]) {
+bool is_pose_available(const float pose[4][4]) {
     // is_nan = np.isnan(pose).any()
     // is_inf = np.isinf(pose).any()
     // is_neg_inf = np.isneginf(pose).any()
