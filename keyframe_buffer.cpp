@@ -67,13 +67,13 @@ int KeyframeBuffer::try_new_keyframe(float pose[4][4], float image[org_image_hei
 }
 
 
-void KeyframeBuffer::get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]) {
+int KeyframeBuffer::get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]) {
     float reference_pose[4][4];
     float reference_image[org_image_height][org_image_width][3];
     decode_buf_pair(buffer.back(), reference_pose, reference_image);
 
     const int len_buf = buffer.size();
-    int n_requested_measurement_frames = min(test_n_measurement_frames, len_buf - 1);
+    const int n_requested_measurement_frames = min(test_n_measurement_frames, len_buf - 1);
 
     pair<float, int> penalties[len_buf - 1];
     for (int i = 0; i < len_buf - 1; i++) {
@@ -97,4 +97,5 @@ void KeyframeBuffer::get_best_measurement_frames(pair<float[4][4], float[org_ima
         for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
             measurement_frames[f].second[i][j][k] = buf.second[i][j][k];
     }
+    return n_requested_measurement_frames;
 }

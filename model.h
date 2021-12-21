@@ -1,22 +1,11 @@
+#pragma once
 #include "config.h"
+#include "functional.h"
 #include "mnasnet.h"
 // #include <Eigen/Dense>
 // #include <Eigen/Core>
 // #include <Eigen/LU>
 // using namespace Eigen;
-
-#define fe1_out_size(size) conv_out_size(conv_out_size(conv_out_size((size), 3, 2, 1), 3, 1, 1), 1, 1, 0)
-#define fe2_out_size(size) stack_out_size(fe1_out_size((size)), 3, 2)
-#define fe3_out_size(size) stack_out_size(fe2_out_size((size)), 5, 2)
-#define fe4_out_size(size) stack_out_size(stack_out_size(fe3_out_size((size)), 5, 2), 3, 1)
-#define fe5_out_size(size) stack_out_size(stack_out_size(fe4_out_size((size)), 5, 2), 3, 1)
-
-#define fe1_out_channel 16
-#define fe2_out_channel 24
-#define fe3_out_channel 40
-#define fe4_out_channel 96
-#define fe5_out_channel 320
-
 
 template <int in_channels, int in_height, int in_width>
 class FeatureExtractor{
@@ -24,11 +13,11 @@ public:
     FeatureExtractor(const string param_path) : param_path(param_path) {}
 
     void forward(float x[in_channels][in_height][in_width],
-                 float layer1[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float layer2[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float layer3[fe3_out_channel][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float layer4[fe4_out_channel][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 float layer5[fe5_out_channel][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
+                 float layer1[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float layer2[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float layer3[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
+                 float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
 
         constexpr int depths[8] = {32, 16, 24, 40, 80, 96, 192, 320};
 
@@ -185,19 +174,19 @@ public:
         l13_stack.forward(y12, y13);
 
 
-        for (int i = 0; i < fe1_out_channel; i++) for (int j = 0; j < fe1_out_size(in_height); j++) for (int k = 0; k < fe1_out_size(in_width); k++)
+        for (int i = 0; i < fe1_out_channels; i++) for (int j = 0; j < fe1_out_size(in_height); j++) for (int k = 0; k < fe1_out_size(in_width); k++)
             layer1[i][j][k] = y7[i][j][k];
 
-        for (int i = 0; i < fe2_out_channel; i++) for (int j = 0; j < fe2_out_size(in_height); j++) for (int k = 0; k < fe2_out_size(in_width); k++)
+        for (int i = 0; i < fe2_out_channels; i++) for (int j = 0; j < fe2_out_size(in_height); j++) for (int k = 0; k < fe2_out_size(in_width); k++)
             layer2[i][j][k] = y8[i][j][k];
 
-        for (int i = 0; i < fe3_out_channel; i++) for (int j = 0; j < fe3_out_size(in_height); j++) for (int k = 0; k < fe3_out_size(in_width); k++)
+        for (int i = 0; i < fe3_out_channels; i++) for (int j = 0; j < fe3_out_size(in_height); j++) for (int k = 0; k < fe3_out_size(in_width); k++)
             layer3[i][j][k] = y9[i][j][k];
 
-        for (int i = 0; i < fe4_out_channel; i++) for (int j = 0; j < fe4_out_size(in_height); j++) for (int k = 0; k < fe4_out_size(in_width); k++)
+        for (int i = 0; i < fe4_out_channels; i++) for (int j = 0; j < fe4_out_size(in_height); j++) for (int k = 0; k < fe4_out_size(in_width); k++)
             layer4[i][j][k] = y11[i][j][k];
 
-        for (int i = 0; i < fe5_out_channel; i++) for (int j = 0; j < fe5_out_size(in_height); j++) for (int k = 0; k < fe5_out_size(in_width); k++)
+        for (int i = 0; i < fe5_out_channels; i++) for (int j = 0; j < fe5_out_size(in_height); j++) for (int k = 0; k < fe5_out_size(in_width); k++)
             layer5[i][j][k] = y13[i][j][k];
 
     }
@@ -217,15 +206,15 @@ class FeatureShrinker{
 public:
     FeatureShrinker(const string param_path) : param_path(param_path) {}
 
-    void forward(float layer1[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float layer2[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float layer3[fe3_out_channel][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float layer4[fe4_out_channel][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 float layer5[fe5_out_channel][fe5_out_size(in_height)][fe5_out_size(in_width)],
-                 float features_half[fe1_out_channel][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float features_quarter[fe2_out_channel][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float features_one_eight[fe3_out_channel][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float features_one_sixteen[fe4_out_channel][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
+    void forward(float layer1[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float layer2[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float layer3[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
+                 float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)],
+                 float features_half[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float features_quarter[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float features_one_eight[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float features_one_sixteen[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
 
         const int stride = 1;
         const int groups = 1;
@@ -236,7 +225,7 @@ public:
         const int layer_padding = 1;
 
         // layer5
-        Conv2d<fe5_out_channel, fe5_out_size(in_height), fe5_out_size(in_width), out_channels, fe5_out_size(in_height), fe5_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i5_conv(param_path + "/fpn.inner_blocks.4");
+        Conv2d<fe5_out_channels, fe5_out_size(in_height), fe5_out_size(in_width), out_channels, fe5_out_size(in_height), fe5_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i5_conv(param_path + "/fpn.inner_blocks.4");
         float inner5[out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)];
         i5_conv.forward(layer5, inner5);
 
@@ -246,7 +235,7 @@ public:
 
 
         // layer4
-        Conv2d<fe4_out_channel, fe4_out_size(in_height), fe4_out_size(in_width), out_channels, fe4_out_size(in_height), fe4_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i4_conv(param_path + "/fpn.inner_blocks.3");
+        Conv2d<fe4_out_channels, fe4_out_size(in_height), fe4_out_size(in_width), out_channels, fe4_out_size(in_height), fe4_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i4_conv(param_path + "/fpn.inner_blocks.3");
         float inner4[out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
         i4_conv.forward(layer4, inner4);
 
@@ -260,7 +249,7 @@ public:
 
 
         // layer3
-        Conv2d<fe3_out_channel, fe3_out_size(in_height), fe3_out_size(in_width), out_channels, fe3_out_size(in_height), fe3_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i3_conv(param_path + "/fpn.inner_blocks.2");
+        Conv2d<fe3_out_channels, fe3_out_size(in_height), fe3_out_size(in_width), out_channels, fe3_out_size(in_height), fe3_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i3_conv(param_path + "/fpn.inner_blocks.2");
         float inner3[out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
         i3_conv.forward(layer3, inner3);
 
@@ -274,7 +263,7 @@ public:
 
 
         // layer2
-        Conv2d<fe2_out_channel, fe2_out_size(in_height), fe2_out_size(in_width), out_channels, fe2_out_size(in_height), fe2_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i2_conv(param_path + "/fpn.inner_blocks.1");
+        Conv2d<fe2_out_channels, fe2_out_size(in_height), fe2_out_size(in_width), out_channels, fe2_out_size(in_height), fe2_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i2_conv(param_path + "/fpn.inner_blocks.1");
         float inner2[out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
         i2_conv.forward(layer2, inner2);
 
@@ -288,7 +277,7 @@ public:
 
 
         // layer1
-        Conv2d<fe1_out_channel, fe1_out_size(in_height), fe1_out_size(in_width), out_channels, fe1_out_size(in_height), fe1_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i1_conv(param_path + "/fpn.inner_blocks.0");
+        Conv2d<fe1_out_channels, fe1_out_size(in_height), fe1_out_size(in_width), out_channels, fe1_out_size(in_height), fe1_out_size(in_width), inner_kernel_size, stride, inner_padding, groups> i1_conv(param_path + "/fpn.inner_blocks.0");
         float inner1[out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
         i1_conv.forward(layer1, inner1);
 

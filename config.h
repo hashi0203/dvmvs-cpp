@@ -46,23 +46,49 @@ const float scale_rgb = 255.0;
 const float mean_rgb[3] = {0.485, 0.456, 0.406};
 const float std_rgb[3] = {0.229, 0.224, 0.225};
 
+const float min_depth = 0.25;
+const float max_depth = 20.0;
+const int n_depth_levels = 64;
+
+#define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
+
+#define fe1_out_size(size) conv_out_size(conv_out_size(conv_out_size((size), 3, 2, 1), 3, 1, 1), 1, 1, 0)
+#define fe2_out_size(size) stack_out_size(fe1_out_size((size)), 3, 2)
+#define fe3_out_size(size) stack_out_size(fe2_out_size((size)), 5, 2)
+#define fe4_out_size(size) stack_out_size(stack_out_size(fe3_out_size((size)), 5, 2), 3, 1)
+#define fe5_out_size(size) stack_out_size(stack_out_size(fe4_out_size((size)), 5, 2), 3, 1)
+
+#define fe1_out_channels 16
+#define fe2_out_channels 24
+#define fe3_out_channels 40
+#define fe4_out_channels 96
+#define fe5_out_channels 320
+
 // utils
 void pose_distance(float reference_pose[4][4], float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]);
+void cost_volume_fusion(const float image1[fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
+                        const float image2s[test_n_measurement_frames][fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
+                        const float pose1[4][4],
+                        const float pose2s[test_n_measurement_frames][4][4],
+                        const float K[3][3],
+                        const float warp_grid[3][warp_grid_width * warp_grid_height],
+                        const int n_measurement_frames,
+                        float fused_cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)]);
 bool is_pose_available(float pose[4][4]);
 
 // keyframe_buffer
 class KeyframeBuffer{
 public:
     int try_new_keyframe(float pose[4][4], float image[org_image_height][org_image_width][3]);
-    void get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]);
+    int get_best_measurement_frames(pair<float[4][4], float[org_image_height][org_image_width][3]> measurement_frames[test_n_measurement_frames]);
 
 private:
     // self.buffer = deque([], maxlen=buffer_size)
     deque<pair<float[4][4], float[org_image_height][org_image_width][3]>> buffer;
-    float optimal_R_score = test_optimal_R_measure;
-    float optimal_t_score = test_optimal_t_measure;
-    float keyframe_pose_distance = test_keyframe_pose_distance;
+    const float optimal_R_score = test_optimal_R_measure;
+    const float optimal_t_score = test_optimal_t_measure;
+    const float keyframe_pose_distance = test_keyframe_pose_distance;
     int __tracking_lost_counter = 0;
     float calculate_penalty(float t_score, float R_score);
 };

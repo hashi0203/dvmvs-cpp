@@ -1,6 +1,5 @@
 #pragma once
 #include "config.h"
-#include "torch.h"
 #include "conv.h"
 #include "batchnorm.h"
 #include "activation.h"

@@ -1,31 +1,7 @@
 #pragma once
 #include "settings.h"
 
-// inline const int conv_out_size(int size, int kernel_size, int stride, int padding) {
-//     return (size + 2 * padding - kernel_size) / stride + 1;
-// }
-
-#define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
-
-ifstream open_file(string path) {
-    ifstream ifs(path);
-    if (!ifs.is_open()) {
-        cout << "File: " << path << " does not exist.\n";
-        exit(1);
-    }
-    return ifs;
-}
-
-template<int channels, int in_height, int in_width, int out_height, int out_width>
-void interpolate(float x[channels][in_height][in_width], float y[channels][out_height][out_width]) {
-    const float fj = (float) in_height / out_height;
-    const float fk = (float) in_width / out_width;
-    for (int i = 0; i < channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
-        const int jj = round(j * fj);
-        const int kk = round(k * fk);
-        y[i][j][k] = x[i][jj][kk];
-    }
-}
+ifstream open_file(const string path);
 
 // template<int channels, int in_height, int in_width, int padding>
 // void pad_input(float input[channels][in_height][in_width], float output[channels][in_height+2*padding][in_width+2*padding]);
@@ -41,9 +17,7 @@ void pad_input(float input[channels][in_height][in_width], float output[channels
         output[i][j+padding][k+padding] = input[i][j][k];
 }
 
-float calculate_gain(float a) {
-    return sqrt(2.0 / (1 + pow(a, 2)));
-}
+float calculate_gain(const float a);
 
 template<int out_channels, int in_channels, int kernel_size>
 void kaiming_uniform_(float a, float weight[out_channels][in_channels][kernel_size][kernel_size]) {
