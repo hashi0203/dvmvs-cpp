@@ -3,10 +3,6 @@
 #include "functional.h"
 #include "layers.h"
 #include "mnasnet.h"
-// #include <Eigen/Dense>
-// #include <Eigen/Core>
-// #include <Eigen/LU>
-// using namespace Eigen;
 
 template <int channels, int height, int width, int kernel_size, bool apply_bn_relu>
 class StandardLayer{
@@ -123,7 +119,6 @@ public:
                  float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
 
         constexpr int depths[8] = {32, fe1_out_channels, fe2_out_channels, fe3_out_channels, 80, fe4_out_channels, 192, fe5_out_channels};
-        // constexpr int depths[8] = {3, 1, 2, 4, 8, 9, 19, 32};
 
         // First layer: regular conv.
         const int l0_kernel_size = 3;

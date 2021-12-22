@@ -10,7 +10,6 @@
 template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int expansion_factor>
 class _InvertedResidual{
 public:
-
     _InvertedResidual(const string param_path) : param_path(param_path) {}
 
     void forward(const float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
@@ -135,7 +134,7 @@ class _stack{
 public:
     _stack(const string param_path) : param_path(param_path) {}
 
-    void forward(float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
+    void forward(const float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
         // First one has no skip, because feature map size changes.
         _InvertedResidual<in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, expansion_factor> l0_invres(param_path + ".0");
 

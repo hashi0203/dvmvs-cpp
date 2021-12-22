@@ -23,7 +23,6 @@ public:
         ifstream ifs = open_file(param_path + ".weight");
         for (int i = 0; i < out_channels; i++)  for (int j = 0; j < in_channels / groups; j++) for (int k = 0; k < kernel_size; k++)
             ifs.read((char*) weight[i][j][k], sizeof(float) * kernel_size);
-        // ifs.read((char*) weight, sizeof(float) * out_channels * (in_channels / groups) * kernel_size * kernel_size);
     }
 
     void forward(const float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
@@ -85,10 +84,6 @@ public:
 
 private:
     string param_path;
-    // const int in_channels, out_channels, kernel_size, stride, padding;
     // const int dilation, groups, bias, padding_mode;
-    // const int out_height = (in_height + 2 * padding - kernel_size) / stride + 1;
-    // const int out_width = (in_width + 2 * padding - kernel_size) / stride + 1;
-    // float weight[out_channels, in_channels / groups, kernel_size];
     // self._reversed_padding_repeated_twice = _reverse_repeat_tuple(self.padding, 2)
 };

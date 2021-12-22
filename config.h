@@ -131,11 +131,11 @@ private:
 };
 
 // dataset_loader
-void load_image(string image_filename, float reference_image[org_image_height][org_image_width][3]);
+void load_image(const string image_filename, float reference_image[org_image_height][org_image_width][3]);
 
 class PreprocessImage{
 public:
-    PreprocessImage(float K[3][3]) {
+    PreprocessImage(const float K[3][3]) {
         float factor_x = (float) test_image_width / (float) org_image_width;
         float factor_y = (float) test_image_height / (float) org_image_height;
         fx = K[0][0] * factor_x;
@@ -143,7 +143,7 @@ public:
         cx = K[0][2] * factor_x;
         cy = K[1][2] * factor_y;
     }
-    void apply_rgb(float image[org_image_height][org_image_width][3], float resized_image[3][test_image_height][test_image_width]);
+    void apply_rgb(const float image[org_image_height][org_image_width][3], float resized_image[3][test_image_height][test_image_width]);
     void get_updated_intrinsics(float updated_intrinsic[3][3]);
 
 private:
