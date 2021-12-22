@@ -92,12 +92,15 @@ public:
 
         DownconvolutionLayer<in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size> l0_down_convolution(param_path + ".down_convolution");
         float y0[out_channels][out_height][out_width];
+        // float ***y0 = new float**[out_channels];
+        // new_3d(y0, out_channels, out_height, out_width);
         l0_down_convolution.forward(x, y0);
 
         const bool apply_bn_relu = true;
         StandardLayer<out_channels, out_height, out_width, kernel_size, apply_bn_relu> l1_standard_convolution(param_path + ".standard_convolution");
         // float y1[out_channels][out_height][out_width];
         l1_standard_convolution.forward(y0, y);
+        // delete_3d(y0, out_channels, out_height, out_width);
 
         // for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
         //     y[i][j][k] = y1[i][j][k];
@@ -119,7 +122,8 @@ public:
                  float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
                  float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
 
-        constexpr int depths[8] = {32, 16, 24, 40, 80, 96, 192, 320};
+        constexpr int depths[8] = {32, fe1_out_channels, fe2_out_channels, fe3_out_channels, 80, fe4_out_channels, 192, fe5_out_channels};
+        // constexpr int depths[8] = {3, 1, 2, 4, 8, 9, 19, 32};
 
         // First layer: regular conv.
         const int l0_kernel_size = 3;
@@ -311,10 +315,10 @@ public:
                  const float layer3[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
                  const float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
                  const float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)],
-                 float features_half[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float features_quarter[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float features_one_eight[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float features_one_sixteen[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
+                 float features_half[fpn_output_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 float features_quarter[fpn_output_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 float features_one_eight[fpn_output_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 float features_one_sixteen[fpn_output_channels][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
 
         const int stride = 1;
         const int groups = 1;

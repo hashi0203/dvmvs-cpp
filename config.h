@@ -3,13 +3,14 @@
 
 // const int org_image_width = 540;
 // const int org_image_height = 360;
-const int org_image_width = 30;
-const int org_image_height = 40;
-
 // const int test_image_width = 320;
 // const int test_image_height = 256;
+
+const int org_image_width = 30;
+const int org_image_height = 40;
 const int test_image_width = 10;
 const int test_image_height = 20;
+
 const int test_distortion_crop = 0;
 const bool test_perform_crop = false;
 const bool test_visualize = true;
@@ -40,7 +41,7 @@ const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_ima
 const string scene_folder = test_online_scene_path;
 const string scene = "000";
 
-const int n_test_frames = 100;
+const int n_test_frames = 10;
 
 const float scale_rgb = 255.0;
 const float mean_rgb[3] = {0.485, 0.456, 0.406};
@@ -71,11 +72,24 @@ const int hyper_channels = 32;
 // #define down_conv_out_size(size) conv_layer_out_size((size), (kernel_size), 2)
 // #define eb_out_size(size, kernel_size) down_conv_out_size((size), (kernel_size))
 
+#define new_2d(arr, d0, d1) for (int iii2 = 0; iii2 < (d0); iii2++) {(arr)[iii2] = new float[(d1)];}
+#define new_3d(arr, d0, d1, d2) for (int iii3 = 0; iii3 < (d0); iii3++) {(arr)[iii3] = new float*[(d1)]; new_2d((arr)[iii3], (d1), (d2));}
+#define new_4d(arr, d0, d1, d2, d3) for (int iii4 = 0; iii4 < (d0); iii4++) {(arr)[iii4] = new float**[(d1)]; new_3d((arr)[iii4], (d1), (d2), (d3));}
+
+#define tmp_delete_2d(arr, d0, d1) for (int iii2 = 0; iii2 < (d0); iii2++) {delete[] (arr)[iii2];}
+#define tmp_delete_3d(arr, d0, d1, d2) for (int iii3 = 0; iii3 < (d0); iii3++) {tmp_delete_2d((arr)[iii3], (d1), (d2)); delete[] (arr)[iii3];}
+#define tmp_delete_4d(arr, d0, d1, d2, d3) for (int iii4 = 0; iii4 < (d0); iii4++) {tmp_delete_3d((arr)[iii4], (d1), (d2), (d3)); delete[] (arr)[iii4];}
+
+#define delete_2d(arr, d0, d1) tmp_delete_2d(arr, d0, d1) ; delete[] (arr);
+#define delete_3d(arr, d0, d1, d2) tmp_delete_3d(arr, d0, d1, d2) ; delete[] (arr);
+#define delete_4d(arr, d0, d1, d2, d3) tmp_delete_4d(arr, d0, d1, d2, d3); delete[] (arr);
+
+
 // utils
 void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]);
-void cost_volume_fusion(const float image1[fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
-                        const float image2s[test_n_measurement_frames][fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
+void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
+                        const float image2s[test_n_measurement_frames][fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                         const float pose1[4][4],
                         const float pose2s[test_n_measurement_frames][4][4],
                         const float K[3][3],
@@ -87,16 +101,28 @@ bool is_pose_available(const float pose[4][4]);
 // keyframe_buffer
 class KeyframeBuffer{
 public:
+    KeyframeBuffer(){
+        new_3d(buffer_poses, buffer_size, 4, 4);
+        new_4d(buffer_images, buffer_size, org_image_height, org_image_width, 3);
+    }
+
     int try_new_keyframe(const float pose[4][4], const float image[org_image_height][org_image_width][3]);
     int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4],
                                     float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3]);
+
+    void close() {
+        delete_3d(buffer_poses, buffer_size, 4, 4);
+        delete_4d(buffer_images, buffer_size, org_image_height, org_image_width, 3);
+    }
 
 private:
     const int buffer_size = test_keyframe_buffer_size;
     int buffer_idx = 0;
     int buffer_cnt = 0;
-    float buffer_poses[test_keyframe_buffer_size][4][4];
-    float buffer_images[test_keyframe_buffer_size][org_image_height][org_image_width][3];
+    float ***buffer_poses = new float**[test_keyframe_buffer_size];
+    // float buffer_poses[test_keyframe_buffer_size][4][4];
+    float ****buffer_images = new float***[test_keyframe_buffer_size];
+    // float buffer_images[test_keyframe_buffer_size][org_image_height][org_image_width][3];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
     const float keyframe_pose_distance = test_keyframe_pose_distance;

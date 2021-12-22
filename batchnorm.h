@@ -4,10 +4,10 @@
 template <int channels, int height, int width>
 class BatchNorm2d{
 public:
-    float running_mean[channels];
-    float running_var[channels];
-    float weight[channels];
-    float bias[channels];
+    float *running_mean = new float[channels];
+    float *running_var = new float[channels];
+    float *weight = new float[channels];
+    float *bias = new float[channels];
 
     BatchNorm2d(const string param_path) : param_path(param_path) {
         // load parameters
@@ -32,6 +32,14 @@ public:
             const float xn = xc / sqrt(running_var[i] + 10e-7);
             y[i][j][k] = weight[i] * xn + bias[i];
         }
+        close();
+    }
+
+    void close() {
+        delete[] running_mean;
+        delete[] running_var;
+        delete[] weight;
+        delete[] bias;
     }
 
 private:

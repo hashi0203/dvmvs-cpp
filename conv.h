@@ -1,6 +1,7 @@
 #pragma once
-#include "settings.h"
+#include "config.h"
 #include "torch.h"
+
 
 template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups>
 class Conv2d{
@@ -13,12 +14,16 @@ public:
     //     //     init.uniform_(self.bias, -bound, bound)
     // }
 
-    float weight[out_channels][in_channels / groups][kernel_size][kernel_size];
+    // float weight[out_channels][in_channels / groups][kernel_size][kernel_size];
+    float ****weight = new float***[out_channels];
 
     Conv2d(const string param_path) : param_path(param_path) {
+        new_4d(weight, out_channels, in_channels / groups, kernel_size, kernel_size);
         // load parameters
         ifstream ifs = open_file(param_path + ".weight");
-        ifs.read((char*) weight, sizeof(float) * out_channels * (in_channels / groups) * kernel_size * kernel_size);
+        for (int i = 0; i < out_channels; i++)  for (int j = 0; j < in_channels / groups; j++) for (int k = 0; k < kernel_size; k++)
+            ifs.read((char*) weight[i][j][k], sizeof(float) * kernel_size);
+        // ifs.read((char*) weight, sizeof(float) * out_channels * (in_channels / groups) * kernel_size * kernel_size);
     }
 
     void forward(const float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
@@ -50,7 +55,11 @@ public:
                 }
             }
         }
+        close();
+    }
 
+    void close() {
+        delete_4d(weight, out_channels, in_channels / groups, kernel_size, kernel_size);
     }
 
     // void forward_org(float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {

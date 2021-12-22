@@ -139,20 +139,20 @@ void predict() {
         float layer5[fe5_out_channels][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
 
         FeatureShrinker<test_image_height, test_image_width> feature_shrinker("params/1_feature_pyramid");
-        float measurement_feature_halfs[test_n_measurement_frames][fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
-        float measurement_feature_quarter[fe2_out_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
-        float measurement_feature_one_eight[fe3_out_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
-        float measurement_feature_one_sixteen[fe4_out_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
+        float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+        float measurement_feature_quarter[fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float measurement_feature_one_eight[fpn_output_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float measurement_feature_one_sixteen[fpn_output_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
 
         for (int m = 0; m < n_measurement_frames; m++) {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
 
-        float reference_feature_half[fe1_out_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
-        float reference_feature_quarter[fe2_out_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
-        float reference_feature_one_eight[fe3_out_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
-        float reference_feature_one_sixteen[fe4_out_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
+        float reference_feature_half[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+        float reference_feature_quarter[fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float reference_feature_one_eight[fpn_output_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float reference_feature_one_sixteen[fpn_output_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
         feature_extractor.forward(reference_image_torch, layer1, layer2, layer3, layer4, layer5);
         feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half,reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
@@ -170,6 +170,7 @@ void predict() {
         // if (f == 1) break;
 
     }
+    keyframe_buffer.close();
 
 }
 
