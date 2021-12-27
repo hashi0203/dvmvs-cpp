@@ -73,6 +73,9 @@ void predict() {
     // lstm_state = None
     // previous_depth = None
     // previous_pose = None
+    bool previous_exists = false;
+    float previous_depth[test_image_height][test_image_width];
+    float previous_pose[4][4];
 
     // predictions = []
 
@@ -91,6 +94,7 @@ void predict() {
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
         else if (response == 3) {
             // previous_depth = None
+            previous_exists = false;
             // previous_pose = None
             // lstm_state = None
             continue;
@@ -167,6 +171,19 @@ void predict() {
         CostVolumeEncoder<test_image_height, test_image_width> cost_volume_encoder("params/2_encoder");
         cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                                     skip0, skip1, skip2, skip3, bottom);
+
+        float depth_estimation[1][test_image_height / 32][test_image_width / 32];
+        if (previous_exists) {
+            float depth_hypothesis[1][test_image_height / 2][test_image_width / 2];
+            get_non_differentiable_rectangle_depth_estimation(reference_pose_torch, previous_pose, previous_depth,
+                                                              full_K_torch, half_K_torch,
+                                                              depth_hypothesis);
+            interpolate<1, test_image_height / 2, test_image_width / 2, test_image_height / 32, test_image_width / 32>(depth_hypothesis, depth_estimation);
+        } else {
+            for (int i = 0 ; i < test_image_height / 32; i++) for (int j = 0; j < test_image_width / 32; j++)
+                depth_estimation[0][i][j] = 0;
+        }
+
         // if (f == 1) break;
 
     }
@@ -179,20 +196,6 @@ int main() {
     return 0;
 }
 
-
-//             if previous_depth is not None:
-//                 depth_estimation = get_non_differentiable_rectangle_depth_estimation(reference_pose_torch=reference_pose_torch,
-//                                                                                      measurement_pose_torch=previous_pose,
-//                                                                                      previous_depth_torch=previous_depth,
-//                                                                                      full_K_torch=full_K_torch,
-//                                                                                      half_K_torch=half_K_torch,
-//                                                                                      original_height=Config.test_image_height,
-//                                                                                      original_width=Config.test_image_width)
-//                 depth_estimation = torch.nn.functional.interpolate(input=depth_estimation,
-//                                                                    scale_factor=(1.0 / 16.0),
-//                                                                    mode="nearest")
-//             else:
-//                 depth_estimation = torch.zeros(size=(1, 1, int(Config.test_image_height / 32.0), int(Config.test_image_width / 32.0))).to(device)
 
 //             lstm_state = lstm_fusion(current_encoding=bottom,
 //                                      current_state=lstm_state,

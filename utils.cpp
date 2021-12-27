@@ -1,5 +1,6 @@
 #include "config.h"
 #include "model.h"
+#include "kornia.h"
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -149,6 +150,63 @@ void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(tes
         fused_cost_volume[depth_i][j][k] /= n_measurement_frames;
 
 }
+
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
+                                                       const float measurement_pose_torch[4][4],
+                                                       const float previous_depth[test_image_height][test_image_width],
+                                                       const float full_K_torch[3][3],
+                                                       const float half_K_torch[3][3],
+                                                       float depth_hypothesis[1][test_image_height / 2][test_image_width / 2]) {
+
+    const int half_height = test_image_height / 2;
+    const int half_width = test_image_width / 2;
+
+    Matrix4f r_pose, m_pose;
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose_torch[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose_torch[i][j];
+
+    Matrix4f trans = r_pose.inverse() * m_pose;
+
+    float points_3d_src[test_image_height][test_image_width][3];
+    depth_to_3d(previous_depth, full_K_torch, points_3d_src);
+    float points_3d_dst[test_image_height][test_image_width][3];
+    transform_points(trans, points_3d_src, points_3d_dst);
+
+    pair<float, pair<int, int>> org_z_values[test_image_height * test_image_width];
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
+        const float z_value = (points_3d_dst[i][j][2] < 0) ? 0 : points_3d_dst[i][j][2];
+        org_z_values[test_image_width * i + j] = pair<float, pair<int, int>>(z_value, pair<float, float>(i, j));
+    }
+
+    sort(org_z_values, org_z_values + (test_image_height * test_image_width), greater<pair<float, pair<int, int>>>());
+
+    float z_values[test_image_height][test_image_width];
+    int sorting_indices[test_image_height][test_image_width][2];
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
+        const int idx = test_image_width * i + j;
+        z_values[i][j] = org_z_values[idx].first;
+        sorting_indices[i][j][0] = org_z_values[idx].second.first;
+        sorting_indices[i][j][1] = org_z_values[idx].second.second;
+    }
+
+    float points_3d_sorted[test_image_height][test_image_width][3];
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 3; k++)
+        points_3d_sorted[i][j][k] = points_3d_dst[sorting_indices[i][j][0]][sorting_indices[i][j][1]][k];
+
+    float predictions_float[test_image_height][test_image_width][2];
+    project_points(points_3d_sorted, half_K_torch, predictions_float);
+    int predictions[test_image_height][test_image_width][2];
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
+        predictions[i][j][k] = round(predictions_float[i][j][k]);
+
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++) {
+        const bool is_valid_below = (predictions[i][j][0] >= 0) && (predictions[i][j][1] >= 0);
+        const bool is_valid_above = (predictions[i][j][0] < half_width) && (predictions[i][j][1] < half_height);
+        const bool is_valid = is_valid_below && is_valid_above;
+        depth_hypothesis[0][predictions[i][j][0]][predictions[i][j][1]] = (is_valid) ? z_values[i][j] : 0;
+    }
+}
+
 
 bool is_pose_available(const float pose[4][4]) {
     // is_nan = np.isnan(pose).any()

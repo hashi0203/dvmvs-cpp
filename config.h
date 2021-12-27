@@ -6,10 +6,10 @@
 // const int test_image_width = 320;
 // const int test_image_height = 256;
 
-const int org_image_width = 30;
-const int org_image_height = 40;
-const int test_image_width = 10;
-const int test_image_height = 20;
+const int org_image_width = 64;
+const int org_image_height = 128;
+const int test_image_width = 32;
+const int test_image_height = 64;
 
 const int test_distortion_crop = 0;
 const bool test_perform_crop = false;
@@ -96,6 +96,12 @@ void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(tes
                         const float warp_grid[3][warp_grid_width * warp_grid_height],
                         const int n_measurement_frames,
                         float fused_cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)]);
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
+                                                       const float measurement_pose_torch[4][4],
+                                                       const float previous_depth[test_image_height][test_image_width],
+                                                       const float full_K_torch[3][3],
+                                                       const float half_K_torch[3][3],
+                                                       float depth_hypothesis[1][test_image_height / 2][test_image_width / 2]);
 bool is_pose_available(const float pose[4][4]);
 
 // keyframe_buffer
