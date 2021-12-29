@@ -138,6 +138,7 @@ private:
 
 // dataset_loader
 void load_image(const string image_filename, float reference_image[org_image_height][org_image_width][3]);
+void save_image(const string image_filename, float depth[test_image_height][test_image_width]);
 
 class PreprocessImage{
 public:

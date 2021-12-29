@@ -9,16 +9,12 @@ void load_image(const string image_filename, float reference_image[org_image_hei
         reference_image[i][j][k] = rgb.data[org_image_width*3*i + 3*j + k];
 }
 
-// void save_img(vii img, const string name) {
-//     cv::Mat opt(height, width, CV_8U);
-//     for (us px = 0; px < height; px++) {
-//         for (us py = 0; py < width; py++) {
-//             opt.data[px*width + py] = img[px][py];
-//         }
-//     }
-//     string fname = name + ".png";
-//     cv::imwrite(fname, opt);
-// }
+void save_image(const string image_filename, float depth[test_image_height][test_image_width]) {
+    cv::Mat gray(test_image_height, test_image_width, CV_32F);
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+        gray.data[test_image_width*i + j] = depth[i][j];
+    cv::imwrite(image_filename, gray);
+}
 
 void PreprocessImage::apply_rgb(const float image[org_image_height][org_image_width][3], float image_torch[3][test_image_height][test_image_width]) {
     cv::Mat img(org_image_height, org_image_width, CV_8UC3);

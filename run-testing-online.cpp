@@ -62,25 +62,24 @@ void predict() {
     // print1(n_poses);
     printvii(poses[0], 4, 4);
 
+    const string image_filedir = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/";
+    const int len_image_filedir = image_filedir.length();
     string image_filenames[n_test_frames];
     for (int i = 0; i < n_test_frames; i++) {
         ostringstream sout;
         sout << setfill('0') << setw(5) << i+3;
-        image_filenames[i] = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/" + sout.str() + ".png";
+        image_filenames[i] = image_filedir + sout.str() + ".png";
     }
     print1(image_filenames[0]);
 
-    // lstm_state = None
-    // previous_depth = None
-    // previous_pose = None
     bool previous_exists = false;
     float previous_depth[test_image_height][test_image_width];
     float previous_pose[4][4];
 
-    // predictions = []
+    // lstm_state = None
+    float hidden_state[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
 
-    // reference_depths = None
-    // depth_filenames = None
+    // predictions = []
 
     for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4][4];
@@ -90,6 +89,7 @@ void predict() {
 
         // POLL THE KEYFRAME BUFFER
         const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
+        printf("%d ", response);
 
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
         else if (response == 3) {
@@ -184,11 +184,18 @@ void predict() {
                 depth_estimation[0][i][j] = 0;
         }
 
-        float hidden_state[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
-
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
         cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
+
+        previous_exists = true;
+        for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+            previous_depth[i][j] = prediction[i][j];
+        for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
+            previous_pose[4][4] = reference_pose_torch[i][j];
+
+        save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
+
         // if (f == 1) break;
 
     }
