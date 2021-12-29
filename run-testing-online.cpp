@@ -163,10 +163,10 @@ void predict() {
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
 
-        float skip0[n_depth_levels + fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
-        float skip1[hyper_channels * 2 + fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
-        float skip2[hyper_channels * 4 + fpn_output_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
-        float skip3[hyper_channels * 8 + fpn_output_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
+        float skip0[hyper_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
+        float skip1[hyper_channels * 2][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
+        float skip2[hyper_channels * 4][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
+        float skip3[hyper_channels * 8][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
         float bottom[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
         CostVolumeEncoder<test_image_height, test_image_width> cost_volume_encoder("params/2_encoder");
         cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
@@ -184,6 +184,11 @@ void predict() {
                 depth_estimation[0][i][j] = 0;
         }
 
+        float hidden_state[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
+
+        float prediction[test_image_height][test_image_width];
+        CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
+        cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
         // if (f == 1) break;
 
     }

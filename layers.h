@@ -37,3 +37,25 @@ public:
 private:
     string param_path;
 };
+
+template <int in_channels, int height, int width>
+class depth_layer_3x3{
+public:
+    depth_layer_3x3(const string param_path) : param_path(param_path) {}
+
+    void forward(const float x[in_channels][height][width], float y[1][height][width]) {
+        const int kernel_size = 3;
+        const int stride = 1;
+        const int padding = (kernel_size - 1) / 2;
+        const int groups = 1;
+        const int out_channels = 1;
+        Conv2d<in_channels, height, width, out_channels, height, width, kernel_size, stride, padding, groups> l0_conv(param_path + ".0");
+        l0_conv.forward(x, y);
+
+        Sigmoid<out_channels, height, width> l2_sigmoid;
+        l2_sigmoid.forward(y, y);
+    }
+
+private:
+    string param_path;
+};

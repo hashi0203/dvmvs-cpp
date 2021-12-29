@@ -24,3 +24,12 @@ public:
     //         y[i][j][k] = (x[i][j][k] < 0) ? 0 : x[i][j][k];
     // }
 };
+
+template <int channels, int height, int width>
+class Sigmoid{
+public:
+    void forward(const float x[channels][height][width], float y[channels][height][width]) {
+        for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+            y[i][j][k] = 1.0 / (1.0 + exp(-x[i][j][k]));
+    }
+};
