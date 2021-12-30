@@ -41,7 +41,7 @@ const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_ima
 const string scene_folder = test_online_scene_path;
 const string scene = "000";
 
-const int n_test_frames = 10;
+const int n_test_frames = 20;
 
 const float scale_rgb = 255.0;
 const float mean_rgb[3] = {0.485, 0.456, 0.406};

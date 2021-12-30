@@ -5,12 +5,6 @@ void predict() {
     printf("Predicting with System: %s\n", system_name.c_str());
     printf("# of Measurement Frames: %d\n", test_n_measurement_frames);
 
-    // feature_extractor = FeatureExtractor();
-    // feature_shrinker = FeatureShrinker();
-    // cost_volume_encoder = CostVolumeEncoder();
-    // lstm_fusion = LSTMFusion();
-    // cost_volume_decoder = CostVolumeDecoder();
-
     float warp_grid[3][warp_grid_width * warp_grid_height];
     get_warp_grid_for_cost_volume_calculation(warp_grid);
 
@@ -88,7 +82,7 @@ void predict() {
 
         // POLL THE KEYFRAME BUFFER
         const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
-        printf("%d ", response);
+        cout << image_filenames[f].substr(len_image_filedir) << ": " << response << "\n";
 
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
         else if (response == 3) {
@@ -198,6 +192,12 @@ void predict() {
 
         save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
 
+        ofstream ofs("./results/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        for (int i = 0 ; i < test_image_height; i++) {
+            for (int j = 0; j < test_image_width-1; j++)
+                ofs << prediction[i][j] << " ";
+            ofs << prediction[i][test_image_width-1] << "\n";
+        }
         // if (f == 1) break;
 
     }
