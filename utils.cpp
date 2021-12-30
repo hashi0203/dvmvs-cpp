@@ -119,7 +119,7 @@ void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][fe
             warping[i][j][k] = _warping0(warp_grid_width * i + j, k);
 
         float warped_image2[channels][height][width];
-        grid_sample(image2, warping, warped_image2);
+        grid_sample<channels, height, width>(image2, warping, warped_image2);
 
         for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
             cost_volume[depth_i][j][k] += (image1[i][j][k] * warped_image2[i][j][k]) / channels;
@@ -168,13 +168,13 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
     Matrix4f trans = r_pose.inverse() * m_pose;
 
     float points_3d_src[test_image_height][test_image_width][3];
-    depth_to_3d(previous_depth, full_K_torch, points_3d_src);
+    depth_to_3d<test_image_height, test_image_width>(previous_depth, full_K_torch, points_3d_src);
     float points_3d_dst[test_image_height][test_image_width][3];
-    transform_points(trans, points_3d_src, points_3d_dst);
+    transform_points<test_image_height, test_image_width>(trans, points_3d_src, points_3d_dst);
 
     pair<float, pair<int, int>> org_z_values[test_image_height * test_image_width];
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
-        const float z_value = (points_3d_dst[i][j][2] < 0) ? 0 : points_3d_dst[i][j][2];
+        const float z_value = max(0.0f, points_3d_dst[i][j][2]);
         org_z_values[test_image_width * i + j] = pair<float, pair<int, int>>(z_value, pair<float, float>(i, j));
     }
 
@@ -194,7 +194,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
         points_3d_sorted[i][j][k] = points_3d_dst[sorting_indices[i][j][0]][sorting_indices[i][j][1]][k];
 
     float predictions_float[test_image_height][test_image_width][2];
-    project_points(points_3d_sorted, half_K_torch, predictions_float);
+    project_points<test_image_height, test_image_width>(points_3d_sorted, half_K_torch, predictions_float);
     int predictions[test_image_height][test_image_width][2];
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
         predictions[i][j][k] = round(predictions_float[i][j][k]);
@@ -205,6 +205,37 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
         const bool is_valid = is_valid_below && is_valid_above;
         depth_hypothesis[0][predictions[i][j][0]][predictions[i][j][1]] = (is_valid) ? z_values[i][j] : 0;
     }
+}
+
+void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)],
+                     const float depth_dst[test_image_height / 32][test_image_width / 32],
+                     const Matrix4f src_trans_dst,
+                     const float camera_matrix[3][3],
+                     float image_dst[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)]) {
+
+    const int channels = hyper_channels * 16;
+    const int height = test_image_height / 32;
+    const int width = test_image_width / 32;
+
+    // unproject source points to camera frame
+    float points_3d_dst[height][width][3];
+    depth_to_3d<height, width>(depth_dst, camera_matrix, points_3d_dst);
+
+    // apply transformation to the 3d points
+    float points_3d_src[height][width][3];
+    transform_points<height, width>(src_trans_dst, points_3d_dst, points_3d_src);
+    for (int i = 0; i < height; i++) for (int j = 0; j < width; j++)
+        points_3d_src[i][j][2] = max(0.0f, points_3d_src[i][j][2]);
+
+    // project back to pixels
+    float points_2d_src[height][width][2];
+    project_points<height, width>(points_3d_src, camera_matrix, points_2d_src);
+
+    // normalize points between [-1 / 1]
+    float points_2d_src_norm[height][width][2];
+    normalize_pixel_coordinates<height, width>(points_2d_src, points_2d_src_norm);
+
+    grid_sample<channels, height, width>(image_src, points_2d_src_norm, image_dst);
 }
 
 

@@ -740,3 +740,26 @@ public:
 private:
     string param_path;
 };
+
+
+template <int in_height, int in_width>
+class LSTMFusion{
+public:
+    LSTMFusion(const string param_path) : param_path(param_path) {}
+
+    void forward(const float image[3][in_height][in_width],
+                 const float skip0[hyper_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
+                 const float skip1[hyper_channels * 2][fe2_out_size(in_height)][fe2_out_size(in_width)],
+                 const float skip2[hyper_channels * 4][fe3_out_size(in_height)][fe3_out_size(in_width)],
+                 const float skip3[hyper_channels * 8][fe4_out_size(in_height)][fe4_out_size(in_width)],
+                 const float bottom[hyper_channels * 16][fe5_out_size(in_height)][fe5_out_size(in_width)],
+                 float depth_full[in_height][in_width]) {
+
+        const int in_channels = hyper_channels * 16;
+        const int hid_channels = hyper_channels * 16;
+
+    }
+
+private:
+    string param_path;
+};
