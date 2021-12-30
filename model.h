@@ -3,6 +3,7 @@
 #include "functional.h"
 #include "layers.h"
 #include "mnasnet.h"
+#include "convlstm.h"
 
 template <int channels, int height, int width, int kernel_size, bool apply_bn_relu>
 class StandardLayer{
@@ -742,22 +743,34 @@ private:
 };
 
 
-template <int in_height, int in_width>
+template <int height, int width>
 class LSTMFusion{
 public:
     LSTMFusion(const string param_path) : param_path(param_path) {}
 
-    void forward(const float image[3][in_height][in_width],
-                 const float skip0[hyper_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 const float skip1[hyper_channels * 2][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 const float skip2[hyper_channels * 4][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 const float skip3[hyper_channels * 8][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 const float bottom[hyper_channels * 16][fe5_out_size(in_height)][fe5_out_size(in_width)],
-                 float depth_full[in_height][in_width]) {
+    void forward(const float current_encoding[hyper_channels * 16][height][width],
+                 const bool previous_exists,
+                 const float previous_pose[4][4],
+                 const float current_pose[4][4],
+                 const float estimated_current_depth[height][width],
+                 const float camera_matrix[3][3],
+                 const bool state_exists,
+                 float hidden_state[hyper_channels * 16][height][width],
+                 float cell_state[hyper_channels * 16][height][width]) {
 
         const int in_channels = hyper_channels * 16;
         const int hid_channels = hyper_channels * 16;
 
+        if (!state_exists) {
+            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+                hidden_state[i][j][k] = 0;
+            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+                cell_state[i][j][k] = 0;
+        }
+
+        const int kernel_size = 3;
+        MVSLayernormConvLSTMCell<in_channels, hid_channels, height, width, kernel_size> lstm_cell(param_path + "/lstm_cell");
+        lstm_cell.forward(current_encoding, previous_exists, previous_pose, current_pose, estimated_current_depth, camera_matrix, hidden_state, cell_state);
     }
 
 private:

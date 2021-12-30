@@ -8,7 +8,7 @@ main: torch.o utils.o keyframe_buffer.o dataset_loader.o run-testing-online.o
 	$(CC) $(CFLAGS) torch.o utils.o keyframe_buffer.o dataset_loader.o run-testing-online.o $(OPENCV) && ./a.out
 
 run-testing-online.o: run-testing-online.cpp
-	$(CC) $(CFLAGS) -c run-testing-online.cpp
+	$(CC) $(CFLAGS) $(EIGEN) -c run-testing-online.cpp
 
 utils.o: utils.cpp
 	$(CC) $(CFLAGS) $(EIGEN) -c utils.cpp

@@ -209,7 +209,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
 
 void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)],
                      const float depth_dst[test_image_height / 32][test_image_width / 32],
-                     const Matrix4f src_trans_dst,
+                     const float trans[4][4],
                      const float camera_matrix[3][3],
                      float image_dst[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)]) {
 
@@ -222,6 +222,8 @@ void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(tes
     depth_to_3d<height, width>(depth_dst, camera_matrix, points_3d_dst);
 
     // apply transformation to the 3d points
+    Matrix4f src_trans_dst;
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) src_trans_dst(i, j) = trans[i][j];
     float points_3d_src[height][width][3];
     transform_points<height, width>(src_trans_dst, points_3d_dst, points_3d_src);
     for (int i = 0; i < height; i++) for (int j = 0; j < width; j++)

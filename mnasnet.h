@@ -4,9 +4,6 @@
 #include "batchnorm.h"
 #include "activation.h"
 
-#define invres_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), (kernel_size) / 2)
-#define stack_out_size(size, kernel_size, stride) invres_out_size((size), (kernel_size), (stride))
-
 template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int expansion_factor>
 class _InvertedResidual{
 public:

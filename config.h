@@ -56,6 +56,9 @@ const int hyper_channels = 32;
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 
+#define invres_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), (kernel_size) / 2)
+#define stack_out_size(size, kernel_size, stride) invres_out_size((size), (kernel_size), (stride))
+
 #define fe1_out_size(size) conv_out_size(conv_out_size(conv_out_size((size), 3, 2, 1), 3, 1, 1), 1, 1, 0)
 #define fe2_out_size(size) stack_out_size(fe1_out_size((size)), 3, 2)
 #define fe3_out_size(size) stack_out_size(fe2_out_size((size)), 5, 2)
@@ -102,6 +105,11 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
                                                        const float full_K_torch[3][3],
                                                        const float half_K_torch[3][3],
                                                        float depth_hypothesis[1][test_image_height / 2][test_image_width / 2]);
+void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)],
+                     const float depth_dst[test_image_height / 32][test_image_width / 32],
+                     const float trans[4][4],
+                     const float camera_matrix[3][3],
+                     float image_dst[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)]);
 bool is_pose_available(const float pose[4][4]);
 
 // keyframe_buffer

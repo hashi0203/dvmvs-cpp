@@ -76,10 +76,9 @@ void predict() {
     float previous_depth[test_image_height][test_image_width];
     float previous_pose[4][4];
 
-    // lstm_state = None
+    bool state_exists = false;
     float hidden_state[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
-
-    // predictions = []
+    float cell_state[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)];
 
     for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4][4];
@@ -93,10 +92,8 @@ void predict() {
 
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
         else if (response == 3) {
-            // previous_depth = None
             previous_exists = false;
-            // previous_pose = None
-            // lstm_state = None
+            state_exists = false;
             continue;
         }
 
@@ -184,15 +181,20 @@ void predict() {
                 depth_estimation[0][i][j] = 0;
         }
 
+        LSTMFusion<fe5_out_size(test_image_height), fe5_out_size(test_image_width)> lstm_fusion("params/3_lstm_fusion");
+        lstm_fusion.forward(bottom, previous_exists, previous_pose, reference_pose_torch, depth_estimation[0], lstm_K_bottom,
+                            state_exists, hidden_state, cell_state);
+        state_exists = true;
+
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
         cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
 
-        previous_exists = true;
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
             previous_pose[4][4] = reference_pose_torch[i][j];
+        previous_exists = true;
 
         save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
 
@@ -207,37 +209,3 @@ int main() {
     predict();
     return 0;
 }
-
-
-//             lstm_state = lstm_fusion(current_encoding=bottom,
-//                                      current_state=lstm_state,
-//                                      previous_pose=previous_pose,
-//                                      current_pose=reference_pose_torch,
-//                                      estimated_current_depth=depth_estimation,
-//                                      camera_matrix=lstm_K_bottom)
-
-//             prediction, _, _, _, _ = cost_volume_decoder(reference_image_torch, skip0, skip1, skip2, skip3, lstm_state[0])
-//             previous_depth = prediction.view(1, 1, Config.test_image_height, Config.test_image_width)
-//             previous_pose = reference_pose_torch
-
-//             inference_timer.record_end_time_and_elapsed_time()
-
-//             prediction = prediction.cpu().numpy().squeeze()
-//             predictions.append(prediction)
-
-//             if Config.test_visualize:
-//                 visualize_predictions(numpy_reference_image=reference_image,
-//                                       numpy_measurement_image=measurement_image,
-//                                       numpy_predicted_depth=prediction,
-//                                       normalization_mean=mean_rgb,
-//                                       normalization_std=std_rgb,
-//                                       normalization_scale=scale_rgb,
-//                                       depth_multiplier_for_visualization=5000)
-
-//         inference_timer.print_statistics()
-
-//         save_results(predictions=predictions,
-//                      groundtruths=reference_depths,
-//                      system_name=system_name,
-//                      scene_name=scene,
-//                      save_folder=".")
