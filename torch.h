@@ -17,7 +17,31 @@ void pad_input(const float input[channels][in_height][in_width], float output[ch
         output[i][j+padding][k+padding] = input[i][j][k];
 }
 
+
+template<int channels, int height, int width>
+void layer_norm(const float input[channels][height][width], float output[channels][height][width]) {
+    const float eps = 1e-5;
+    const int n1 = height * width - 1;
+    for (int i = 0; i < channels; i++) {
+        float e = 0;
+        float v = 0;
+        for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+            e += input[i][j][k];
+        e /= n1;
+        for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
+            const float tmp = input[i][j][k] - e;
+            v += tmp * tmp;
+            output[i][j][k] = tmp;
+        }
+        v /= n1;
+        for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+            output[i][j][k] /= sqrt(v + eps);
+    }
+}
+
+
 float calculate_gain(const float a);
+
 
 template<int out_channels, int in_channels, int kernel_size>
 void kaiming_uniform_(const float a, float weight[out_channels][in_channels][kernel_size][kernel_size]) {
