@@ -134,15 +134,14 @@ public:
     void forward(const float x[in_channels][in_height][in_width], float y[out_channels][out_height][out_width]) {
         // First one has no skip, because feature map size changes.
         _InvertedResidual<in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, expansion_factor> l0_invres(param_path + ".0");
-
-        float yi[out_channels][out_height][out_width];
-        l0_invres.forward(x, yi);
+        l0_invres.forward(x, y);
 
         for (int i = 1; i < repeats; i++) {
-            _InvertedResidual<out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, 1, expansion_factor> li_invres(param_path + "." + to_string(i));
-            li_invres.forward(yi, y);
+            float yi[out_channels][out_height][out_width];
             for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
                 yi[i][j][k] = y[i][j][k];
+            _InvertedResidual<out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, 1, expansion_factor> li_invres(param_path + "." + to_string(i));
+            li_invres.forward(yi, y);
         }
     }
 

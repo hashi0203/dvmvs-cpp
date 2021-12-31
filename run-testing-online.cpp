@@ -143,7 +143,8 @@ void predict() {
         for (int m = 0; m < n_measurement_frames; m++) {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
             if (f == 6 && m == 0) {
-                printvii(layer1[fe1_out_channels-1], fe1_out_size(test_image_height), fe1_out_size(test_image_width));
+                // printvii(layer5[0], fe5_out_size(test_image_height), fe5_out_size(test_image_width));
+                printviii(layer5, fe5_out_channels, fe5_out_size(test_image_height), fe5_out_size(test_image_width));
             }
             break;
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
