@@ -141,7 +141,7 @@ void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(tes
 
     for (int m = 0; m < n_measurement_frames; m++) {
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
-        calculate_cost_volume_by_warping(image1, image2s[m], pose1, pose2s[m], K, warp_grid, fused_cost_volume);
+        calculate_cost_volume_by_warping(image1, image2s[m], pose1, pose2s[m], K, warp_grid, cost_volume);
         for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) for (int j = 0; j < fe1_out_size(test_image_height); j++) for (int k = 0; k < fe1_out_size(test_image_width); k++)
             fused_cost_volume[depth_i][j][k] += cost_volume[depth_i][j][k];
     }
