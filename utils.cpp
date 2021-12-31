@@ -42,9 +42,9 @@ void pose_distance(const float reference_pose[4][4], const float measurement_pos
 
 
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]) {
-    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[0][i * warp_grid_height + j] = j;
-    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[1][i * warp_grid_height + j] = i;
-    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[2][i * warp_grid_height + j] = 1;
+    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[0][warp_grid_width * i + j] = j;
+    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[1][warp_grid_width * i + j] = i;
+    for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[2][warp_grid_width * i + j] = 1;
 }
 
 void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
