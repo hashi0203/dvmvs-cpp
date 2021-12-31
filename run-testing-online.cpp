@@ -144,12 +144,6 @@ void predict() {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
-        if (f == 6) {
-            // printvii(measurement_poses[m], 4, 4);
-            // printviii(reference_image_torch, 3, 2, test_image_width);
-            printviii(measurement_feature_halfs[0], 2, fe1_out_size(test_image_height), fe1_out_size(test_image_width));
-        }
-        break;
 
         float reference_feature_half[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float reference_feature_quarter[fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
@@ -160,6 +154,10 @@ void predict() {
 
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
+        if (f == 6) {
+            printvii(cost_volume[10], fe1_out_size(test_image_height), fe1_out_size(test_image_width));
+        }
+        break;
 
         float skip0[hyper_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float skip1[hyper_channels * 2][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
