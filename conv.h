@@ -3,7 +3,7 @@
 #include "torch.h"
 
 
-template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups=1, bool apply_bias=false>
+template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups, bool apply_bias=false>
 class Conv2d{
 public:
     // Conv2d() {
