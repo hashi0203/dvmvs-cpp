@@ -99,10 +99,6 @@ void predict() {
 
         float reference_pose_torch[4][4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose_torch[i][j] = reference_pose[i][j];
-        if (f == 6) {
-            printvii(reference_pose_torch, 4, 4);
-            printviii(reference_image_torch, 3, 2, test_image_width);
-        }
 
         float full_K_torch[3][3];
         preprocessor.get_updated_intrinsics(full_K_torch);
@@ -146,8 +142,18 @@ void predict() {
 
         for (int m = 0; m < n_measurement_frames; m++) {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
+            if (f == 6 && m == 0) {
+                printvii(layer1[fe1_out_channels-1], fe1_out_size(test_image_height), fe1_out_size(test_image_width));
+            }
+            break;
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
+        // if (f == 6) {
+        //     // printvii(measurement_poses[m], 4, 4);
+        //     // printviii(reference_image_torch, 3, 2, test_image_width);
+        //     printviii(measurement_feature_halfs[0], 2, fe1_out_size(test_image_height), fe1_out_size(test_image_width));
+        // }
+        break;
 
         float reference_feature_half[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float reference_feature_quarter[fpn_output_channels][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
