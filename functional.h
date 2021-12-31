@@ -7,27 +7,36 @@ void interpolate(const float input[channels][in_height][in_width], float output[
     const float fx = (float) in_width / out_width;
     if (mode == "nearest") {
         for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
-            const int y = (out_height == in_height * 2) ? j >> 1 : round(j * fy);
-            const int x = (out_width == in_width * 2) ? k >> 1 : round(k * fx);
+            const int y = j * fy + (fy - 1) / 2 + 0.5;
+            const int x = k * fx + (fx - 1) / 2 + 0.5;
             for (int i = 0; i < channels; i++)
                 output[i][j][k] = input[i][y][x];
         }
     } else if (mode == "bilinear") {
-        float padded_input[channels][in_height+1][in_width+1];
+        float padded_input[channels][in_height+2][in_width+2];
+        for (int i = 0; i < channels; i++) for (int j = 0; j < in_height; j++) for (int k = 0; k < in_width; k++)
+            padded_input[i][j+1][k+1] = input[i][j][k];
+
+        for (int i = 0; i < channels; i++) for (int j = 0; j < in_height; j++) {
+            padded_input[i][j+1][0] = input[i][j][0];
+            padded_input[i][j+1][in_width+1] = input[i][j][in_width-1];
+        }
+
+        for (int i = 0; i < channels; i++) for (int k = 0; k < in_width; k++) {
+            padded_input[i][0][k+1] = input[i][0][k];
+            padded_input[i][in_height+1][k+1] = input[i][in_height-1][k];
+        }
+
         for (int i = 0; i < channels; i++) {
-            for (int j = 0; j < in_height; j++) {
-                for (int k = 0; k < in_width; k++)
-                    padded_input[i][j][k] = input[i][j][k];
-                padded_input[i][j][in_width] = input[i][j][in_width-1];
-            }
-            for (int k = 0; k < in_width; k++)
-                padded_input[i][in_height][k] = input[i][in_height-1][k];
-            padded_input[i][in_height][in_width] = input[i][in_height-1][in_width-1];
+            padded_input[i][0][0] = input[i][0][0];
+            padded_input[i][in_height+1][0] = input[i][in_height-1][0];
+            padded_input[i][0][in_width+1] = input[i][0][in_width-1];
+            padded_input[i][in_height+1][in_width+1] = input[i][in_height-1][in_width-1];
         }
 
         for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
-            const float y = j * fy;
-            const float x = k * fx;
+            const float y = j * fy + (fy - 1) / 2 + 1;
+            const float x = k * fx + (fx - 1) / 2 + 1;
             const int y_int = y;
             const int x_int = x;
             const int ys[2] = {y_int, y_int + 1};
@@ -51,9 +60,6 @@ template <int channels, int height, int width>
 void grid_sample(const float image[channels][height][width],
                  const float warping[height][width][2],
                  float warped_image[channels][height][width]) {
-
-    // float pad_image[channels][height+2][width+2];
-    // pad_input<channels, height, width, 1>(image, pad_image);
 
     for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
         const float x = (warping[j][k][0] + 1) * (width - 1) / 2.0; // maybe vice versa

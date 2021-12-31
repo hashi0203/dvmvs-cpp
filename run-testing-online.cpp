@@ -29,7 +29,7 @@ void predict() {
         }
     }
 
-    printvii(K, 3, 3);
+    // printvii(K, 3, 3);
 
     ifs = open_file(scene_folder + "/poses.txt");
     vector<float> tmp_poses;
@@ -54,7 +54,7 @@ void predict() {
         }
     }
     // print1(n_poses);
-    printvii(poses[0], 4, 4);
+    // printvii(poses[0], 4, 4);
 
     const string image_filedir = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/";
     const int len_image_filedir = image_filedir.length();
@@ -80,6 +80,7 @@ void predict() {
         float reference_image[org_image_height][org_image_width][3];
         load_image(image_filenames[f], reference_image);
 
+
         // POLL THE KEYFRAME BUFFER
         const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
         cout << image_filenames[f].substr(len_image_filedir) << ": " << response << "\n";
@@ -98,6 +99,10 @@ void predict() {
 
         float reference_pose_torch[4][4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose_torch[i][j] = reference_pose[i][j];
+        if (f == 6) {
+            printvii(reference_pose_torch, 4, 4);
+            printviii(reference_image_torch, 3, 2, test_image_width);
+        }
 
         float full_K_torch[3][3];
         preprocessor.get_updated_intrinsics(full_K_torch);

@@ -11,9 +11,6 @@ const int org_image_height = 128;
 const int test_image_width = 32;
 const int test_image_height = 64;
 
-const int test_distortion_crop = 0;
-const bool test_perform_crop = false;
-const bool test_visualize = true;
 const int test_n_measurement_frames = 2;
 const int test_keyframe_buffer_size = 30;
 const float test_keyframe_pose_distance = 0.1;
@@ -23,13 +20,6 @@ const float test_optimal_R_measure = 0.0;
 const int warp_grid_width = test_image_width / 2;
 const int warp_grid_height = test_image_height / 2;
 // const int warp_grid_size = warp_grid_width * warp_grid_height;
-
-// SET THESE: TRAINING FOLDER LOCATIONS
-const string dataset = "/home/nhsmt1123/master-thesis/deep-video-mvs/data/7scenes";
-const string train_run_directory = "/home/nhsmt1123/master-thesis/deep-video-mvs/training-runs";
-
-const string fusionnet_train_weights = "weights";
-const string fusionnet_test_weights = "weights";
 
 // SET THESE: TESTING FOLDER LOCATIONS
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
