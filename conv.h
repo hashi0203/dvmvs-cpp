@@ -3,7 +3,7 @@
 #include "torch.h"
 
 
-template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups>
+template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size, int stride, int padding, int groups=1, bool apply_bias=false>
 class Conv2d{
 public:
     // Conv2d() {
@@ -16,13 +16,22 @@ public:
 
     // float weight[out_channels][in_channels / groups][kernel_size][kernel_size];
     float ****weight = new float***[out_channels];
+    float *bias = new float[out_channels];
 
     Conv2d(const string param_path) : param_path(param_path) {
         new_4d(weight, out_channels, in_channels / groups, kernel_size, kernel_size);
         // load parameters
-        ifstream ifs = open_file(param_path + ".weight");
+        ifstream ifs;
+        ifs  = open_file(param_path + ".weight");
         for (int i = 0; i < out_channels; i++)  for (int j = 0; j < in_channels / groups; j++) for (int k = 0; k < kernel_size; k++)
             ifs.read((char*) weight[i][j][k], sizeof(float) * kernel_size);
+
+        if (apply_bias) {
+            ifs = open_file(param_path + ".bias");
+            ifs.read((char*) bias, sizeof(float) * out_channels);
+        } else {
+            for (int i = 0; i < out_channels; i++) bias[i] = 0;
+        }
     }
 
     void forward(const float input[in_channels][in_height][in_width], float output[out_channels][out_height][out_width]) {
@@ -34,7 +43,7 @@ public:
         float padded_input[in_channels][in_height+2*padding][in_width+2*padding];
         pad_input<in_channels, in_height, in_width, padding>(input, padded_input);
         for (int oc = 0; oc < out_channels; oc++) for (int oh = 0; oh < out_height; oh++) for (int ow = 0; ow < out_width; ow++)
-            output[oc][oh][ow] = 0;
+            output[oc][oh][ow] = bias[oc];
 
         // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
         const int ocpg = out_channels / groups;
