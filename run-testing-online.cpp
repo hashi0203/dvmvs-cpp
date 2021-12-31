@@ -142,18 +142,13 @@ void predict() {
 
         for (int m = 0; m < n_measurement_frames; m++) {
             feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
-            if (f == 6 && m == 0) {
-                // printvii(layer5[0], fe5_out_size(test_image_height), fe5_out_size(test_image_width));
-                printviii(layer5, fe5_out_channels, fe5_out_size(test_image_height), fe5_out_size(test_image_width));
-            }
-            break;
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
-        // if (f == 6) {
-        //     // printvii(measurement_poses[m], 4, 4);
-        //     // printviii(reference_image_torch, 3, 2, test_image_width);
-        //     printviii(measurement_feature_halfs[0], 2, fe1_out_size(test_image_height), fe1_out_size(test_image_width));
-        // }
+        if (f == 6) {
+            // printvii(measurement_poses[m], 4, 4);
+            // printviii(reference_image_torch, 3, 2, test_image_width);
+            printviii(measurement_feature_halfs[0], 2, fe1_out_size(test_image_height), fe1_out_size(test_image_width));
+        }
         break;
 
         float reference_feature_half[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
