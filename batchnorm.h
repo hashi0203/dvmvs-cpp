@@ -29,7 +29,7 @@ public:
         // https://www.anarchive-beta.com/entry/2020/08/16/180000
         for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
             const float xc = x[i][j][k] - running_mean[i];
-            const float xn = xc / sqrt(running_var[i] + 10e-7);
+            const float xn = xc / sqrt(running_var[i] + 1e-7);
             y[i][j][k] = weight[i] * xn + bias[i];
         }
         close();
