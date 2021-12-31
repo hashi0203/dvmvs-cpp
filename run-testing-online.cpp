@@ -150,7 +150,7 @@ void predict() {
         float reference_feature_one_eight[fpn_output_channels][fe3_out_size(test_image_height)][fe3_out_size(test_image_width)];
         float reference_feature_one_sixteen[fpn_output_channels][fe4_out_size(test_image_height)][fe4_out_size(test_image_width)];
         feature_extractor.forward(reference_image_torch, layer1, layer2, layer3, layer4, layer5);
-        feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half,reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+        feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
