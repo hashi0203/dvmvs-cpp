@@ -43,7 +43,7 @@ public:
         for (int i = 0; i < in_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
             combined[i][j][k] = input[i][j][k];
         for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
-            combined[i + in_channels][j][k] = hidden_state[i][j][k];
+            combined[i+in_channels][j][k] = hidden_state[i][j][k];
 
         const int stride = 1;
         const int padding = (kernel_size - 1) / 2;
