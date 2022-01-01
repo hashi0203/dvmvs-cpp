@@ -498,7 +498,7 @@ public:
 
         // 2nd set
         const int l1_kernel_size = 3;
-        const int l1_in_channels = l0_out_channels + fpn_output_channels;
+        const int l1_in_channels = fpn_output_channels + l0_out_channels;
 
         const int l1_mid_channels = hyper_channels * 2;
         const int l1_mid_height = fe2_out_size(in_height);
@@ -524,7 +524,7 @@ public:
 
         // 3rd set
         const int l2_kernel_size = 3;
-        const int l2_in_channels = l1_out_channels + fpn_output_channels;
+        const int l2_in_channels = fpn_output_channels + l1_out_channels;
 
         const int l2_mid_channels = hyper_channels * 4;
         const int l2_mid_height = fe3_out_size(in_height);
@@ -550,7 +550,7 @@ public:
 
         // 4th set
         const int l3_kernel_size = 3;
-        const int l3_in_channels = l2_out_channels + fpn_output_channels;
+        const int l3_in_channels = fpn_output_channels + l2_out_channels;
 
         const int l3_mid_channels = hyper_channels * 8;
         const int l3_mid_height = fe4_out_size(in_height);
