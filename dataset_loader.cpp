@@ -11,9 +11,9 @@ void load_image(const string image_filename, float reference_image[org_image_hei
 }
 
 void save_image(const string image_filename, float depth[test_image_height][test_image_width]) {
-    cv::Mat gray(test_image_height, test_image_width, CV_32F);
+    cv::Mat gray(test_image_height, test_image_width, CV_8U);
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
-        gray.data[test_image_width*i + j] = depth[i][j];
+        gray.data[test_image_width*i + j] = depth[i][j] * 150;
     cv::imwrite(image_filename, gray);
 }
 
