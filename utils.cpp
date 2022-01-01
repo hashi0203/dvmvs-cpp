@@ -196,17 +196,21 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 3; k++)
         points_3d_sorted[i][j][k] = points_3d_dst[sorting_indices[i][j][0]][sorting_indices[i][j][1]][k];
 
-    float predictions_float[test_image_height][test_image_width][2];
-    project_points<test_image_height, test_image_width>(points_3d_sorted, half_K_torch, predictions_float);
-    int predictions[test_image_height][test_image_width][2];
+    float projections_float[test_image_height][test_image_width][2];
+    project_points<test_image_height, test_image_width>(points_3d_sorted, half_K_torch, projections_float);
+    int projections[test_image_height][test_image_width][2];
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
-        predictions[i][j][k] = round(predictions_float[i][j][k]);
+        projections[i][j][k] = round(projections_float[i][j][k]);
 
-    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++) {
-        const bool is_valid_below = (predictions[i][j][0] >= 0) && (predictions[i][j][1] >= 0);
-        const bool is_valid_above = (predictions[i][j][0] < half_width) && (predictions[i][j][1] < half_height);
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+        depth_hypothesis[0][i][j] = 0;
+
+    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
+        const bool is_valid_below = (projections[i][j][0] >= 0) && (projections[i][j][1] >= 0);
+        const bool is_valid_above = (projections[i][j][0] < half_width) && (projections[i][j][1] < half_height);
         const bool is_valid = is_valid_below && is_valid_above;
-        depth_hypothesis[0][predictions[i][j][0]][predictions[i][j][1]] = (is_valid) ? z_values[i][j] : 0;
+        if (is_valid && depth_hypothesis[0][projections[i][j][1]][projections[i][j][0]] == 0)
+            depth_hypothesis[0][projections[i][j][1]][projections[i][j][0]] = z_values[i][j];
     }
 }
 
