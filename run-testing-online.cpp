@@ -165,7 +165,7 @@ void predict() {
                                     skip0, skip1, skip2, skip3, bottom);
 
         float depth_estimation[1][test_image_height / 32][test_image_width / 32];
-        if (previous_exists) { // test here later
+        if (previous_exists) {
             float depth_hypothesis[1][test_image_height / 2][test_image_width / 2];
             get_non_differentiable_rectangle_depth_estimation(reference_pose_torch, previous_pose, previous_depth,
                                                               full_K_torch, half_K_torch,
@@ -184,15 +184,15 @@ void predict() {
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
         cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
-        if (f == 6) {
-            printvi(prediction[10], test_image_width);
-        }
-        break;
+        // if (f == 6) {
+        //     printvi(prediction[10], test_image_width);
+        // }
+        // break;
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
-            previous_pose[4][4] = reference_pose_torch[i][j];
+            previous_pose[i][j] = reference_pose_torch[i][j];
         previous_exists = true;
 
         save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
@@ -203,8 +203,6 @@ void predict() {
                 ofs << prediction[i][j] << " ";
             ofs << prediction[i][test_image_width-1] << "\n";
         }
-        // if (f == 1) break;
-
     }
     keyframe_buffer.close();
 
