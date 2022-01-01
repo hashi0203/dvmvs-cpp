@@ -163,13 +163,9 @@ void predict() {
         CostVolumeEncoder<test_image_height, test_image_width> cost_volume_encoder("params/2_encoder");
         cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                                     skip0, skip1, skip2, skip3, bottom);
-        if (f == 6) {
-            printviii(bottom, 10, fe5_out_size(test_image_height), fe5_out_size(test_image_width));
-        }
-        break;
 
         float depth_estimation[1][test_image_height / 32][test_image_width / 32];
-        if (previous_exists) {
+        if (previous_exists) { // test here later
             float depth_hypothesis[1][test_image_height / 2][test_image_width / 2];
             get_non_differentiable_rectangle_depth_estimation(reference_pose_torch, previous_pose, previous_depth,
                                                               full_K_torch, half_K_torch,
@@ -184,6 +180,10 @@ void predict() {
         lstm_fusion.forward(bottom, previous_exists, previous_pose, reference_pose_torch, depth_estimation[0], lstm_K_bottom,
                             state_exists, hidden_state, cell_state);
         state_exists = true;
+        if (f == 6) {
+            printviii(cell_state, 10, test_image_height / 32, test_image_width / 32);
+        }
+        break;
 
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
