@@ -47,6 +47,7 @@ void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_widt
     for (int i = 0; i < warp_grid_height; i++) for (int j = 0; j < warp_grid_width; j++) warp_grid[2][warp_grid_width * i + j] = 1;
 }
 
+
 void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                                       const float image2[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                                       const float ls_pose1[4][4],
@@ -127,6 +128,7 @@ void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][fe
     }
 }
 
+
 void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                         const float image2s[test_n_measurement_frames][fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
                         const float pose1[4][4],
@@ -150,6 +152,7 @@ void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(tes
         fused_cost_volume[depth_i][j][k] /= n_measurement_frames;
 
 }
+
 
 void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
                                                        const float measurement_pose_torch[4][4],
@@ -206,6 +209,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
         depth_hypothesis[0][predictions[i][j][0]][predictions[i][j][1]] = (is_valid) ? z_values[i][j] : 0;
     }
 }
+
 
 void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)],
                      const float depth_dst[test_image_height / 32][test_image_width / 32],
