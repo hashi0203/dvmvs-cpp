@@ -17,10 +17,6 @@ const float test_keyframe_pose_distance = 0.1;
 const float test_optimal_t_measure = 0.15;
 const float test_optimal_R_measure = 0.0;
 
-const int warp_grid_width = test_image_width / 2;
-const int warp_grid_height = test_image_height / 2;
-// const int warp_grid_size = warp_grid_width * warp_grid_height;
-
 // SET THESE: TESTING FOLDER LOCATIONS
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
 const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
@@ -44,26 +40,28 @@ const int n_depth_levels = 64;
 const int fpn_output_channels = 32;
 const int hyper_channels = 32;
 
-#define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
+const int height_2 = test_image_height / 2;
+const int height_4 = test_image_height / 4;
+const int height_8 = test_image_height / 8;
+const int height_16 = test_image_height / 16;
+const int height_32 = test_image_height / 32;
 
+const int width_2 = test_image_width / 2;
+const int width_4 = test_image_width / 4;
+const int width_8 = test_image_width / 8;
+const int width_16 = test_image_width / 16;
+const int width_32 = test_image_width / 32;
+
+const int channels_1 = 16;
+const int channels_2 = 24;
+const int channels_3 = 40;
+const int channels_4 = 96;
+const int channels_5 = 320;
+
+
+#define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 #define invres_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), (kernel_size) / 2)
 #define stack_out_size(size, kernel_size, stride) invres_out_size((size), (kernel_size), (stride))
-
-#define fe1_out_size(size) conv_out_size(conv_out_size(conv_out_size((size), 3, 2, 1), 3, 1, 1), 1, 1, 0)
-#define fe2_out_size(size) stack_out_size(fe1_out_size((size)), 3, 2)
-#define fe3_out_size(size) stack_out_size(fe2_out_size((size)), 5, 2)
-#define fe4_out_size(size) stack_out_size(stack_out_size(fe3_out_size((size)), 5, 2), 3, 1)
-#define fe5_out_size(size) stack_out_size(stack_out_size(fe4_out_size((size)), 5, 2), 3, 1)
-
-#define fe1_out_channels 16
-#define fe2_out_channels 24
-#define fe3_out_channels 40
-#define fe4_out_channels 96
-#define fe5_out_channels 320
-
-// #define conv_layer_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), ((kernel_size) - 1) / 2)
-// #define down_conv_out_size(size) conv_layer_out_size((size), (kernel_size), 2)
-// #define eb_out_size(size, kernel_size) down_conv_out_size((size), (kernel_size))
 
 #define new_2d(arr, d0, d1) for (int iii2 = 0; iii2 < (d0); iii2++) {(arr)[iii2] = new float[(d1)];}
 #define new_3d(arr, d0, d1, d2) for (int iii3 = 0; iii3 < (d0); iii3++) {(arr)[iii3] = new float*[(d1)]; new_2d((arr)[iii3], (d1), (d2));}
@@ -80,26 +78,26 @@ const int hyper_channels = 32;
 
 // utils
 void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
-void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][warp_grid_width * warp_grid_height]);
-void cost_volume_fusion(const float image1[fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
-                        const float image2s[test_n_measurement_frames][fpn_output_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)],
+void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * height_2]);
+void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_2],
+                        const float image2s[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
                         const float pose1[4][4],
                         const float pose2s[test_n_measurement_frames][4][4],
                         const float K[3][3],
-                        const float warp_grid[3][warp_grid_width * warp_grid_height],
+                        const float warp_grid[3][width_2 * height_2],
                         const int n_measurement_frames,
-                        float fused_cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)]);
+                        float fused_cost_volume[n_depth_levels][height_2][width_2]);
 void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
                                                        const float measurement_pose_torch[4][4],
                                                        const float previous_depth[test_image_height][test_image_width],
                                                        const float full_K_torch[3][3],
                                                        const float half_K_torch[3][3],
-                                                       float depth_hypothesis[1][test_image_height / 2][test_image_width / 2]);
-void warp_from_depth(const float image_src[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)],
-                     const float depth_dst[test_image_height / 32][test_image_width / 32],
+                                                       float depth_hypothesis[1][height_2][width_2]);
+void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width_32],
+                     const float depth_dst[height_32][width_32],
                      const float trans[4][4],
                      const float camera_matrix[3][3],
-                     float image_dst[hyper_channels * 16][fe5_out_size(test_image_height)][fe5_out_size(test_image_width)]);
+                     float image_dst[hyper_channels * 16][height_32][width_32]);
 bool is_pose_available(const float pose[4][4]);
 
 // keyframe_buffer

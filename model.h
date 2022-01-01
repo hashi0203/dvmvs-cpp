@@ -82,6 +82,7 @@ private:
     string param_path;
 };
 
+
 template <int in_channels, int in_height, int in_width, int out_channels, int out_height, int out_width, int kernel_size>
 class EncoderBlock{
 public:
@@ -108,6 +109,7 @@ public:
 private:
     string param_path;
 };
+
 
 template <int in_channels, int in_height, int in_width, int kernel_size, bool apply_bn_relu, bool plus_one>
 class DecoderBlock{
@@ -160,20 +162,18 @@ private:
 };
 
 
-
-template <int in_channels, int in_height, int in_width>
 class FeatureExtractor{
 public:
     FeatureExtractor(const string param_path) : param_path(param_path) {}
 
-    void forward(const float x[in_channels][in_height][in_width],
-                 float layer1[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float layer2[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float layer3[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
+    void forward(const float x[3][test_image_height][test_image_width],
+                 float layer1[channels_1][height_2][width_2],
+                 float layer2[channels_2][height_4][width_4],
+                 float layer3[channels_3][height_8][width_8],
+                 float layer4[channels_4][height_16][width_16],
+                 float layer5[channels_5][height_32][width_32]) {
 
-        constexpr int depths[8] = {32, fe1_out_channels, fe2_out_channels, fe3_out_channels, 80, fe4_out_channels, 192, fe5_out_channels};
+        constexpr int depths[8] = {32, channels_1, channels_2, channels_3, 80, channels_4, 192, channels_5};
 
         // First layer: regular conv.
         const int l0_kernel_size = 3;
@@ -181,9 +181,9 @@ public:
         const int l0_padding = 1;
         const int l0_groups = 1;
         const int l0_out_channels = depths[0];
-        const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
-        const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
-        Conv2d<in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups> l0_conv(param_path + "/layer1.0");
+        const int l0_out_height = conv_out_size(test_image_height, l0_kernel_size, l0_stride, l0_padding);
+        const int l0_out_width = conv_out_size(test_image_width, l0_kernel_size, l0_stride, l0_padding);
+        Conv2d<3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups> l0_conv(param_path + "/layer1.0");
 
         const int l1_out_channels = depths[0];
         const int l1_out_height = l0_out_height;
@@ -328,19 +328,19 @@ public:
         l13_stack.forward(y12, layer5);
 
 
-        // for (int i = 0; i < fe1_out_channels; i++) for (int j = 0; j < fe1_out_size(in_height); j++) for (int k = 0; k < fe1_out_size(in_width); k++)
+        // for (int i = 0; i < channels_1; i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
         //     layer1[i][j][k] = y7[i][j][k];
 
-        // for (int i = 0; i < fe2_out_channels; i++) for (int j = 0; j < fe2_out_size(in_height); j++) for (int k = 0; k < fe2_out_size(in_width); k++)
+        // for (int i = 0; i < channels_2; i++) for (int j = 0; j < height_4; j++) for (int k = 0; k < width_4; k++)
         //     layer2[i][j][k] = y8[i][j][k];
 
-        // for (int i = 0; i < fe3_out_channels; i++) for (int j = 0; j < fe3_out_size(in_height); j++) for (int k = 0; k < fe3_out_size(in_width); k++)
+        // for (int i = 0; i < channels_3; i++) for (int j = 0; j < height_8; j++) for (int k = 0; k < width_8; k++)
         //     layer3[i][j][k] = y9[i][j][k];
 
-        // for (int i = 0; i < fe4_out_channels; i++) for (int j = 0; j < fe4_out_size(in_height); j++) for (int k = 0; k < fe4_out_size(in_width); k++)
+        // for (int i = 0; i < channels_4; i++) for (int j = 0; j < height_16; j++) for (int k = 0; k < width_16; k++)
         //     layer4[i][j][k] = y11[i][j][k];
 
-        // for (int i = 0; i < fe5_out_channels; i++) for (int j = 0; j < fe5_out_size(in_height); j++) for (int k = 0; k < fe5_out_size(in_width); k++)
+        // for (int i = 0; i < channels_5; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
         //     layer5[i][j][k] = y13[i][j][k];
 
     }
@@ -350,7 +350,6 @@ private:
 };
 
 
-template <int in_height, int in_width>
 class FeatureShrinker{
 // Module that adds a FPN from on top of a set of feature maps. This is based on
 // `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.
@@ -360,15 +359,15 @@ class FeatureShrinker{
 public:
     FeatureShrinker(const string param_path) : param_path(param_path) {}
 
-    void forward(const float layer1[fe1_out_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 const float layer2[fe2_out_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 const float layer3[fe3_out_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 const float layer4[fe4_out_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 const float layer5[fe5_out_channels][fe5_out_size(in_height)][fe5_out_size(in_width)],
-                 float features_half[fpn_output_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float features_quarter[fpn_output_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float features_one_eight[fpn_output_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float features_one_sixteen[fpn_output_channels][fe4_out_size(in_height)][fe4_out_size(in_width)]) {
+    void forward(const float layer1[channels_1][height_2][width_2],
+                 const float layer2[channels_2][height_4][width_4],
+                 const float layer3[channels_3][height_8][width_8],
+                 const float layer4[channels_4][height_16][width_16],
+                 const float layer5[channels_5][height_32][width_32],
+                 float features_half[fpn_output_channels][height_2][width_2],
+                 float features_quarter[fpn_output_channels][height_4][width_4],
+                 float features_one_eight[fpn_output_channels][height_8][width_8],
+                 float features_one_sixteen[fpn_output_channels][height_16][width_16]) {
 
         const int stride = 1;
         const int groups = 1;
@@ -380,68 +379,68 @@ public:
         const int layer_padding = 1;
 
         // layer5
-        Conv2d<fe5_out_channels, fe5_out_size(in_height), fe5_out_size(in_width), fpn_output_channels, fe5_out_size(in_height), fe5_out_size(in_width), inner_kernel_size, stride, inner_padding, groups, apply_bias> i5_conv(param_path + "/fpn.inner_blocks.4");
-        float inner5[fpn_output_channels][fe5_out_size(in_height)][fe5_out_size(in_width)];
+        Conv2d<channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_bias> i5_conv(param_path + "/fpn.inner_blocks.4");
+        float inner5[fpn_output_channels][height_32][width_32];
         i5_conv.forward(layer5, inner5);
 
-        // Conv2d<fpn_output_channels, fe5_out_size(in_height), fe5_out_size(in_width), fpn_output_channels, fe5_out_size(in_height), fe5_out_size(in_width), layer_kernel_size, stride, layer_padding, groups, apply_bias> l5_conv(param_path + "/fpn.layer_blocks.4");
-        // float features_smallest[fpn_output_channels][fe5_out_size(in_height)][fe5_out_size(in_width)];
+        // Conv2d<fpn_output_channels, height_32, width_32, fpn_output_channels, height_32, width_32, layer_kernel_size, stride, layer_padding, groups, apply_bias> l5_conv(param_path + "/fpn.layer_blocks.4");
+        // float features_smallest[fpn_output_channels][height_32][width_32];
         // l5_conv.forward(inner5, features_smallest);
 
 
         // layer4
-        Conv2d<fe4_out_channels, fe4_out_size(in_height), fe4_out_size(in_width), fpn_output_channels, fe4_out_size(in_height), fe4_out_size(in_width), inner_kernel_size, stride, inner_padding, groups, apply_bias> i4_conv(param_path + "/fpn.inner_blocks.3");
-        float inner4[fpn_output_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
+        Conv2d<channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_bias> i4_conv(param_path + "/fpn.inner_blocks.3");
+        float inner4[fpn_output_channels][height_16][width_16];
         i4_conv.forward(layer4, inner4);
 
-        float top_down4[fpn_output_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
-        interpolate<fpn_output_channels, fe5_out_size(in_height), fe5_out_size(in_width), fe4_out_size(in_height), fe4_out_size(in_width)>(inner5, top_down4);
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < fe4_out_size(in_height); j++) for (int k = 0; k < fe4_out_size(in_width); k++)
+        float top_down4[fpn_output_channels][height_16][width_16];
+        interpolate<fpn_output_channels, height_32, width_32, height_16, width_16>(inner5, top_down4);
+        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_16; j++) for (int k = 0; k < width_16; k++)
             inner4[i][j][k] += top_down4[i][j][k];
 
-        Conv2d<fpn_output_channels, fe4_out_size(in_height), fe4_out_size(in_width), fpn_output_channels, fe4_out_size(in_height), fe4_out_size(in_width), layer_kernel_size, stride, layer_padding, groups, apply_bias> l4_conv(param_path + "/fpn.layer_blocks.3");
+        Conv2d<fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_bias> l4_conv(param_path + "/fpn.layer_blocks.3");
         l4_conv.forward(inner4, features_one_sixteen);
 
 
         // layer3
-        Conv2d<fe3_out_channels, fe3_out_size(in_height), fe3_out_size(in_width), fpn_output_channels, fe3_out_size(in_height), fe3_out_size(in_width), inner_kernel_size, stride, inner_padding, groups, apply_bias> i3_conv(param_path + "/fpn.inner_blocks.2");
-        float inner3[fpn_output_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
+        Conv2d<channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_bias> i3_conv(param_path + "/fpn.inner_blocks.2");
+        float inner3[fpn_output_channels][height_8][width_8];
         i3_conv.forward(layer3, inner3);
 
-        float top_down3[fpn_output_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
-        interpolate<fpn_output_channels, fe4_out_size(in_height), fe4_out_size(in_width), fe3_out_size(in_height), fe3_out_size(in_width)>(inner4, top_down3);
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < fe3_out_size(in_height); j++) for (int k = 0; k < fe3_out_size(in_width); k++)
+        float top_down3[fpn_output_channels][height_8][width_8];
+        interpolate<fpn_output_channels, height_16, width_16, height_8, width_8>(inner4, top_down3);
+        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_8; j++) for (int k = 0; k < width_8; k++)
             inner3[i][j][k] += top_down3[i][j][k];
 
-        Conv2d<fpn_output_channels, fe3_out_size(in_height), fe3_out_size(in_width), fpn_output_channels, fe3_out_size(in_height), fe3_out_size(in_width), layer_kernel_size, stride, layer_padding, groups, apply_bias> l3_conv(param_path + "/fpn.layer_blocks.2");
+        Conv2d<fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_bias> l3_conv(param_path + "/fpn.layer_blocks.2");
         l3_conv.forward(inner3, features_one_eight);
 
 
         // layer2
-        Conv2d<fe2_out_channels, fe2_out_size(in_height), fe2_out_size(in_width), fpn_output_channels, fe2_out_size(in_height), fe2_out_size(in_width), inner_kernel_size, stride, inner_padding, groups, apply_bias> i2_conv(param_path + "/fpn.inner_blocks.1");
-        float inner2[fpn_output_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
+        Conv2d<channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_bias> i2_conv(param_path + "/fpn.inner_blocks.1");
+        float inner2[fpn_output_channels][height_4][width_4];
         i2_conv.forward(layer2, inner2);
 
-        float top_down2[fpn_output_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
-        interpolate<fpn_output_channels, fe3_out_size(in_height), fe3_out_size(in_width), fe2_out_size(in_height), fe2_out_size(in_width)>(inner3, top_down2);
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < fe2_out_size(in_height); j++) for (int k = 0; k < fe2_out_size(in_width); k++)
+        float top_down2[fpn_output_channels][height_4][width_4];
+        interpolate<fpn_output_channels, height_8, width_8, height_4, width_4>(inner3, top_down2);
+        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_4; j++) for (int k = 0; k < width_4; k++)
             inner2[i][j][k] += top_down2[i][j][k];
 
-        Conv2d<fpn_output_channels, fe2_out_size(in_height), fe2_out_size(in_width), fpn_output_channels, fe2_out_size(in_height), fe2_out_size(in_width), layer_kernel_size, stride, layer_padding, groups, apply_bias> l2_conv(param_path + "/fpn.layer_blocks.1");
+        Conv2d<fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_bias> l2_conv(param_path + "/fpn.layer_blocks.1");
         l2_conv.forward(inner2, features_quarter);
 
 
         // layer1
-        Conv2d<fe1_out_channels, fe1_out_size(in_height), fe1_out_size(in_width), fpn_output_channels, fe1_out_size(in_height), fe1_out_size(in_width), inner_kernel_size, stride, inner_padding, groups, apply_bias> i1_conv(param_path + "/fpn.inner_blocks.0");
-        float inner1[fpn_output_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
+        Conv2d<channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_bias> i1_conv(param_path + "/fpn.inner_blocks.0");
+        float inner1[fpn_output_channels][height_2][width_2];
         i1_conv.forward(layer1, inner1);
 
-        float top_down1[fpn_output_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
-        interpolate<fpn_output_channels, fe2_out_size(in_height), fe2_out_size(in_width), fe1_out_size(in_height), fe1_out_size(in_width)>(inner2, top_down1);
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < fe1_out_size(in_height); j++) for (int k = 0; k < fe1_out_size(in_width); k++)
+        float top_down1[fpn_output_channels][height_2][width_2];
+        interpolate<fpn_output_channels, height_4, width_4, height_2, width_2>(inner2, top_down1);
+        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
             inner1[i][j][k] += top_down1[i][j][k];
 
-        Conv2d<fpn_output_channels, fe1_out_size(in_height), fe1_out_size(in_width), fpn_output_channels, fe1_out_size(in_height), fe1_out_size(in_width), layer_kernel_size, stride, layer_padding, groups, apply_bias> l1_conv(param_path + "/fpn.layer_blocks.0");
+        Conv2d<fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_bias> l1_conv(param_path + "/fpn.layer_blocks.0");
         l1_conv.forward(inner1, features_half);
     }
 
@@ -450,21 +449,20 @@ private:
 };
 
 
-template <int in_height, int in_width>
 class CostVolumeEncoder{
 public:
     CostVolumeEncoder(const string param_path) : param_path(param_path) {}
 
-    void forward(const float features_half[fpn_output_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 const float features_quarter[fpn_output_channels][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 const float features_one_eight[fpn_output_channels][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 const float features_one_sixteen[fpn_output_channels][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 const float cost_volume[n_depth_levels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float skip0[hyper_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 float skip1[hyper_channels * 2][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 float skip2[hyper_channels * 4][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 float skip3[hyper_channels * 8][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 float bottom[hyper_channels * 16][fe5_out_size(in_height)][fe5_out_size(in_width)]) {
+    void forward(const float features_half[fpn_output_channels][height_2][width_2],
+                 const float features_quarter[fpn_output_channels][height_4][width_4],
+                 const float features_one_eight[fpn_output_channels][height_8][width_8],
+                 const float features_one_sixteen[fpn_output_channels][height_16][width_16],
+                 const float cost_volume[n_depth_levels][height_2][width_2],
+                 float skip0[hyper_channels][height_2][width_2],
+                 float skip1[hyper_channels * 2][height_4][width_4],
+                 float skip2[hyper_channels * 4][height_8][width_8],
+                 float skip3[hyper_channels * 8][height_16][width_16],
+                 float bottom[hyper_channels * 16][height_32][width_32]) {
 
         const int stride = 1;
         const bool apply_bn_relu = true;
@@ -475,17 +473,17 @@ public:
         const int l0_in_channels = fpn_output_channels + n_depth_levels;
 
         const int l0_mid_channels = hyper_channels;
-        const int l0_mid_height = fe1_out_size(in_height);
-        const int l0_mid_width = fe1_out_size(in_width);
+        const int l0_mid_height = height_2;
+        const int l0_mid_width = width_2;
 
         const int l0_out_channels = hyper_channels * 2;
-        const int l0_out_height = fe2_out_size(in_height);
-        const int l0_out_width = fe2_out_size(in_width);
+        const int l0_out_height = height_4;
+        const int l0_out_width = width_4;
 
         conv_layer<l0_in_channels, l0_mid_height, l0_mid_width, l0_mid_channels, l0_mid_height, l0_mid_width, l0_kernel_size, stride, apply_bn_relu> l0_aggregator(param_path + "/aggregator0");
         EncoderBlock<l0_mid_channels, l0_mid_height, l0_mid_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size> l0_encoder_block(param_path + "/encoder_block0");
 
-        float l0_in[l0_in_channels][fe1_out_size(in_height)][fe1_out_size(in_width)];
+        float l0_in[l0_in_channels][height_2][width_2];
         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l0_mid_height; j++) for (int k = 0; k < l0_mid_width; k++)
             l0_in[i][j][k] = features_half[i][j][k];
         for (int i = 0; i < n_depth_levels; i++) for (int j = 0; j < l0_mid_height; j++) for (int k = 0; k < l0_mid_width; k++)
@@ -501,17 +499,17 @@ public:
         const int l1_in_channels = fpn_output_channels + l0_out_channels;
 
         const int l1_mid_channels = hyper_channels * 2;
-        const int l1_mid_height = fe2_out_size(in_height);
-        const int l1_mid_width = fe2_out_size(in_width);
+        const int l1_mid_height = height_4;
+        const int l1_mid_width = width_4;
 
         const int l1_out_channels = hyper_channels * 4;
-        const int l1_out_height = fe3_out_size(in_height);
-        const int l1_out_width = fe3_out_size(in_width);
+        const int l1_out_height = height_8;
+        const int l1_out_width = width_8;
 
         conv_layer<l1_in_channels, l1_mid_height, l1_mid_width, l1_mid_channels, l1_mid_height, l1_mid_width, l1_kernel_size, stride, apply_bn_relu> l1_aggregator(param_path + "/aggregator1");
         EncoderBlock<l1_mid_channels, l1_mid_height, l1_mid_width, l1_out_channels, l1_out_height, l1_out_width, l1_kernel_size> l1_encoder_block(param_path + "/encoder_block1");
 
-        float l1_in[l1_in_channels][fe2_out_size(in_height)][fe2_out_size(in_width)];
+        float l1_in[l1_in_channels][height_4][width_4];
         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l1_mid_height; j++) for (int k = 0; k < l1_mid_width; k++)
             l1_in[i][j][k] = features_quarter[i][j][k];
         for (int i = 0; i < l0_out_channels; i++) for (int j = 0; j < l1_mid_height; j++) for (int k = 0; k < l1_mid_width; k++)
@@ -527,17 +525,17 @@ public:
         const int l2_in_channels = fpn_output_channels + l1_out_channels;
 
         const int l2_mid_channels = hyper_channels * 4;
-        const int l2_mid_height = fe3_out_size(in_height);
-        const int l2_mid_width = fe3_out_size(in_width);
+        const int l2_mid_height = height_8;
+        const int l2_mid_width = width_8;
 
         const int l2_out_channels = hyper_channels * 8;
-        const int l2_out_height = fe4_out_size(in_height);
-        const int l2_out_width = fe4_out_size(in_width);
+        const int l2_out_height = height_16;
+        const int l2_out_width = width_16;
 
         conv_layer<l2_in_channels, l2_mid_height, l2_mid_width, l2_mid_channels, l2_mid_height, l2_mid_width, l2_kernel_size, stride, apply_bn_relu> l2_aggregator(param_path + "/aggregator2");
         EncoderBlock<l2_mid_channels, l2_mid_height, l2_mid_width, l2_out_channels, l2_out_height, l2_out_width, l2_kernel_size> l2_encoder_block(param_path + "/encoder_block2");
 
-        float l2_in[l2_in_channels][fe3_out_size(in_height)][fe3_out_size(in_width)];
+        float l2_in[l2_in_channels][height_8][width_8];
         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l2_mid_height; j++) for (int k = 0; k < l2_mid_width; k++)
             l2_in[i][j][k] = features_one_eight[i][j][k];
         for (int i = 0; i < l1_out_channels; i++) for (int j = 0; j < l2_mid_height; j++) for (int k = 0; k < l2_mid_width; k++)
@@ -553,17 +551,17 @@ public:
         const int l3_in_channels = fpn_output_channels + l2_out_channels;
 
         const int l3_mid_channels = hyper_channels * 8;
-        const int l3_mid_height = fe4_out_size(in_height);
-        const int l3_mid_width = fe4_out_size(in_width);
+        const int l3_mid_height = height_16;
+        const int l3_mid_width = width_16;
 
         const int l3_out_channels = hyper_channels * 16;
-        const int l3_out_height = fe5_out_size(in_height);
-        const int l3_out_width = fe5_out_size(in_width);
+        const int l3_out_height = height_32;
+        const int l3_out_width = width_32;
 
         conv_layer<l3_in_channels, l3_mid_height, l3_mid_width, l3_mid_channels, l3_mid_height, l3_mid_width, l3_kernel_size, stride, apply_bn_relu> l3_aggregator(param_path + "/aggregator3");
         EncoderBlock<l3_mid_channels, l3_mid_height, l3_mid_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size> l3_encoder_block(param_path + "/encoder_block3");
 
-        float l3_in[l3_in_channels][fe4_out_size(in_height)][fe4_out_size(in_width)];
+        float l3_in[l3_in_channels][height_16][width_16];
         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l3_mid_height; j++) for (int k = 0; k < l3_mid_width; k++)
             l3_in[i][j][k] = features_one_sixteen[i][j][k];
         for (int i = 0; i < l2_out_channels; i++) for (int j = 0; j < l3_mid_height; j++) for (int k = 0; k < l3_mid_width; k++)
@@ -583,24 +581,17 @@ private:
 };
 
 
-template <int in_height, int in_width>
 class CostVolumeDecoder{
 public:
     CostVolumeDecoder(const string param_path) : param_path(param_path) {}
 
-    void forward(const float image[3][in_height][in_width],
-                 const float skip0[hyper_channels][fe1_out_size(in_height)][fe1_out_size(in_width)],
-                 const float skip1[hyper_channels * 2][fe2_out_size(in_height)][fe2_out_size(in_width)],
-                 const float skip2[hyper_channels * 4][fe3_out_size(in_height)][fe3_out_size(in_width)],
-                 const float skip3[hyper_channels * 8][fe4_out_size(in_height)][fe4_out_size(in_width)],
-                 const float bottom[hyper_channels * 16][fe5_out_size(in_height)][fe5_out_size(in_width)],
-                 float depth_full[in_height][in_width]) {
-                //  float depth_full[in_height][in_width],
-                //  float depth_half[fe1_out_size(in_height)][fe1_out_size(in_width)],
-                //  float depth_quarter[fe2_out_size(in_height)][fe2_out_size(in_width)],
-                //  float depth_one_eight[fe3_out_size(in_height)][fe3_out_size(in_width)],
-                //  float depth_one_sixteen[fe4_out_size(in_height)][fe4_out_size(in_width)]) {
-
+    void forward(const float image[3][test_image_height][test_image_width],
+                 const float skip0[hyper_channels][height_2][width_2],
+                 const float skip1[hyper_channels * 2][height_4][width_4],
+                 const float skip2[hyper_channels * 4][height_8][width_8],
+                 const float skip3[hyper_channels * 8][height_16][width_16],
+                 const float bottom[hyper_channels * 16][height_32][width_32],
+                 float depth_full[test_image_height][test_image_width]) {
 
         const float inverse_depth_base = 1 / max_depth;
         const float inverse_depth_multiplier = 1 / min_depth - 1 / max_depth;
@@ -609,16 +600,16 @@ public:
 
         // 1st set
         const int l0_in_channels = hyper_channels * 16;
-        const int l0_in_height = fe5_out_size(in_height);
-        const int l0_in_width = fe5_out_size(in_width);
+        const int l0_in_height = height_32;
+        const int l0_in_width = width_32;
 
         const int l0_kernel_size = 3;
         const bool l0_plus_one = false;
         DecoderBlock<l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, apply_bn_relu, l0_plus_one> l0_decoder_block(param_path + "/decoder_block1");
 
         const int l0_out_channels = hyper_channels * 8;
-        const int l0_out_height = fe4_out_size(in_height);
-        const int l0_out_width = fe4_out_size(in_width);
+        const int l0_out_height = height_16;
+        const int l0_out_width = width_16;
         depth_layer_3x3<l0_out_channels, l0_out_height, l0_out_width> l0_depth_layer_one_sixteen(param_path + "/depth_layer_one_sixteen");
 
         float null_depth[1][l0_in_height][l0_in_width];
@@ -639,8 +630,8 @@ public:
         DecoderBlock<l0_out_channels, l0_out_height, l0_out_width, l1_kernel_size, apply_bn_relu, l1_plus_one> l1_decoder_block(param_path + "/decoder_block2");
 
         const int l1_out_channels = hyper_channels * 4;
-        const int l1_out_height = fe3_out_size(in_height);
-        const int l1_out_width = fe3_out_size(in_width);
+        const int l1_out_height = height_8;
+        const int l1_out_width = width_8;
         depth_layer_3x3<l1_out_channels, l1_out_height, l1_out_width> l1_depth_layer_one_eight(param_path + "/depth_layer_one_eight");
 
         float decoder_block2[l1_out_channels][l1_out_height][l1_out_width];
@@ -660,8 +651,8 @@ public:
         DecoderBlock<l1_out_channels, l1_out_height, l1_out_width, l2_kernel_size, apply_bn_relu, l2_plus_one> l2_decoder_block(param_path + "/decoder_block3");
 
         const int l2_out_channels = hyper_channels * 2;
-        const int l2_out_height = fe2_out_size(in_height);
-        const int l2_out_width = fe2_out_size(in_width);
+        const int l2_out_height = height_4;
+        const int l2_out_width = width_4;
         depth_layer_3x3<l2_out_channels, l2_out_height, l2_out_width> l2_depth_layer_quarter(param_path + "/depth_layer_quarter");
 
         float decoder_block3[l2_out_channels][l2_out_height][l2_out_width];
@@ -681,8 +672,8 @@ public:
         DecoderBlock<l2_out_channels, l2_out_height, l2_out_width, l3_kernel_size, apply_bn_relu, l3_plus_one> l3_decoder_block(param_path + "/decoder_block4");
 
         const int l3_out_channels = hyper_channels;
-        const int l3_out_height = fe1_out_size(in_height);
-        const int l3_out_width = fe1_out_size(in_width);
+        const int l3_out_height = height_2;
+        const int l3_out_width = width_2;
         depth_layer_3x3<l3_out_channels, l3_out_height, l3_out_width> l3_depth_layer_half(param_path + "/depth_layer_half");
 
         float decoder_block4[l3_out_channels][l3_out_height][l3_out_width];
@@ -718,8 +709,8 @@ public:
         const int l4_stride = 1;
 
         const int l4_out_channels = hyper_channels;
-        const int l4_out_height = in_height;
-        const int l4_out_width = in_width;
+        const int l4_out_height = test_image_height;
+        const int l4_out_width = test_image_width;
         conv_layer<l4_in_channels, l4_in_height, l4_in_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu> l4_refine0(param_path + "/refine.0");
         conv_layer<l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu> l4_refine1(param_path + "/refine.1");
         depth_layer_3x3<l4_out_channels, l4_out_height, l4_out_width> l4_depth_layer_full(param_path + "/depth_layer_full");
@@ -744,33 +735,32 @@ private:
 };
 
 
-template <int height, int width>
 class LSTMFusion{
 public:
     LSTMFusion(const string param_path) : param_path(param_path) {}
 
-    void forward(const float current_encoding[hyper_channels * 16][height][width],
+    void forward(const float current_encoding[hyper_channels * 16][height_32][width_32],
                  const bool previous_exists,
                  const float previous_pose[4][4],
                  const float current_pose[4][4],
-                 const float estimated_current_depth[height][width],
+                 const float estimated_current_depth[height_32][width_32],
                  const float camera_matrix[3][3],
                  const bool state_exists,
-                 float hidden_state[hyper_channels * 16][height][width],
-                 float cell_state[hyper_channels * 16][height][width]) {
+                 float hidden_state[hyper_channels * 16][height_32][width_32],
+                 float cell_state[hyper_channels * 16][height_32][width_32]) {
 
         const int in_channels = hyper_channels * 16;
         const int hid_channels = hyper_channels * 16;
 
         if (!state_exists) {
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 hidden_state[i][j][k] = 0;
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 cell_state[i][j][k] = 0;
         }
 
         const int kernel_size = 3;
-        MVSLayernormConvLSTMCell<in_channels, hid_channels, height, width, kernel_size> lstm_cell(param_path + "/lstm_cell");
+        MVSLayernormConvLSTMCell<in_channels, hid_channels, height_32, width_32, kernel_size> lstm_cell(param_path + "/lstm_cell");
         lstm_cell.forward(current_encoding, previous_exists, previous_pose, current_pose, estimated_current_depth, camera_matrix, hidden_state, cell_state);
     }
 
