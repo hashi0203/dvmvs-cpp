@@ -7,8 +7,8 @@ void interpolate(const float input[channels][in_height][in_width], float output[
         const float fy = (float) in_height / out_height;
         const float fx = (float) in_width / out_width;
         for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
-            const int y = j * fy + (fy - 1) / 2 + 0.5;
-            const int x = k * fx + (fx - 1) / 2 + 0.5;
+            const int y = j * fy;
+            const int x = k * fx;
             for (int i = 0; i < channels; i++)
                 output[i][j][k] = input[i][y][x];
         }
