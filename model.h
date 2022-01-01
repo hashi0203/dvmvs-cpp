@@ -152,7 +152,7 @@ public:
         // Learn from aggregation
         const bool l2_apply_bn_relu = apply_bn_relu;
         conv_layer<out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l2_apply_bn_relu> l2_conv_layer(param_path + ".convolution2");
-        l1_conv_layer.forward(y1, y);
+        l2_conv_layer.forward(y1, y);
     }
 
 private:
