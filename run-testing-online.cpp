@@ -154,10 +154,6 @@ void predict() {
 
         float cost_volume[n_depth_levels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
-        if (f == 6) {
-            printvii(cost_volume[10], fe1_out_size(test_image_height), fe1_out_size(test_image_width));
-        }
-        break;
 
         float skip0[hyper_channels][fe1_out_size(test_image_height)][fe1_out_size(test_image_width)];
         float skip1[hyper_channels * 2][fe2_out_size(test_image_height)][fe2_out_size(test_image_width)];
@@ -167,6 +163,10 @@ void predict() {
         CostVolumeEncoder<test_image_height, test_image_width> cost_volume_encoder("params/2_encoder");
         cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                                     skip0, skip1, skip2, skip3, bottom);
+        if (f == 6) {
+            printviii(bottom, 10, fe5_out_size(test_image_height), fe5_out_size(test_image_width));
+        }
+        break;
 
         float depth_estimation[1][test_image_height / 32][test_image_width / 32];
         if (previous_exists) {
