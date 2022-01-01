@@ -180,14 +180,14 @@ void predict() {
         lstm_fusion.forward(bottom, previous_exists, previous_pose, reference_pose_torch, depth_estimation[0], lstm_K_bottom,
                             state_exists, hidden_state, cell_state);
         state_exists = true;
-        if (f == 6) {
-            printviii(cell_state, 10, test_image_height / 32, test_image_width / 32);
-        }
-        break;
 
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder<test_image_height, test_image_width> cost_volume_decoder("params/4_decoder");
         cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
+        if (f == 6) {
+            printvi(prediction[10], test_image_width);
+        }
+        break;
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];
