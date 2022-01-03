@@ -15,7 +15,7 @@ float KeyframeBuffer::calculate_penalty(const float t_score, const float R_score
 }
 
 
-int KeyframeBuffer::try_new_keyframe(const float pose[4][4], const float image[org_image_height][org_image_width][3]) {
+int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float*** image) {
     if (is_pose_available(pose)) {
         __tracking_lost_counter = 0;
         const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
@@ -60,8 +60,7 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4][4], const float image[o
 }
 
 
-int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4],
-                                                float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3]) {
+int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float**** measurement_images) {
     float reference_pose[4][4];
     const int buffer_last = (buffer_idx + buffer_cnt - 1) % buffer_size;
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = buffer_poses[buffer_last][i][j];

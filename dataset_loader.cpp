@@ -2,7 +2,7 @@
 #include "config.h"
 #include "functional.h"
 
-void load_image(const string image_filename, float reference_image[org_image_height][org_image_width][3]) {
+void load_image(const string image_filename, float ***reference_image) {
     cv::Mat bgr = cv::imread(image_filename, -1);
     cv::Mat rgb;
     cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
@@ -19,7 +19,7 @@ void save_image(const string image_filename, float depth[test_image_height][test
 }
 
 
-void PreprocessImage::apply_rgb(const float org_image[org_image_height][org_image_width][3], float image[3][test_image_height][test_image_width]) {
+void PreprocessImage::apply_rgb(float*** org_image, float image[3][test_image_height][test_image_width]) {
     float src[3][org_image_height][org_image_width];
     for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
         src[k][i][j] = org_image[i][j][k];

@@ -1,14 +1,14 @@
 #pragma once
 #include "settings.h"
 
-// const int org_image_width = 540;
-// const int org_image_height = 360;
+const int org_image_width = 540;
+const int org_image_height = 360;
 // const int test_image_width = 320;
 // const int test_image_height = 256;
 
-const int org_image_width = 64;
-const int org_image_height = 128;
-const int test_image_width = 32;
+// const int org_image_width = 128;
+// const int org_image_height = 128;
+const int test_image_width = 96;
 const int test_image_height = 64;
 
 const int test_n_measurement_frames = 2;
@@ -108,9 +108,8 @@ public:
         new_4d(buffer_images, buffer_size, org_image_height, org_image_width, 3);
     }
 
-    int try_new_keyframe(const float pose[4][4], const float image[org_image_height][org_image_width][3]);
-    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4],
-                                    float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3]);
+    int try_new_keyframe(const float pose[4][4], float*** image);
+    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float**** measurement_images);
 
     void close() {
         delete_3d(buffer_poses, buffer_size, 4, 4);
@@ -133,7 +132,7 @@ private:
 };
 
 // dataset_loader
-void load_image(const string image_filename, float reference_image[org_image_height][org_image_width][3]);
+void load_image(const string image_filename, float*** reference_image);
 void save_image(const string image_filename, float depth[test_image_height][test_image_width]);
 
 class PreprocessImage{
@@ -146,7 +145,7 @@ public:
         cx = K[0][2] * factor_x;
         cy = K[1][2] * factor_y;
     }
-    void apply_rgb(const float org_image[org_image_height][org_image_width][3], float image[3][test_image_height][test_image_width]);
+    void apply_rgb(float*** org_image, float image[3][test_image_height][test_image_width]);
     void get_updated_intrinsics(float updated_intrinsic[3][3]);
 
 private:

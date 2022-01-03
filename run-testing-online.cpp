@@ -27,7 +27,6 @@ void predict() {
         }
     }
 
-
     ifs = open_file(scene_folder + "/poses.txt");
     vector<float> tmp_poses;
     while (getline(ifs, file_buf)) {
@@ -71,7 +70,8 @@ void predict() {
     float cell_state[hyper_channels * 16][height_32][width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
-        float org_reference_image[org_image_height][org_image_width][3];
+        float ***org_reference_image = new float**[org_image_height];
+        new_3d(org_reference_image, org_image_height, org_image_width, 3);
         load_image(image_filenames[f], org_reference_image);
 
         float reference_pose[4][4];
@@ -92,6 +92,7 @@ void predict() {
 
         float reference_image[3][test_image_height][test_image_width];
         preprocessor.apply_rgb(org_reference_image, reference_image);
+        delete_3d(org_reference_image, org_image_height, org_image_width, 3);
 
         float full_K[3][3];
         preprocessor.get_updated_intrinsics(full_K);
@@ -105,12 +106,14 @@ void predict() {
         for (int j = 0; j < 3; j++) lstm_K_bottom[2][j] = full_K[2][j];
 
         float measurement_poses[test_n_measurement_frames][4][4];
-        float org_measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3];
+        float ****org_measurement_images = new float***[test_n_measurement_frames];
+        new_4d(org_measurement_images, test_n_measurement_frames, org_image_height, org_image_width, 3);
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, org_measurement_images);
 
         float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width];
         for (int m = 0; m < n_measurement_frames; m++)
             preprocessor.apply_rgb(org_measurement_images[m], measurement_images[m]);
+        delete_4d(org_measurement_images, test_n_measurement_frames, org_image_height, org_image_width, 3);
 
         FeatureExtractor feature_extractor("params/0_feature_extractor");
         float layer1[channels_1][height_2][width_2];
