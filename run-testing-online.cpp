@@ -8,8 +8,6 @@ void predict() {
     float warp_grid[3][width_2 * height_2];
     get_warp_grid_for_cost_volume_calculation(warp_grid);
 
-    // printvii(warp_grid, 3, width_2 * height_2);
-
     printf("Predicting for scene:%s\n", scene.c_str());
 
     KeyframeBuffer keyframe_buffer;
@@ -29,7 +27,6 @@ void predict() {
         }
     }
 
-    // printvii(K, 3, 3);
 
     ifs = open_file(scene_folder + "/poses.txt");
     vector<float> tmp_poses;
@@ -54,7 +51,6 @@ void predict() {
         }
     }
     // print1(n_poses);
-    // printvii(poses[0], 4, 4);
 
     const string image_filedir = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/";
     const int len_image_filedir = image_filedir.length();
@@ -125,7 +121,6 @@ void predict() {
 
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_poses[m][i][j];
         }
-
 
         FeatureExtractor feature_extractor("params/0_feature_extractor");
         float layer1[channels_1][height_2][width_2];
