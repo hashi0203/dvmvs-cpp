@@ -23,7 +23,7 @@ public:
         const int l0_in_channels = in_channels + hid_channels;
         const int l0_out_channels = 4 * hid_channels;
 
-        if (!previous_exists) {
+        if (previous_exists) {
             Matrix4f p_pose, c_pose;
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) p_pose(i, j) = previous_pose[i][j];
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) c_pose(i, j) = current_pose[i][j];
