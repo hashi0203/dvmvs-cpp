@@ -87,11 +87,11 @@ void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_
                         const float warp_grid[3][width_2 * height_2],
                         const int n_measurement_frames,
                         float fused_cost_volume[n_depth_levels][height_2][width_2]);
-void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
-                                                       const float measurement_pose_torch[4][4],
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4][4],
+                                                       const float measurement_pose[4][4],
                                                        const float previous_depth[test_image_height][test_image_width],
-                                                       const float full_K_torch[3][3],
-                                                       const float half_K_torch[3][3],
+                                                       const float full_K[3][3],
+                                                       const float half_K[3][3],
                                                        float depth_hypothesis[1][height_2][width_2]);
 void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width_32],
                      const float depth_dst[height_32][width_32],
@@ -146,7 +146,7 @@ public:
         cx = K[0][2] * factor_x;
         cy = K[1][2] * factor_y;
     }
-    void apply_rgb(const float image[org_image_height][org_image_width][3], float resized_image[3][test_image_height][test_image_width]);
+    void apply_rgb(const float org_image[org_image_height][org_image_width][3], float image[3][test_image_height][test_image_width]);
     void get_updated_intrinsics(float updated_intrinsic[3][3]);
 
 private:

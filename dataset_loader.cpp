@@ -17,14 +17,14 @@ void save_image(const string image_filename, float depth[test_image_height][test
     cv::imwrite(image_filename, gray);
 }
 
-void PreprocessImage::apply_rgb(const float image[org_image_height][org_image_width][3], float image_torch[3][test_image_height][test_image_width]) {
+void PreprocessImage::apply_rgb(const float org_image[org_image_height][org_image_width][3], float image[3][test_image_height][test_image_width]) {
     float src[3][org_image_height][org_image_width];
     for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
-        src[k][i][j] = image[i][j][k];
+        src[k][i][j] = org_image[i][j][k];
 
-    interpolate<3, org_image_height, org_image_width, test_image_height, test_image_width>(src, image_torch, "bilinear");
+    interpolate<3, org_image_height, org_image_width, test_image_height, test_image_width>(src, image, "bilinear");
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 3; k++) {
-        image_torch[k][i][j] = ((image_torch[k][i][j] / scale_rgb) - mean_rgb[k]) / std_rgb[k];
+        image[k][i][j] = ((image[k][i][j] / scale_rgb) - mean_rgb[k]) / std_rgb[k];
     }
 }
 

@@ -150,24 +150,24 @@ void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_
 }
 
 
-void get_non_differentiable_rectangle_depth_estimation(const float reference_pose_torch[4][4],
-                                                       const float measurement_pose_torch[4][4],
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4][4],
+                                                       const float measurement_pose[4][4],
                                                        const float previous_depth[test_image_height][test_image_width],
-                                                       const float full_K_torch[3][3],
-                                                       const float half_K_torch[3][3],
+                                                       const float full_K[3][3],
+                                                       const float half_K[3][3],
                                                        float depth_hypothesis[1][height_2][width_2]) {
 
     const int half_height = test_image_height / 2;
     const int half_width = test_image_width / 2;
 
     Matrix4f r_pose, m_pose;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose_torch[i][j];
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose_torch[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i][j];
 
     Matrix4f trans = r_pose.inverse() * m_pose;
 
     float points_3d_src[test_image_height][test_image_width][3];
-    depth_to_3d<test_image_height, test_image_width>(previous_depth, full_K_torch, points_3d_src);
+    depth_to_3d<test_image_height, test_image_width>(previous_depth, full_K, points_3d_src);
     float points_3d_dst[test_image_height][test_image_width][3];
     transform_points<test_image_height, test_image_width>(trans, points_3d_src, points_3d_dst);
 
@@ -193,7 +193,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
         points_3d_sorted[i][j][k] = points_3d_dst[sorting_indices[i][j][0]][sorting_indices[i][j][1]][k];
 
     float projections_float[test_image_height][test_image_width][2];
-    project_points<test_image_height, test_image_width>(points_3d_sorted, half_K_torch, projections_float);
+    project_points<test_image_height, test_image_width>(points_3d_sorted, half_K, projections_float);
     int projections[test_image_height][test_image_width][2];
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
         projections[i][j][k] = round(projections_float[i][j][k]);

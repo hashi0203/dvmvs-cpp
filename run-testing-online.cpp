@@ -71,14 +71,14 @@ void predict() {
     float cell_state[hyper_channels * 16][height_32][width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
+        float org_reference_image[org_image_height][org_image_width][3];
+        load_image(image_filenames[f], org_reference_image);
+
         float reference_pose[4][4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = poses[f][i][j];
-        float reference_image[org_image_height][org_image_width][3];
-        load_image(image_filenames[f], reference_image);
-
 
         // POLL THE KEYFRAME BUFFER
-        const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
+        const int response = keyframe_buffer.try_new_keyframe(reference_pose, org_reference_image);
         cout << image_filenames[f].substr(len_image_filedir) << ": " << response << "\n";
 
         if (response == 0 || response == 2 || response == 4 || response == 5) continue;
@@ -90,37 +90,27 @@ void predict() {
 
         PreprocessImage preprocessor(K);
 
-        float reference_image_torch[3][test_image_height][test_image_width];
-        preprocessor.apply_rgb(reference_image, reference_image_torch);
+        float reference_image[3][test_image_height][test_image_width];
+        preprocessor.apply_rgb(org_reference_image, reference_image);
 
-        float reference_pose_torch[4][4];
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose_torch[i][j] = reference_pose[i][j];
+        float full_K[3][3];
+        preprocessor.get_updated_intrinsics(full_K);
 
-        float full_K_torch[3][3];
-        preprocessor.get_updated_intrinsics(full_K_torch);
-
-        float half_K_torch[3][3];
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) half_K_torch[i][j] = full_K_torch[i][j] / 2.0;
-        for (int j = 0; j < 3; j++) half_K_torch[2][j] = full_K_torch[2][j];
+        float half_K[3][3];
+        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) half_K[i][j] = full_K[i][j] / 2.0;
+        for (int j = 0; j < 3; j++) half_K[2][j] = full_K[2][j];
 
         float lstm_K_bottom[3][3];
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[i][j] = full_K_torch[i][j] / 32.0;
-        for (int j = 0; j < 3; j++) lstm_K_bottom[2][j] = full_K_torch[2][j];
+        for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[i][j] = full_K[i][j] / 32.0;
+        for (int j = 0; j < 3; j++) lstm_K_bottom[2][j] = full_K[2][j];
 
         float measurement_poses[test_n_measurement_frames][4][4];
-        float measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3];
-        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, measurement_images);
+        float org_measurement_images[test_n_measurement_frames][org_image_height][org_image_width][3];
+        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, org_measurement_images);
 
-        float measurement_images_torch[test_n_measurement_frames][3][test_image_height][test_image_width];
-        float measurement_poses_torch[test_n_measurement_frames][4][4];
-        for (int m = 0; m < n_measurement_frames; m++) {
-            float measurement_image[org_image_height][org_image_width][3];
-            for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
-                measurement_image[i][j][k] = measurement_images[m][i][j][k];
-            preprocessor.apply_rgb(measurement_image, measurement_images_torch[m]);
-
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses_torch[m][i][j] = measurement_poses[m][i][j];
-        }
+        float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width];
+        for (int m = 0; m < n_measurement_frames; m++)
+            preprocessor.apply_rgb(org_measurement_images[m], measurement_images[m]);
 
         FeatureExtractor feature_extractor("params/0_feature_extractor");
         float layer1[channels_1][height_2][width_2];
@@ -136,7 +126,7 @@ void predict() {
         float measurement_feature_one_sixteen[fpn_output_channels][height_16][width_16];
 
         for (int m = 0; m < n_measurement_frames; m++) {
-            feature_extractor.forward(measurement_images_torch[m], layer1, layer2, layer3, layer4, layer5);
+            feature_extractor.forward(measurement_images[m], layer1, layer2, layer3, layer4, layer5);
             feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
         }
 
@@ -144,11 +134,11 @@ void predict() {
         float reference_feature_quarter[fpn_output_channels][height_4][width_4];
         float reference_feature_one_eight[fpn_output_channels][height_8][width_8];
         float reference_feature_one_sixteen[fpn_output_channels][height_16][width_16];
-        feature_extractor.forward(reference_image_torch, layer1, layer2, layer3, layer4, layer5);
+        feature_extractor.forward(reference_image, layer1, layer2, layer3, layer4, layer5);
         feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
         float cost_volume[n_depth_levels][height_2][width_2];
-        cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose_torch, measurement_poses_torch, half_K_torch, warp_grid, n_measurement_frames, cost_volume);
+        cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose, measurement_poses, half_K, warp_grid, n_measurement_frames, cost_volume);
 
         float skip0[hyper_channels][height_2][width_2];
         float skip1[hyper_channels * 2][height_4][width_4];
@@ -162,8 +152,8 @@ void predict() {
         float depth_estimation[1][height_32][width_32];
         if (previous_exists) {
             float depth_hypothesis[1][height_2][width_2];
-            get_non_differentiable_rectangle_depth_estimation(reference_pose_torch, previous_pose, previous_depth,
-                                                              full_K_torch, half_K_torch,
+            get_non_differentiable_rectangle_depth_estimation(reference_pose, previous_pose, previous_depth,
+                                                              full_K, half_K,
                                                               depth_hypothesis);
             interpolate<1, height_2, width_2, height_32, width_32>(depth_hypothesis, depth_estimation);
         } else {
@@ -172,13 +162,13 @@ void predict() {
         }
 
         LSTMFusion lstm_fusion("params/3_lstm_fusion");
-        lstm_fusion.forward(bottom, previous_exists, previous_pose, reference_pose_torch, depth_estimation[0], lstm_K_bottom,
+        lstm_fusion.forward(bottom, previous_exists, previous_pose, reference_pose, depth_estimation[0], lstm_K_bottom,
                             state_exists, hidden_state, cell_state);
         state_exists = true;
 
         float prediction[test_image_height][test_image_width];
         CostVolumeDecoder cost_volume_decoder("params/4_decoder");
-        cost_volume_decoder.forward(reference_image_torch, skip0, skip1, skip2, skip3, hidden_state, prediction);
+        cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
         // if (f == 6) {
         //     printvi(prediction[10], test_image_width);
         // }
@@ -187,7 +177,7 @@ void predict() {
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
-            previous_pose[i][j] = reference_pose_torch[i][j];
+            previous_pose[i][j] = reference_pose[i][j];
         previous_exists = true;
 
         save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
