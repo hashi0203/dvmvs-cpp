@@ -83,6 +83,20 @@ void predict() {
     float cell_state[hyper_channels * 16][height_32][width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
+        float reference_pose[4][4];
+        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = poses[f][i][j];
+
+        // POLL THE KEYFRAME BUFFER
+        const int response = keyframe_buffer.try_new_keyframe(reference_pose);
+        cout << image_filenames[f].substr(len_image_filedir) << ": " << response << "\n";
+
+        if (response == 2 || response == 4 || response == 5) continue;
+        else if (response == 3) {
+            previous_exists = false;
+            state_exists = false;
+            continue;
+        }
+
         float ***org_reference_image = new float**[3];
         new_3d(org_reference_image, 3, org_image_height, org_image_width);
         load_image(image_filenames[f], org_reference_image);
@@ -91,19 +105,9 @@ void predict() {
         preprocessor.apply_rgb(org_reference_image, reference_image);
         delete_3d(org_reference_image, 3, org_image_height, org_image_width);
 
-        float reference_pose[4][4];
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = poses[f][i][j];
+        keyframe_buffer.add_new_keyframe(reference_pose, reference_image);
 
-        // POLL THE KEYFRAME BUFFER
-        const int response = keyframe_buffer.try_new_keyframe(reference_pose, reference_image);
-        cout << image_filenames[f].substr(len_image_filedir) << ": " << response << "\n";
-
-        if (response == 0 || response == 2 || response == 4 || response == 5) continue;
-        else if (response == 3) {
-            previous_exists = false;
-            state_exists = false;
-            continue;
-        }
+        if (response == 0) continue;
 
         float measurement_poses[test_n_measurement_frames][4][4];
         float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width];

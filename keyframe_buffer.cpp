@@ -15,15 +15,10 @@ float KeyframeBuffer::calculate_penalty(const float t_score, const float R_score
 }
 
 
-int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float image[3][test_image_height][test_image_width]) {
+int KeyframeBuffer::try_new_keyframe(const float pose[4][4]) {
     if (is_pose_available(pose)) {
         __tracking_lost_counter = 0;
-        const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
         if (buffer_cnt == 0) {
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) buffer_poses[buffer_end][i][j] = pose[i][j];
-            for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
-                buffer_images[buffer_end][i][j][k] = image[i][j][k];
-            buffer_cnt++;
             return 0;  // pose is available, new frame added but buffer was empty, this is the first frame, no depth map prediction will be done
         } else {
             float last_pose[4][4];
@@ -33,15 +28,10 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float image[3][test
             float combined_measure, R_measure, t_measure;
             pose_distance(pose, last_pose, combined_measure, R_measure, t_measure);
 
-            if (combined_measure >= keyframe_pose_distance) {
-                for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) buffer_poses[buffer_end][i][j] = pose[i][j];
-                for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
-                    buffer_images[buffer_end][i][j][k] = image[i][j][k];
-                if (buffer_cnt != buffer_size) buffer_cnt++;
+            if (combined_measure >= keyframe_pose_distance)
                 return 1;  // pose is available, new frame added, everything is perfect, and we will predict a depth map later
-            } else {
+            else
                 return 2;  // pose is available but not enough change has happened since the last keyframe
-            }
         }
     } else {
         __tracking_lost_counter += 1;
@@ -57,6 +47,16 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float image[3][test
             return 5;  // pose is not available right now, but not enough time has passed to consider lost, there is still hope :)
         }
     }
+}
+
+
+void KeyframeBuffer::add_new_keyframe(const float pose[4][4], const float image[3][test_image_height][test_image_width]) {
+    const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++)
+        buffer_poses[buffer_end][i][j] = pose[i][j];
+    for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
+        buffer_images[buffer_end][i][j][k] = image[i][j][k];
+    if (buffer_cnt != buffer_size) buffer_cnt++;
 }
 
 

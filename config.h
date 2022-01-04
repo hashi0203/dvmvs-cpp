@@ -108,7 +108,8 @@ public:
         new_4d(buffer_images, buffer_size, 3, test_image_height, test_image_width);
     }
 
-    int try_new_keyframe(const float pose[4][4], float image[3][test_image_height][test_image_width]);
+    int try_new_keyframe(const float pose[4][4]);
+    void add_new_keyframe(const float pose[4][4], const float image[3][test_image_height][test_image_width]);
     int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]);
 
     void close() {
