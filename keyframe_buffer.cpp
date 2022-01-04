@@ -15,13 +15,13 @@ float KeyframeBuffer::calculate_penalty(const float t_score, const float R_score
 }
 
 
-int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float*** image) {
+int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float image[3][test_image_height][test_image_width]) {
     if (is_pose_available(pose)) {
         __tracking_lost_counter = 0;
         const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
         if (buffer_cnt == 0) {
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) buffer_poses[buffer_end][i][j] = pose[i][j];
-            for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
+            for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
                 buffer_images[buffer_end][i][j][k] = image[i][j][k];
             buffer_cnt++;
             return 0;  // pose is available, new frame added but buffer was empty, this is the first frame, no depth map prediction will be done
@@ -35,7 +35,7 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float*** image) {
 
             if (combined_measure >= keyframe_pose_distance) {
                 for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) buffer_poses[buffer_end][i][j] = pose[i][j];
-                for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
+                for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
                     buffer_images[buffer_end][i][j][k] = image[i][j][k];
                 if (buffer_cnt != buffer_size) buffer_cnt++;
                 return 1;  // pose is available, new frame added, everything is perfect, and we will predict a depth map later
@@ -60,7 +60,7 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4][4], float*** image) {
 }
 
 
-int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float**** measurement_images) {
+int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]) {
     float reference_pose[4][4];
     const int buffer_last = (buffer_idx + buffer_cnt - 1) % buffer_size;
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = buffer_poses[buffer_last][i][j];
@@ -84,7 +84,7 @@ int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_m
 
     for (int f = 0; f < n_requested_measurement_frames; f++) {
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses[f][i][j] = buffer_poses[penalties[f].second][i][j];
-        for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
+        for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
             measurement_images[f][i][j][k] = buffer_images[penalties[f].second][i][j][k];
     }
     return n_requested_measurement_frames;

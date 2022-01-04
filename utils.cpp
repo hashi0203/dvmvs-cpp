@@ -19,25 +19,12 @@ void pose_distance(const float reference_pose[4][4], const float measurement_pos
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i][j];
 
     Matrix4f rel_pose = r_pose.inverse() * m_pose;
-
-    // Matrix3f R;
-    // for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) R(i, j) = rel_pose(i, j);
-    // Vector3f t;
-    // for (int i = 0; i < 3; i++) t(i) = rel_pose(i, 3);
-
     Matrix3f R = rel_pose.block(0, 0, 3, 3);
     Vector3f t = rel_pose.block(0, 3, 3, 1);
 
     R_measure = sqrt(2 * (1 - min((float) 3.0, (float) R.trace()) / 3));
     t_measure = t.norm();
     combined_measure = sqrt(t_measure * t_measure + R_measure * R_measure);
-
-    // rel_pose = np.dot(np.linalg.inv(reference_pose), measurement_pose)
-    // R = rel_pose[:3, :3]
-    // t = rel_pose[:3, 3]
-    // R_measure = np.sqrt(2 * (1 - min(3.0, np.matrix.trace(R)) / 3))
-    // t_measure = np.linalg.norm(t)
-    // combined_measure = np.sqrt(t_measure ** 2 + R_measure ** 2)
 }
 
 
@@ -61,12 +48,6 @@ void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][he
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose2(i, j) = ls_pose2[i][j];
 
     Matrix4f extrinsic2 = pose2.inverse() * pose1;
-
-    // Matrix3f R;
-    // for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) R(i, j) = extrinsic2(i, j);
-    // Vector3f t;
-    // for (int i = 0; i < 3; i++) t(i) = extrinsic2(i, 3);
-
     Matrix3f R = extrinsic2.block(0, 0, 3, 3);
     Vector3f t = extrinsic2.block(0, 3, 3, 1);
 

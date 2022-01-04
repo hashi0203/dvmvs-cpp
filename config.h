@@ -105,15 +105,15 @@ class KeyframeBuffer{
 public:
     KeyframeBuffer(){
         new_3d(buffer_poses, buffer_size, 4, 4);
-        new_4d(buffer_images, buffer_size, org_image_height, org_image_width, 3);
+        new_4d(buffer_images, buffer_size, 3, test_image_height, test_image_width);
     }
 
-    int try_new_keyframe(const float pose[4][4], float*** image);
-    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float**** measurement_images);
+    int try_new_keyframe(const float pose[4][4], float image[3][test_image_height][test_image_width]);
+    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]);
 
     void close() {
         delete_3d(buffer_poses, buffer_size, 4, 4);
-        delete_4d(buffer_images, buffer_size, org_image_height, org_image_width, 3);
+        delete_4d(buffer_images, buffer_size, 3, test_image_height, test_image_width);
     }
 
 private:
@@ -121,9 +121,7 @@ private:
     int buffer_idx = 0;
     int buffer_cnt = 0;
     float ***buffer_poses = new float**[test_keyframe_buffer_size];
-    // float buffer_poses[test_keyframe_buffer_size][4][4];
     float ****buffer_images = new float***[test_keyframe_buffer_size];
-    // float buffer_images[test_keyframe_buffer_size][org_image_height][org_image_width][3];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
     const float keyframe_pose_distance = test_keyframe_pose_distance;
