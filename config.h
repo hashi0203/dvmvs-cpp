@@ -131,22 +131,6 @@ private:
 };
 
 // dataset_loader
-void load_image(const string image_filename, float*** reference_image);
+void get_updated_intrinsics(const float K[3][3], float updated_intrinsic[3][3]);
+void load_image(const string image_filename, float reference_image[3][test_image_height][test_image_width]);
 void save_image(const string image_filename, float depth[test_image_height][test_image_width]);
-
-class PreprocessImage{
-public:
-    PreprocessImage(const float K[3][3]) {
-        float factor_x = (float) test_image_width / (float) org_image_width;
-        float factor_y = (float) test_image_height / (float) org_image_height;
-        fx = K[0][0] * factor_x;
-        fy = K[1][1] * factor_y;
-        cx = K[0][2] * factor_x;
-        cy = K[1][2] * factor_y;
-    }
-    void apply_rgb(float*** org_image, float image[3][test_image_height][test_image_width]);
-    void get_updated_intrinsics(float updated_intrinsic[3][3]);
-
-private:
-    float fx, fy, cx, cy;
-};

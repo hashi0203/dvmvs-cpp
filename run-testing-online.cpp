@@ -27,10 +27,8 @@ void predict() {
         }
     }
 
-    PreprocessImage preprocessor(K);
-
     float full_K[3][3];
-    preprocessor.get_updated_intrinsics(full_K);
+    get_updated_intrinsics(K, full_K);
 
     float half_K[3][3];
     for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) half_K[i][j] = full_K[i][j] / 2.0;
@@ -97,13 +95,8 @@ void predict() {
             continue;
         }
 
-        float ***org_reference_image = new float**[3];
-        new_3d(org_reference_image, 3, org_image_height, org_image_width);
-        load_image(image_filenames[f], org_reference_image);
-
         float reference_image[3][test_image_height][test_image_width];
-        preprocessor.apply_rgb(org_reference_image, reference_image);
-        delete_3d(org_reference_image, 3, org_image_height, org_image_width);
+        load_image(image_filenames[f], reference_image);
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_image);
 
