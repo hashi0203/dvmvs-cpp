@@ -50,12 +50,12 @@ void predict() {
     }
 
     // const int n_poses = tmp_poses.size() / 16;
-    float poses[n_test_frames][4][4];
+    float poses[n_test_frames][4 * 4];
     int poses_idx = 0;
     for (int i = 0; i < n_test_frames; i++) {
         for (int j = 0; j < 4; j++) {
             for (int k = 0; k < 4; k++) {
-                poses[i][j][k] = tmp_poses[poses_idx];
+                poses[i][j * 4 + k] = tmp_poses[poses_idx];
                 poses_idx++;
             }
         }
@@ -74,15 +74,15 @@ void predict() {
 
     bool previous_exists = false;
     float previous_depth[test_image_height][test_image_width];
-    float previous_pose[4][4];
+    float previous_pose[4 * 4];
 
     bool state_exists = false;
     float hidden_state[hyper_channels * 16][height_32][width_32];
     float cell_state[hyper_channels * 16][height_32][width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
-        float reference_pose[4][4];
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i][j] = poses[f][i][j];
+        float reference_pose[4 * 4];
+        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
         // POLL THE KEYFRAME BUFFER
         const int response = keyframe_buffer.try_new_keyframe(reference_pose);
@@ -102,7 +102,7 @@ void predict() {
 
         if (response == 0) continue;
 
-        float measurement_poses[test_n_measurement_frames][4][4];
+        float measurement_poses[test_n_measurement_frames][4 * 4];
         float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width];
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, measurement_images);
 
@@ -171,12 +171,12 @@ void predict() {
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
-            previous_pose[i][j] = reference_pose[i][j];
+            previous_pose[i * 4 + j] = reference_pose[i * 4 + j];
         previous_exists = true;
 
-        save_image("./results/" + image_filenames[f].substr(len_image_filedir), prediction);
+        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), prediction);
 
-        ofstream ofs("./results/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        ofstream ofs("./results-hw/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << prediction[i][j] << " ";

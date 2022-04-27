@@ -741,8 +741,8 @@ public:
 
     void forward(const float current_encoding[hyper_channels * 16][height_32][width_32],
                  const bool previous_exists,
-                 const float previous_pose[4][4],
-                 const float current_pose[4][4],
+                 const float previous_pose[4 * 4],
+                 const float current_pose[4 * 4],
                  const float estimated_current_depth[height_32][width_32],
                  const float camera_matrix[3][3],
                  const bool state_exists,

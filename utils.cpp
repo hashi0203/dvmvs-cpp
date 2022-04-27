@@ -7,7 +7,7 @@
 using namespace Eigen;
 
 // GEOMETRIC UTILS
-void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure) {
+void pose_distance(const float reference_pose[4 * 4], const float measurement_pose[4 * 4], float &combined_measure, float &R_measure, float &t_measure) {
     // :param reference_pose: 4x4 numpy array, reference frame camera-to-world pose (not extrinsic matrix!)
     // :param measurement_pose: 4x4 numpy array, measurement frame camera-to-world pose (not extrinsic matrix!)
     // :return combined_measure: float, combined pose distance measure
@@ -15,8 +15,8 @@ void pose_distance(const float reference_pose[4][4], const float measurement_pos
     // :return t_measure: float, translation distance measure
 
     Matrix4f r_pose, m_pose;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i][j];
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i * 4 + j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i * 4 + j];
 
     Matrix4f rel_pose = r_pose.inverse() * m_pose;
     Matrix3f R = rel_pose.block(0, 0, 3, 3);
@@ -37,15 +37,15 @@ void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * heig
 
 void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][height_2][width_2],
                                       const float image2[fpn_output_channels][height_2][width_2],
-                                      const float ls_pose1[4][4],
-                                      const float ls_pose2[4][4],
+                                      const float ls_pose1[4 * 4],
+                                      const float ls_pose2[4 * 4],
                                       const float ls_K[3][3],
                                       const float ls_warp_grid[3][width_2 * height_2],
                                       float cost_volume[n_depth_levels][height_2][width_2]) {
 
     Matrix4f pose1, pose2;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = ls_pose1[i][j];
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose2(i, j) = ls_pose2[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = ls_pose1[i * 4 + j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose2(i, j) = ls_pose2[i * 4 + j];
 
     Matrix4f extrinsic2 = pose2.inverse() * pose1;
     Matrix3f R = extrinsic2.block(0, 0, 3, 3);
@@ -108,8 +108,8 @@ void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][he
 
 void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_2],
                         const float image2s[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
-                        const float pose1[4][4],
-                        const float pose2s[test_n_measurement_frames][4][4],
+                        const float pose1[4 * 4],
+                        const float pose2s[test_n_measurement_frames][4 * 4],
                         const float K[3][3],
                         const float warp_grid[3][width_2 * height_2],
                         const int n_measurement_frames,
@@ -131,8 +131,8 @@ void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_
 }
 
 
-void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4][4],
-                                                       const float measurement_pose[4][4],
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4 * 4],
+                                                       const float measurement_pose[4 * 4],
                                                        const float previous_depth[test_image_height][test_image_width],
                                                        const float full_K[3][3],
                                                        const float half_K[3][3],
@@ -142,8 +142,8 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
     const int half_width = test_image_width / 2;
 
     Matrix4f r_pose, m_pose;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i][j];
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i][j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i * 4 + j];
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i * 4 + j];
 
     Matrix4f trans = r_pose.inverse() * m_pose;
 
@@ -222,7 +222,7 @@ void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width
 }
 
 
-bool is_pose_available(const float pose[4][4]) {
+bool is_pose_available(const float pose[4 * 4]) {
     // is_nan = np.isnan(pose).any()
     // is_inf = np.isinf(pose).any()
     // is_neg_inf = np.isneginf(pose).any()

@@ -77,18 +77,18 @@ const int channels_5 = 320;
 
 
 // utils
-void pose_distance(const float reference_pose[4][4], const float measurement_pose[4][4], float &combined_measure, float &R_measure, float &t_measure);
+void pose_distance(const float reference_pose[4 * 4], const float measurement_pose[4 * 4], float &combined_measure, float &R_measure, float &t_measure);
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * height_2]);
 void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_2],
                         const float image2s[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
-                        const float pose1[4][4],
-                        const float pose2s[test_n_measurement_frames][4][4],
+                        const float pose1[4 * 4],
+                        const float pose2s[test_n_measurement_frames][4 * 4],
                         const float K[3][3],
                         const float warp_grid[3][width_2 * height_2],
                         const int n_measurement_frames,
                         float fused_cost_volume[n_depth_levels][height_2][width_2]);
-void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4][4],
-                                                       const float measurement_pose[4][4],
+void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4 * 4],
+                                                       const float measurement_pose[4 * 4],
                                                        const float previous_depth[test_image_height][test_image_width],
                                                        const float full_K[3][3],
                                                        const float half_K[3][3],
@@ -98,22 +98,22 @@ void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width
                      const float trans[4][4],
                      const float camera_matrix[3][3],
                      float image_dst[hyper_channels * 16][height_32][width_32]);
-bool is_pose_available(const float pose[4][4]);
+bool is_pose_available(const float pose[4 * 4]);
 
 // keyframe_buffer
 class KeyframeBuffer{
 public:
     KeyframeBuffer(){
-        new_3d(buffer_poses, buffer_size, 4, 4);
+        new_2d(buffer_poses, buffer_size, 4 * 4);
         new_4d(buffer_images, buffer_size, 3, test_image_height, test_image_width);
     }
 
-    int try_new_keyframe(const float pose[4][4]);
-    void add_new_keyframe(const float pose[4][4], const float image[3][test_image_height][test_image_width]);
-    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4][4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]);
+    int try_new_keyframe(const float pose[4 * 4]);
+    void add_new_keyframe(const float pose[4 * 4], const float image[3][test_image_height][test_image_width]);
+    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]);
 
     void close() {
-        delete_3d(buffer_poses, buffer_size, 4, 4);
+        delete_2d(buffer_poses, buffer_size, 4 * 4);
         delete_4d(buffer_images, buffer_size, 3, test_image_height, test_image_width);
     }
 
@@ -121,7 +121,7 @@ private:
     const int buffer_size = test_keyframe_buffer_size;
     int buffer_idx = 0;
     int buffer_cnt = 0;
-    float ***buffer_poses = new float**[test_keyframe_buffer_size];
+    float **buffer_poses = new float*[test_keyframe_buffer_size];
     float ****buffer_images = new float***[test_keyframe_buffer_size];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
