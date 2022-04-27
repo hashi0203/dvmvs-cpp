@@ -743,28 +743,15 @@ public:
     LSTMFusion(const string param_path) : param_path(param_path) {}
 
     void forward(const float current_encoding[hyper_channels * 16][height_32][width_32],
-                 const bool previous_exists,
-                 const float previous_pose[4 * 4],
-                 const float current_pose[4 * 4],
-                 const float estimated_current_depth[height_32][width_32],
-                 const float camera_matrix[3][3],
-                 const bool state_exists,
                  float hidden_state[hyper_channels * 16][height_32][width_32],
                  float cell_state[hyper_channels * 16][height_32][width_32]) {
 
         const int in_channels = hyper_channels * 16;
         const int hid_channels = hyper_channels * 16;
 
-        if (!state_exists) {
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                hidden_state[i][j][k] = 0;
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                cell_state[i][j][k] = 0;
-        }
-
         const int kernel_size = 3;
         MVSLayernormConvLSTMCell<in_channels, hid_channels, height_32, width_32, kernel_size> lstm_cell(param_path + "/lstm_cell");
-        lstm_cell.forward(current_encoding, previous_exists, previous_pose, current_pose, estimated_current_depth, camera_matrix, hidden_state, cell_state);
+        lstm_cell.forward(current_encoding, hidden_state, cell_state);
     }
 
 private:

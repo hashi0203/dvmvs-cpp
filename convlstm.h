@@ -12,32 +12,11 @@ public:
     MVSLayernormConvLSTMCell(const string param_path) : param_path(param_path) {}
 
     void forward(const float input[in_channels][height][width],
-                 const bool previous_exists,
-                 const float previous_pose[4 * 4],
-                 const float current_pose[4 * 4],
-                 const float estimated_current_depth[height][width],
-                 const float camera_matrix[3][3],
                  float hidden_state[hid_channels][height][width],
                  float cell_state[hid_channels][height][width]) {
 
         const int l0_in_channels = in_channels + hid_channels;
         const int l0_out_channels = 4 * hid_channels;
-
-        if (previous_exists) {
-            Matrix4f p_pose, c_pose;
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) p_pose(i, j) = previous_pose[i * 4 + j];
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) c_pose(i, j) = current_pose[i * 4 + j];
-
-            Matrix4f transformation = p_pose.inverse() * c_pose;
-            float trans[4][4];
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) trans[i][j] = transformation(i, j);
-
-            float tmp_hidden_state[hid_channels][height][width];
-            warp_from_depth(hidden_state, estimated_current_depth, trans, camera_matrix, tmp_hidden_state);
-
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
-                hidden_state[i][j][k] = (estimated_current_depth[j][k] <= 0.01) ? 0.0 : tmp_hidden_state[i][j][k];
-        }
 
         float combined[l0_in_channels][height][width];
         for (int i = 0; i < in_channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
