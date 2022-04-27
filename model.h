@@ -166,7 +166,7 @@ class FeatureExtractor{
 public:
     FeatureExtractor(const string param_path) : param_path(param_path) {}
 
-    void forward(const float x[3][test_image_height][test_image_width],
+    void forward(const float x[3 * test_image_height * test_image_width],
                  float layer1[channels_1][height_2][width_2],
                  float layer2[channels_2][height_4][width_4],
                  float layer3[channels_3][height_8][width_8],
@@ -284,9 +284,12 @@ public:
         const int l13_out_width = stack_out_size(l12_out_width, l13_kernel_size, l13_stride);
         _stack<l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats> l13_stack(param_path + "/layer5.1");
 
+        float x0[3][test_image_height][test_image_width];
+        for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
+            x0[i][j][k] = x[(i * test_image_height + j) * test_image_width + k];
 
         float y0[l0_out_channels][l0_out_height][l0_out_width];
-        l0_conv.forward(x, y0);
+        l0_conv.forward(x0, y0);
 
         // float y1[l1_out_channels][l1_out_height][l1_out_width];
         l1_bn.forward(y0, y0);
@@ -585,7 +588,7 @@ class CostVolumeDecoder{
 public:
     CostVolumeDecoder(const string param_path) : param_path(param_path) {}
 
-    void forward(const float image[3][test_image_height][test_image_width],
+    void forward(const float image[3 * test_image_height * test_image_width],
                  const float skip0[hyper_channels][height_2][width_2],
                  const float skip1[hyper_channels * 2][height_4][width_4],
                  const float skip2[hyper_channels * 4][height_8][width_8],
@@ -703,7 +706,7 @@ public:
         for (int j = 0; j < l4_in_height; j++) for (int k = 0; k < l4_in_width; k++)
             scaled_combined[l3_out_channels][j][k] = scaled_depth[0][j][k];
         for (int i = 0; i < 3; i++) for (int j = 0; j < l4_in_height; j++) for (int k = 0; k < l4_in_width; k++)
-            scaled_combined[i+l3_out_channels+1][j][k] = image[i][j][k];
+            scaled_combined[i+l3_out_channels+1][j][k] = image[(i * test_image_height + j) * test_image_width + k];
 
         const int l4_kernel_size = 5;
         const int l4_stride = 1;

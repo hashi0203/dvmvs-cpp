@@ -25,7 +25,7 @@ void apply_rgb(float*** org_image, float image[3][test_image_height][test_image_
 }
 
 
-void load_image(const string image_filename, float reference_image[3][test_image_height][test_image_width]) {
+void load_image(const string image_filename, float reference_image[3 * test_image_height * test_image_width]) {
     cv::Mat bgr = cv::imread(image_filename, -1);
     cv::Mat rgb;
     cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
@@ -35,8 +35,12 @@ void load_image(const string image_filename, float reference_image[3][test_image
     for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
         org_reference_image[k][i][j] = rgb.data[540*3*i + 3*j + k];
 
-    apply_rgb(org_reference_image, reference_image);
+    float image[3][test_image_height][test_image_width];
+    apply_rgb(org_reference_image, image);
     delete_3d(org_reference_image, 3, org_image_height, org_image_width);
+
+    for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
+        reference_image[(i * test_image_height + j) * test_image_width + k] = image[i][j][k];
 }
 
 

@@ -95,7 +95,7 @@ void predict() {
             continue;
         }
 
-        float reference_image[3][test_image_height][test_image_width];
+        float reference_image[3 * test_image_height * test_image_width];
         load_image(image_filenames[f], reference_image);
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_image);
@@ -103,7 +103,7 @@ void predict() {
         if (response == 0) continue;
 
         float measurement_poses[test_n_measurement_frames][4 * 4];
-        float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width];
+        float measurement_images[test_n_measurement_frames][3 * test_image_height * test_image_width];
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, measurement_images);
 
         FeatureExtractor feature_extractor("params/0_feature_extractor");

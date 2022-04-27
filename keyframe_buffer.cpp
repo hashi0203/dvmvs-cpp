@@ -50,17 +50,17 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4 * 4]) {
 }
 
 
-void KeyframeBuffer::add_new_keyframe(const float pose[4 * 4], const float image[3][test_image_height][test_image_width]) {
+void KeyframeBuffer::add_new_keyframe(const float pose[4 * 4], const float image[3 * test_image_height * test_image_width]) {
     const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++)
         buffer_poses[buffer_end][i * 4 + j] = pose[i * 4 + j];
     for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
-        buffer_images[buffer_end][i][j][k] = image[i][j][k];
+        buffer_images[buffer_end][(i * test_image_height + j) * test_image_width + k] = image[(i * test_image_height + j) * test_image_width + k];
     if (buffer_cnt != buffer_size) buffer_cnt++;
 }
 
 
-int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_images[test_n_measurement_frames][3][test_image_height][test_image_width]) {
+int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_images[test_n_measurement_frames][3 * test_image_height * test_image_width]) {
     float reference_pose[4 * 4];
     const int buffer_last = (buffer_idx + buffer_cnt - 1) % buffer_size;
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = buffer_poses[buffer_last][i * 4 + j];
@@ -85,7 +85,7 @@ int KeyframeBuffer::get_best_measurement_frames(float measurement_poses[test_n_m
     for (int f = 0; f < n_requested_measurement_frames; f++) {
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses[f][i * 4 + j] = buffer_poses[penalties[f].second][i * 4 + j];
         for (int i = 0; i < 3; i++) for (int j = 0; j < test_image_height; j++) for (int k = 0; k < test_image_width; k++)
-            measurement_images[f][i][j][k] = buffer_images[penalties[f].second][i][j][k];
+            measurement_images[f][(i * test_image_height + j) * test_image_width + k] = buffer_images[penalties[f].second][(i * test_image_height + j) * test_image_width + k];
     }
     return n_requested_measurement_frames;
 }
