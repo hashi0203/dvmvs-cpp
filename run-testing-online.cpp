@@ -1,6 +1,27 @@
 #include "config.h"
 #include "model.h"
 
+void read_params(const string dirname, const int n_files, float* params, unordered_map<string, int>& mp) {
+    ifstream fv("params/" + dirname + "_values");
+    int n_params[n_files];
+    fv.read((char*) n_params, sizeof(int) * n_files);
+    int end_idx[n_files];
+    end_idx[0] = n_params[0];
+    for (int i = 1; i < n_files; i++) {
+        end_idx[i] = end_idx[i-1] + n_params[i];
+    }
+
+    ifstream fk("params/" + dirname + "_keys");
+    for (int i = 0; i < n_files; i++) {
+        string filename;
+        getline(fk, filename);
+        mp[filename] = end_idx[i];
+    }
+
+    ifstream fp("params/" + dirname + "_params");
+    fp.read((char*) params, sizeof(float) * end_idx[n_files-1]);
+}
+
 void predict(const float reference_image[3 * test_image_height * test_image_width],
              const float reference_pose[4 * 4],
              const int n_measurement_frames,
@@ -12,6 +33,24 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              float cell_state[hyper_channels * 16][height_32][width_32],
              float reference_feature_half[fpn_output_channels][height_2][width_2],
              float prediction[test_image_height][test_image_width]) {
+
+    float *params0 = new float[2725512];
+    float *params1 = new float[62272];
+    float *params2 = new float[8990848];
+    float *params3 = new float[18874368];
+    float *params4 = new float[4066277];
+
+    unordered_map<string, int> mp0;
+    unordered_map<string, int> mp1;
+    unordered_map<string, int> mp2;
+    unordered_map<string, int> mp3;
+    unordered_map<string, int> mp4;
+
+    read_params("0_feature_extractor", 255, params0, mp0);
+    read_params("1_feature_pyramid", 20, params1, mp1);
+    read_params("2_encoder", 80, params2, mp2);
+    read_params("3_lstm_fusion", 1, params3, mp3);
+    read_params("4_decoder", 80, params4, mp4);
 
     FeatureExtractor feature_extractor("params/0_feature_extractor");
     float layer1[channels_1][height_2][width_2];
@@ -197,6 +236,7 @@ int main() {
         float prediction[test_image_height][test_image_width];
         predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_feature_halfs,
                 half_K, warp_grid, hidden_state, cell_state, reference_feature_half, prediction);
+        return 0;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
