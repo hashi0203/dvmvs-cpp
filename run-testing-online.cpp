@@ -5,12 +5,14 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              const float reference_pose[4 * 4],
              const int n_measurement_frames,
              const float measurement_poses[test_n_measurement_frames][4 * 4],
-             const float measurement_images[test_n_measurement_frames][3 * test_image_height * test_image_width],
+             const float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
              const float half_K[3][3],
              const float warp_grid[3][width_2 * height_2],
              float hidden_state[hyper_channels * 16][height_32][width_32],
              float cell_state[hyper_channels * 16][height_32][width_32],
+             float reference_feature_half[fpn_output_channels][height_2][width_2],
              float prediction[test_image_height][test_image_width]) {
+
     FeatureExtractor feature_extractor("params/0_feature_extractor");
     float layer1[channels_1][height_2][width_2];
     float layer2[channels_2][height_4][width_4];
@@ -19,22 +21,13 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float layer5[channels_5][height_32][width_32];
 
     FeatureShrinker feature_shrinker("params/1_feature_pyramid");
-    float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2];
-    float measurement_feature_quarter[fpn_output_channels][height_4][width_4];
-    float measurement_feature_one_eight[fpn_output_channels][height_8][width_8];
-    float measurement_feature_one_sixteen[fpn_output_channels][height_16][width_16];
-
-    for (int m = 0; m < n_measurement_frames; m++) {
-        feature_extractor.forward(measurement_images[m], layer1, layer2, layer3, layer4, layer5);
-        feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, measurement_feature_halfs[m], measurement_feature_quarter, measurement_feature_one_eight, measurement_feature_one_sixteen);
-    }
-
-    float reference_feature_half[fpn_output_channels][height_2][width_2];
     float reference_feature_quarter[fpn_output_channels][height_4][width_4];
     float reference_feature_one_eight[fpn_output_channels][height_8][width_8];
     float reference_feature_one_sixteen[fpn_output_channels][height_16][width_16];
     feature_extractor.forward(reference_image, layer1, layer2, layer3, layer4, layer5);
     feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+
+    if (n_measurement_frames == 0) return;
 
     float cost_volume[n_depth_levels][height_2][width_2];
     cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose, measurement_poses, half_K, warp_grid, n_measurement_frames, cost_volume);
@@ -53,6 +46,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     CostVolumeDecoder cost_volume_decoder("params/4_decoder");
     cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
+
     // if (f == 6) {
     //     printvi(prediction[10], test_image_width);
     // }
@@ -158,13 +152,9 @@ int main() {
         float reference_image[3 * test_image_height * test_image_width];
         load_image(image_filenames[f], reference_image);
 
-        keyframe_buffer.add_new_keyframe(reference_pose, reference_image);
-
-        if (response == 0) continue;
-
         float measurement_poses[test_n_measurement_frames][4 * 4];
-        float measurement_images[test_n_measurement_frames][3 * test_image_height * test_image_width];
-        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(measurement_poses, measurement_images);
+        float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2];
+        const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(reference_pose, measurement_poses, measurement_feature_halfs);
 
         // prepare depth_estimation
         float depth_estimation[1][height_32][width_32];
@@ -203,9 +193,13 @@ int main() {
                 hidden_state[i][j][k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : tmp_hidden_state[i][j][k];
         }
 
+        float reference_feature_half[fpn_output_channels][height_2][width_2];
         float prediction[test_image_height][test_image_width];
-        predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_images,
-                half_K, warp_grid, hidden_state, cell_state, prediction);
+        predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_feature_halfs,
+                half_K, warp_grid, hidden_state, cell_state, reference_feature_half, prediction);
+
+        keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
+        if (response == 0) continue;
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];

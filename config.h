@@ -105,16 +105,16 @@ class KeyframeBuffer{
 public:
     KeyframeBuffer(){
         new_2d(buffer_poses, buffer_size, 4 * 4);
-        new_2d(buffer_images, buffer_size, 3 * test_image_height * test_image_width);
+        new_4d(buffer_feature_halfs, buffer_size, fpn_output_channels, height_2, width_2);
     }
 
     int try_new_keyframe(const float pose[4 * 4]);
-    void add_new_keyframe(const float pose[4 * 4], const float image[3 * test_image_height * test_image_width]);
-    int get_best_measurement_frames(float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_images[test_n_measurement_frames][3 * test_image_height * test_image_width]);
+    void add_new_keyframe(const float pose[4 * 4], const float feature_half[fpn_output_channels][height_2][width_2]);
+    int get_best_measurement_frames(const float reference_pose[4 * 4], float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2]);
 
     void close() {
         delete_2d(buffer_poses, buffer_size, 4 * 4);
-        delete_2d(buffer_images, buffer_size, 3 * test_image_height * test_image_width);
+        delete_4d(buffer_feature_halfs, buffer_size, fpn_output_channels, height_2, width_2);
     }
 
 private:
@@ -122,7 +122,7 @@ private:
     int buffer_idx = 0;
     int buffer_cnt = 0;
     float **buffer_poses = new float*[test_keyframe_buffer_size];
-    float **buffer_images = new float*[test_keyframe_buffer_size];
+    float ****buffer_feature_halfs = new float***[test_keyframe_buffer_size];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
     const float keyframe_pose_distance = test_keyframe_pose_distance;
