@@ -22,7 +22,7 @@ public:
         new_4d(weight, out_channels, in_channels / groups, kernel_size, kernel_size);
         // load parameters
         ifstream ifs;
-        ifs  = open_file(param_path + ".weight");
+        ifs = open_file(param_path + ".weight");
         for (int i = 0; i < out_channels; i++)  for (int j = 0; j < in_channels / groups; j++) for (int k = 0; k < kernel_size; k++)
             ifs.read((char*) weight[i][j][k], sizeof(float) * kernel_size);
 
