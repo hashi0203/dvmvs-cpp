@@ -43,13 +43,13 @@ void read_params(const string dirname, const int n_files, float* params, unorder
 void predict(const float reference_image[3 * test_image_height * test_image_width],
              const float reference_pose[4 * 4],
              const int n_measurement_frames,
-             const float measurement_poses[test_n_measurement_frames][4 * 4],
-             const float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
+             const float measurement_poses[test_n_measurement_frames * 4 * 4],
+             const float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
              const float half_K[3][3],
              const float warp_grid[3][width_2 * height_2],
              float hidden_state[hyper_channels * 16][height_32][width_32],
              float cell_state[hyper_channels * 16][height_32][width_32],
-             float reference_feature_half[fpn_output_channels][height_2][width_2],
+             float reference_feature_half[fpn_output_channels * height_2 * width_2],
              float prediction[test_image_height][test_image_width]) {
 
     float layer1[channels_1 * height_2 * width_2];
@@ -61,11 +61,25 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     mp = mp0;
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
 
+    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
+    //     // ofs5 << layer5[idx] << "\n";
+    //     ofs5.write((char*) &layer5[idx], sizeof(float));
+    // ofs5.close();
+
     // FeatureShrinker feature_shrinker("params/1_feature_pyramid");
-    // float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    // float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    // float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    params = params1;
+    mp = mp1;
+    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+
+    // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+    //     // ofsf << reference_feature_half[idx] << "\n";
+    //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
+    // ofsf.close();
 
     if (n_measurement_frames == 0) return;
 
@@ -199,8 +213,8 @@ int main() {
         float reference_image[3 * test_image_height * test_image_width];
         load_image(image_filenames[f], reference_image);
 
-        float measurement_poses[test_n_measurement_frames][4 * 4];
-        float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2];
+        float measurement_poses[test_n_measurement_frames * 4 * 4];
+        float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2];
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(reference_pose, measurement_poses, measurement_feature_halfs);
 
         // prepare depth_estimation
@@ -240,7 +254,7 @@ int main() {
                 hidden_state[i][j][k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : tmp_hidden_state[i][j][k];
         }
 
-        float reference_feature_half[fpn_output_channels][height_2][width_2];
+        float reference_feature_half[fpn_output_channels * height_2 * width_2];
         float prediction[test_image_height][test_image_width];
         predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_feature_halfs,
                 half_K, warp_grid, hidden_state, cell_state, reference_feature_half, prediction);

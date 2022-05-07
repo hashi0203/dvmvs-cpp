@@ -292,6 +292,85 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
 }
 
 
+void FeatureShrinker(const float layer1[channels_1 * height_2 * width_2],
+                    const float layer2[channels_2 * height_4 * width_4],
+                    const float layer3[channels_3 * height_8 * width_8],
+                    const float layer4[channels_4 * height_16 * width_16],
+                    const float layer5[channels_5 * height_32 * width_32],
+                    float features_half[fpn_output_channels * height_2 * width_2],
+                    float features_quarter[fpn_output_channels * height_4 * width_4],
+                    float features_one_eight[fpn_output_channels * height_8 * width_8],
+                    float features_one_sixteen[fpn_output_channels * height_16 * width_16]) {
+
+    // Module that adds a FPN from on top of a set of feature maps. This is based on
+    // `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.
+    // The feature maps are currently supposed to be in increasing depth order.
+    // The input to the model is expected to be an OrderedDict[Tensor], containing
+    // the feature maps on top of which the FPN will be added.
+
+    const int stride = 1;
+    const int groups = 1;
+    const bool apply_bias = true;
+
+    const int inner_kernel_size = 1;
+    const int inner_padding = 0;
+    const int layer_kernel_size = 3;
+    const int layer_padding = 1;
+
+    // layer5
+    float inner5[fpn_output_channels * height_32 * width_32];
+    Conv2d(layer5, inner5, "fpn.inner_blocks.4", channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_bias);
+
+
+    // layer4
+    float inner4[fpn_output_channels * height_16 * width_16];
+    Conv2d(layer4, inner4, "fpn.inner_blocks.3", channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_bias);
+
+    float top_down4[fpn_output_channels * height_16 * width_16];
+    interpolate(inner5, top_down4, "nearest", fpn_output_channels, height_32, width_32, height_16, width_16);
+    for (int idx = 0; idx < fpn_output_channels * height_16 * width_16; idx++)
+        inner4[idx] += top_down4[idx];
+
+    Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_bias);
+
+
+    // layer3
+    float inner3[fpn_output_channels * height_8 * width_8];
+    Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_bias);
+
+    float top_down3[fpn_output_channels * height_8 * width_8];
+    interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
+    for (int idx = 0; idx < fpn_output_channels * height_8 * width_8; idx++)
+        inner3[idx] += top_down3[idx];
+
+    Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_bias);
+
+
+    // layer2
+    float inner2[fpn_output_channels * height_4 * width_4];
+    Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_bias);
+
+    float top_down2[fpn_output_channels * height_4 * width_4];
+    interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
+    for (int idx = 0; idx < fpn_output_channels * height_4 * width_4; idx++)
+        inner2[idx] += top_down2[idx];
+
+    Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_bias);
+
+
+    // layer1
+    float inner1[fpn_output_channels * height_2 * width_2];
+    Conv2d(layer1, inner1, "fpn.inner_blocks.0", channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_bias);
+
+    float top_down1[fpn_output_channels * height_2 * width_2];
+    interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2);
+    for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+        inner1[idx] += top_down1[idx];
+
+    Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_bias);
+}
+
+
 // class FeatureShrinker{
 // // Module that adds a FPN from on top of a set of feature maps. This is based on
 // // `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.

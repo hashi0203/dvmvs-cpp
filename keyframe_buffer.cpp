@@ -23,7 +23,7 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4 * 4]) {
         } else {
             float last_pose[4 * 4];
             const int buffer_last = (buffer_idx + buffer_cnt - 1) % buffer_size;
-            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) last_pose[i * 4 + j] = buffer_poses[buffer_last][i * 4 + j];
+            for (int idx = 0; idx < 4 * 4; idx++) last_pose[idx] = buffer_poses[buffer_last][idx];
 
             float combined_measure, R_measure, t_measure;
             pose_distance(pose, last_pose, combined_measure, R_measure, t_measure);
@@ -50,17 +50,17 @@ int KeyframeBuffer::try_new_keyframe(const float pose[4 * 4]) {
 }
 
 
-void KeyframeBuffer::add_new_keyframe(const float pose[4 * 4], const float feature_half[fpn_output_channels][height_2][width_2]) {
+void KeyframeBuffer::add_new_keyframe(const float pose[4 * 4], const float feature_half[fpn_output_channels * height_2 * width_2]) {
     const int buffer_end = (buffer_idx + buffer_cnt) % buffer_size;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++)
-        buffer_poses[buffer_end][i * 4 + j] = pose[i * 4 + j];
-    for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-        buffer_feature_halfs[buffer_end][i][j][k] = feature_half[i][j][k];
+    for (int idx = 0; idx < 4 * 4; idx++)
+        buffer_poses[buffer_end][idx] = pose[idx];
+    for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+        buffer_feature_halfs[buffer_end][idx] = feature_half[idx];
     if (buffer_cnt != buffer_size) buffer_cnt++;
 }
 
 
-int KeyframeBuffer::get_best_measurement_frames(const float reference_pose[4 * 4], float measurement_poses[test_n_measurement_frames][4 * 4], float measurement_feature_halfs[test_n_measurement_frames][fpn_output_channels][height_2][width_2]) {
+int KeyframeBuffer::get_best_measurement_frames(const float reference_pose[4 * 4], float measurement_poses[test_n_measurement_frames * 4 * 4], float measurement_feature_halfs[test_keyframe_buffer_size * fpn_output_channels * height_2 * width_2]) {
     // float reference_pose[4 * 4];
     // const int buffer_last = (buffer_idx + buffer_cnt - 1) % buffer_size;
     // for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = buffer_poses[buffer_last][i * 4 + j];
@@ -73,7 +73,7 @@ int KeyframeBuffer::get_best_measurement_frames(const float reference_pose[4 * 4
     for (int bi = 0; bi < buffer_cnt; bi++) {
         const int b = (bi + buffer_idx) % buffer_size;
         float measurement_pose[4 * 4];
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_pose[i * 4 + j] = buffer_poses[b][i * 4 + j];
+        for (int idx = 0; idx < 4 * 4; idx++) measurement_pose[idx] = buffer_poses[b][idx];
 
         float combined_measure, R_measure, t_measure;
         pose_distance(reference_pose, measurement_pose, combined_measure, R_measure, t_measure);
@@ -85,9 +85,9 @@ int KeyframeBuffer::get_best_measurement_frames(const float reference_pose[4 * 4
     // indices = np.argpartition(penalties, n_requested_measurement_frames - 1)[:n_requested_measurement_frames]
 
     for (int f = 0; f < n_requested_measurement_frames; f++) {
-        for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) measurement_poses[f][i * 4 + j] = buffer_poses[penalties[f].second][i * 4 + j];
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-            measurement_feature_halfs[f][i][j][k] = buffer_feature_halfs[penalties[f].second][i][j][k];
+        for (int idx = 0; idx < 4 * 4; idx++) measurement_poses[f * 4 * 4 + idx] = buffer_poses[penalties[f].second][4 * 4 + idx];
+        for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+            measurement_feature_halfs[f * fpn_output_channels * height_2 * width_2 + idx] = buffer_feature_halfs[penalties[f].second][fpn_output_channels * height_2 * width_2 + idx];
     }
     return n_requested_measurement_frames;
 }
