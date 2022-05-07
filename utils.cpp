@@ -35,98 +35,45 @@ void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * heig
 }
 
 
-void calculate_cost_volume_by_warping(const float image1[fpn_output_channels][height_2][width_2],
-                                      const float image2[fpn_output_channels][height_2][width_2],
-                                      const float ls_pose1[4 * 4],
-                                      const float ls_pose2[4 * 4],
-                                      const float ls_K[3][3],
-                                      const float ls_warp_grid[3][width_2 * height_2],
-                                      float cost_volume[n_depth_levels][height_2][width_2]) {
+void calculate_cost_volume_by_warping(const float image1[fpn_output_channels * height_2 * width_2],
+                                      const float* image2,
+                                      const float* warping,
+                                      float cost_volume[n_depth_levels * height_2 * width_2]) {
 
-    Matrix4f pose1, pose2;
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = ls_pose1[i * 4 + j];
-    for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose2(i, j) = ls_pose2[i * 4 + j];
-
-    Matrix4f extrinsic2 = pose2.inverse() * pose1;
-    Matrix3f R = extrinsic2.block(0, 0, 3, 3);
-    Vector3f t = extrinsic2.block(0, 3, 3, 1);
-
-    Matrix3f K;
-    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) K(i, j) = ls_K[i][j];
-    MatrixXf warp_grid(3, width_2 * height_2);
-    for (int i = 0; i < 3; i++) for (int j = 0; j < width_2 * height_2; j++) warp_grid(i, j) = ls_warp_grid[i][j];
-
-    Vector3f _Kt = K * t;
-    Matrix3f K_R_Kinv = K * R * K.inverse();
-    MatrixXf K_R_Kinv_UV(3, width_2 * height_2);
-    K_R_Kinv_UV = K_R_Kinv * warp_grid;
-
-    MatrixXf Kt(3, width_2 * height_2);
-    for (int i = 0; i < width_2 * height_2; i++) Kt.block(0, i, 3, 1) = _Kt;
-
-    const float inverse_depth_base = 1.0 / max_depth;
-    const float inverse_depth_step = (1.0 / min_depth - 1.0 / max_depth) / (n_depth_levels - 1);
-
-    const float width_normalizer = width_2 / 2.0;
-    const float height_normalizer = height_2 / 2.0;
-
-    for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-        cost_volume[depth_i][j][k] = 0;
+    for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+        cost_volume[idx] = 0;
 
     for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) {
-        const float this_depth = 1.0 / (inverse_depth_base + depth_i * inverse_depth_step);
+        float warped_image2[fpn_output_channels * height_2 * width_2];
+        grid_sample(image2, warping + depth_i * (height_2 * width_2 * 2), warped_image2, fpn_output_channels, height_2, width_2);
 
-        MatrixXf _warping(width_2 * height_2, 3);
-        _warping = (K_R_Kinv_UV + (Kt / this_depth)).transpose();
-
-        MatrixXf _warping0(width_2 * height_2, 2);
-        VectorXf _warping1(width_2 * height_2);
-        _warping0 = _warping.block(0, 0, width_2 * height_2, 2);
-        _warping1 = _warping.block(0, 2, width_2 * height_2, 1).array() + 1e-8f;
-
-        _warping0.block(0, 0, width_2 * height_2, 1).array() /= _warping1.array();
-        _warping0.block(0, 0, width_2 * height_2, 1).array() -= width_normalizer;
-        _warping0.block(0, 0, width_2 * height_2, 1).array() /= width_normalizer;
-
-        _warping0.block(0, 1, width_2 * height_2, 1).array() /= _warping1.array();
-        _warping0.block(0, 1, width_2 * height_2, 1).array() -= height_normalizer;
-        _warping0.block(0, 1, width_2 * height_2, 1).array() /= height_normalizer;
-
-        float warping[height_2][width_2][2];
-        for (int i = 0; i < height_2; i++) for (int j = 0; j < width_2; j++) for (int k = 0; k < 2; k++)
-            warping[i][j][k] = _warping0(width_2 * i + j, k);
-
-        float warped_image2[fpn_output_channels][height_2][width_2];
-        grid_sample<fpn_output_channels, height_2, width_2>(image2, warping, warped_image2);
-
-        for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-            cost_volume[depth_i][j][k] += (image1[i][j][k] * warped_image2[i][j][k]) / fpn_output_channels;
+        for (int i = 0; i < fpn_output_channels; i++) for (int idx = 0; idx < height_2 * width_2; idx++)
+            cost_volume[depth_i * (height_2 * width_2) + idx] += (image1[i * (height_2 * width_2) + idx] * warped_image2[i * (height_2 * width_2) + idx]) / fpn_output_channels;
 
     }
 }
 
 
-void cost_volume_fusion(const float image1[fpn_output_channels][height_2][width_2],
-                        const float image2s[test_n_measurement_frames][fpn_output_channels][height_2][width_2],
-                        const float pose1[4 * 4],
-                        const float pose2s[test_n_measurement_frames][4 * 4],
-                        const float K[3][3],
-                        const float warp_grid[3][width_2 * height_2],
+void cost_volume_fusion(const float image1[fpn_output_channels * height_2 * width_2],
                         const int n_measurement_frames,
-                        float fused_cost_volume[n_depth_levels][height_2][width_2]) {
+                        const float image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
+                        const float* warpings,
+                        float fused_cost_volume[n_depth_levels * height_2 * width_2]) {
 
-    for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-        fused_cost_volume[depth_i][j][k] = 0;
+    for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+        fused_cost_volume[idx] = 0;
 
     for (int m = 0; m < n_measurement_frames; m++) {
-        float cost_volume[n_depth_levels][height_2][width_2];
-        calculate_cost_volume_by_warping(image1, image2s[m], pose1, pose2s[m], K, warp_grid, cost_volume);
-        for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-            fused_cost_volume[depth_i][j][k] += cost_volume[depth_i][j][k];
+        float cost_volume[n_depth_levels * height_2 * width_2];
+        const float* image2 = image2s + m * (fpn_output_channels * height_2 * width_2);
+        const float* warping = warpings + m * (n_depth_levels * height_2 * width_2 * 2);
+        calculate_cost_volume_by_warping(image1, image2, warping, cost_volume);
+        for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+            fused_cost_volume[idx] += cost_volume[idx];
     }
 
-    for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) for (int j = 0; j < height_2; j++) for (int k = 0; k < width_2; k++)
-        fused_cost_volume[depth_i][j][k] /= n_measurement_frames;
+    for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+        fused_cost_volume[idx] /= n_measurement_frames;
 
 }
 

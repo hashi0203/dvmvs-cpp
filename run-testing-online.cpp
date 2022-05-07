@@ -41,12 +41,9 @@ void read_params(const string dirname, const int n_files, float* params, unorder
 }
 
 void predict(const float reference_image[3 * test_image_height * test_image_width],
-             const float reference_pose[4 * 4],
              const int n_measurement_frames,
-             const float measurement_poses[test_n_measurement_frames * 4 * 4],
              const float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
-             const float half_K[3][3],
-             const float warp_grid[3][width_2 * height_2],
+             const float* warpings,
              float hidden_state[hyper_channels * 16][height_32][width_32],
              float cell_state[hyper_channels * 16][height_32][width_32],
              float reference_feature_half[fpn_output_channels * height_2 * width_2],
@@ -61,11 +58,11 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     mp = mp0;
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
 
-    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
-    // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-    //     // ofs5 << layer5[idx] << "\n";
-    //     ofs5.write((char*) &layer5[idx], sizeof(float));
-    // ofs5.close();
+    ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
+        // ofs5 << layer5[idx] << "\n";
+        ofs5.write((char*) &layer5[idx], sizeof(float));
+    ofs5.close();
 
     // FeatureShrinker feature_shrinker("params/1_feature_pyramid");
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
@@ -75,16 +72,23 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     mp = mp1;
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
-    // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
-    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-    //     // ofsf << reference_feature_half[idx] << "\n";
-    //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
-    // ofsf.close();
+    ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
+    for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+        // ofsf << reference_feature_half[idx] << "\n";
+        ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
+    ofsf.close();
 
     if (n_measurement_frames == 0) return;
 
-    // float cost_volume[n_depth_levels][height_2][width_2];
-    // cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose, measurement_poses, half_K, warp_grid, n_measurement_frames, cost_volume);
+    float cost_volume[n_depth_levels * height_2 * width_2];
+    cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
+
+    ofstream ofsc("cost_volume.txt");
+    // ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
+    for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+        ofsc << cost_volume[idx] << "\n";
+        // ofsc.write((char*) &cost_volume[idx], sizeof(float));
+    ofsc.close();
 
     // float skip0[hyper_channels][height_2][width_2];
     // float skip1[hyper_channels * 2][height_4][width_4];
@@ -195,7 +199,7 @@ int main() {
     float hidden_state[hid_channels][height_32][width_32];
     float cell_state[hid_channels][height_32][width_32];
 
-    for (int f = 6; f < n_test_frames; f++) { // fix later
+    for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -216,6 +220,60 @@ int main() {
         float measurement_poses[test_n_measurement_frames * 4 * 4];
         float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2];
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(reference_pose, measurement_poses, measurement_feature_halfs);
+
+        // prepare for cost volume fusion
+        float* warpings = new float[n_measurement_frames * n_depth_levels * height_2 * width_2 * 2];
+        for (int m = 0; m < n_measurement_frames; m++) {
+            Matrix4f pose1, pose2;
+            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = reference_pose[i * 4 + j];
+            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose2(i, j) = measurement_poses[(m * 4 + i) * 4 + j];
+
+            Matrix4f extrinsic2 = pose2.inverse() * pose1;
+            Matrix3f R = extrinsic2.block(0, 0, 3, 3);
+            Vector3f t = extrinsic2.block(0, 3, 3, 1);
+
+            Matrix3f K;
+            for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) K(i, j) = half_K[i][j];
+            MatrixXf wg(3, width_2 * height_2);
+            for (int i = 0; i < 3; i++) for (int j = 0; j < width_2 * height_2; j++) wg(i, j) = warp_grid[i][j];
+
+            Vector3f _Kt = K * t;
+            Matrix3f K_R_Kinv = K * R * K.inverse();
+            MatrixXf K_R_Kinv_UV(3, width_2 * height_2);
+            K_R_Kinv_UV = K_R_Kinv * wg;
+
+            MatrixXf Kt(3, width_2 * height_2);
+            for (int i = 0; i < width_2 * height_2; i++) Kt.block(0, i, 3, 1) = _Kt;
+
+            const float inverse_depth_base = 1.0 / max_depth;
+            const float inverse_depth_step = (1.0 / min_depth - 1.0 / max_depth) / (n_depth_levels - 1);
+
+            const float width_normalizer = width_2 / 2.0;
+            const float height_normalizer = height_2 / 2.0;
+
+            for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) {
+                const float this_depth = 1.0 / (inverse_depth_base + depth_i * inverse_depth_step);
+
+                MatrixXf _warping(width_2 * height_2, 3);
+                _warping = (K_R_Kinv_UV + (Kt / this_depth)).transpose();
+
+                MatrixXf _warping0(width_2 * height_2, 2);
+                VectorXf _warping1(width_2 * height_2);
+                _warping0 = _warping.block(0, 0, width_2 * height_2, 2);
+                _warping1 = _warping.block(0, 2, width_2 * height_2, 1).array() + 1e-8f;
+
+                _warping0.block(0, 0, width_2 * height_2, 1).array() /= _warping1.array();
+                _warping0.block(0, 0, width_2 * height_2, 1).array() -= width_normalizer;
+                _warping0.block(0, 0, width_2 * height_2, 1).array() /= width_normalizer;
+
+                _warping0.block(0, 1, width_2 * height_2, 1).array() /= _warping1.array();
+                _warping0.block(0, 1, width_2 * height_2, 1).array() -= height_normalizer;
+                _warping0.block(0, 1, width_2 * height_2, 1).array() /= height_normalizer;
+
+                for (int idx = 0; idx < height_2 * width_2; idx++) for (int k = 0; k < 2; k++)
+                    warpings[((m * n_depth_levels + depth_i) * (height_2 * width_2) + idx) * 2 + k] = _warping0(idx, k);
+            }
+        }
 
         // prepare depth_estimation
         float depth_estimation[1][height_32][width_32];
@@ -256,12 +314,13 @@ int main() {
 
         float reference_feature_half[fpn_output_channels * height_2 * width_2];
         float prediction[test_image_height][test_image_width];
-        predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_feature_halfs,
-                half_K, warp_grid, hidden_state, cell_state, reference_feature_half, prediction);
-        return 0; // fix later
+        predict(reference_image, n_measurement_frames, measurement_feature_halfs,
+                warpings, hidden_state, cell_state, reference_feature_half, prediction);
+        delete[] warpings;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
+        return 0; // fix later
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i][j];

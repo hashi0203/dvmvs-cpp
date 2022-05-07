@@ -47,3 +47,26 @@ void interpolate(const float* input, float* output, const string mode,
         exit(1);
     }
 }
+
+
+void grid_sample(const float* image, const float* warping, float* warped_image,
+                 const int channels, const int height, const int width) {
+
+    for (int idx = 0; idx < height * width; idx++) {
+        const float x = (warping[idx * 2 + 0] + 1) * (width - 1) / 2.0;
+        const float y = (warping[idx * 2 + 1] + 1) * (height - 1) / 2.0;
+        const int y_int = floor(y);
+        const int x_int = floor(x);
+        const int ys[2] = {y_int, y_int + 1};
+        const int xs[2] = {x_int, x_int + 1};
+        const float dys[2] = {y - ys[0], ys[1] - y};
+        const float dxs[2] = {x - xs[0], xs[1] - x};
+        for (int i = 0; i < channels; i++) {
+            warped_image[i * (height * width) + idx] = 0;
+            for (int yi = 0; yi < 2; yi++) for (int xi = 0; xi < 2; xi++) {
+                const float val = (ys[yi] < 0 || height-1 < ys[yi] || xs[xi] < 0 || width-1 < xs[xi]) ? 0 : image[(i * height + ys[yi]) * width + xs[xi]];
+                warped_image[i * (height * width) + idx] += dys[1-yi] * dxs[1-xi] * val;
+            }
+        }
+    }
+}
