@@ -2,7 +2,7 @@
 #include "settings.h"
 
 void BatchNorm2d(float* x, const string param_path,
-                const int channels, const int height, const int width) {
+                 const int channels, const int height, const int width) {
 
     if (mp.find(param_path + ".running_mean") == mp.end())
         cout << param_path + ".running_mean" << "\n";

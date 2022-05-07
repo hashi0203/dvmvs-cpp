@@ -3,21 +3,21 @@
 
 #include <unordered_map>
 
-const int org_image_width = 540;
-const int org_image_height = 360;
-// const int test_image_width = 320;
-// const int test_image_height = 256;
+constexpr int org_image_width = 540;
+constexpr int org_image_height = 360;
+// constexpr int test_image_width = 320;
+// constexpr int test_image_height = 256;
 
-// const int org_image_width = 128;
-// const int org_image_height = 128;
-const int test_image_width = 96;
-const int test_image_height = 64;
+// constexpr int org_image_width = 128;
+// constexpr int org_image_height = 128;
+constexpr int test_image_width = 96;
+constexpr int test_image_height = 64;
 
-const int test_n_measurement_frames = 2;
-const int test_keyframe_buffer_size = 30;
-const float test_keyframe_pose_distance = 0.1;
-const float test_optimal_t_measure = 0.15;
-const float test_optimal_R_measure = 0.0;
+constexpr int test_n_measurement_frames = 2;
+constexpr int test_keyframe_buffer_size = 30;
+constexpr float test_keyframe_pose_distance = 0.1;
+constexpr float test_optimal_t_measure = 0.15;
+constexpr float test_optimal_R_measure = 0.0;
 
 // SET THESE: TESTING FOLDER LOCATIONS
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
@@ -29,36 +29,37 @@ const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_ima
 const string scene_folder = test_online_scene_path;
 const string scene = "000";
 
-const int n_test_frames = 20;
+constexpr int n_test_frames = 20;
 
-const float scale_rgb = 255.0;
-const float mean_rgb[3] = {0.485, 0.456, 0.406};
-const float std_rgb[3] = {0.229, 0.224, 0.225};
+constexpr float scale_rgb = 255.0;
+constexpr float mean_rgb[3] = {0.485, 0.456, 0.406};
+constexpr float std_rgb[3] = {0.229, 0.224, 0.225};
 
-const float min_depth = 0.25;
-const float max_depth = 20.0;
-const int n_depth_levels = 64;
+constexpr float min_depth = 0.25;
+constexpr float max_depth = 20.0;
+constexpr int n_depth_levels = 64;
 
-const int fpn_output_channels = 32;
-const int hyper_channels = 32;
+constexpr int fpn_output_channels = 32;
+constexpr int hyper_channels = 32;
+constexpr int hid_channels = hyper_channels * 16;
 
-const int height_2 = test_image_height / 2;
-const int height_4 = test_image_height / 4;
-const int height_8 = test_image_height / 8;
-const int height_16 = test_image_height / 16;
-const int height_32 = test_image_height / 32;
+constexpr int height_2 = test_image_height / 2;
+constexpr int height_4 = test_image_height / 4;
+constexpr int height_8 = test_image_height / 8;
+constexpr int height_16 = test_image_height / 16;
+constexpr int height_32 = test_image_height / 32;
 
-const int width_2 = test_image_width / 2;
-const int width_4 = test_image_width / 4;
-const int width_8 = test_image_width / 8;
-const int width_16 = test_image_width / 16;
-const int width_32 = test_image_width / 32;
+constexpr int width_2 = test_image_width / 2;
+constexpr int width_4 = test_image_width / 4;
+constexpr int width_8 = test_image_width / 8;
+constexpr int width_16 = test_image_width / 16;
+constexpr int width_32 = test_image_width / 32;
 
-const int channels_1 = 16;
-const int channels_2 = 24;
-const int channels_3 = 40;
-const int channels_4 = 96;
-const int channels_5 = 320;
+constexpr int channels_1 = 16;
+constexpr int channels_2 = 24;
+constexpr int channels_3 = 40;
+constexpr int channels_4 = 96;
+constexpr int channels_5 = 320;
 
 extern float* params;
 extern float* params0;

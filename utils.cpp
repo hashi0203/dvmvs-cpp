@@ -85,9 +85,6 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
                                                        const float half_K[3][3],
                                                        float depth_hypothesis[1][height_2][width_2]) {
 
-    const int half_height = test_image_height / 2;
-    const int half_width = test_image_width / 2;
-
     Matrix4f r_pose, m_pose;
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) r_pose(i, j) = reference_pose[i * 4 + j];
     for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) m_pose(i, j) = measurement_pose[i * 4 + j];
@@ -131,7 +128,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
 
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
         const bool is_valid_below = (projections[i][j][0] >= 0) && (projections[i][j][1] >= 0);
-        const bool is_valid_above = (projections[i][j][0] < half_width) && (projections[i][j][1] < half_height);
+        const bool is_valid_above = (projections[i][j][0] < width_2) && (projections[i][j][1] < height_2);
         const bool is_valid = is_valid_below && is_valid_above;
         if (is_valid && depth_hypothesis[0][projections[i][j][1]][projections[i][j][0]] == 0)
             depth_hypothesis[0][projections[i][j][1]][projections[i][j][0]] = z_values[i][j];

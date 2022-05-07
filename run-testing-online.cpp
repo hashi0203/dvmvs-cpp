@@ -195,7 +195,6 @@ int main() {
     float previous_pose[4 * 4];
 
     bool state_exists = false;
-    const int hid_channels = hyper_channels * 16;
     float hidden_state[hid_channels][height_32][width_32];
     float cell_state[hid_channels][height_32][width_32];
 
@@ -223,6 +222,12 @@ int main() {
 
         // prepare for cost volume fusion
         float* warpings = new float[n_measurement_frames * n_depth_levels * height_2 * width_2 * 2];
+
+        constexpr float inverse_depth_base = 1.0 / max_depth;
+        constexpr float inverse_depth_step = (1.0 / min_depth - 1.0 / max_depth) / (n_depth_levels - 1);
+
+        constexpr float width_normalizer = width_2 / 2.0;
+        constexpr float height_normalizer = height_2 / 2.0;
         for (int m = 0; m < n_measurement_frames; m++) {
             Matrix4f pose1, pose2;
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = reference_pose[i * 4 + j];
@@ -244,12 +249,6 @@ int main() {
 
             MatrixXf Kt(3, width_2 * height_2);
             for (int i = 0; i < width_2 * height_2; i++) Kt.block(0, i, 3, 1) = _Kt;
-
-            const float inverse_depth_base = 1.0 / max_depth;
-            const float inverse_depth_step = (1.0 / min_depth - 1.0 / max_depth) / (n_depth_levels - 1);
-
-            const float width_normalizer = width_2 / 2.0;
-            const float height_normalizer = height_2 / 2.0;
 
             for (int depth_i = 0; depth_i < n_depth_levels; depth_i++) {
                 const float this_depth = 1.0 / (inverse_depth_base + depth_i * inverse_depth_step);

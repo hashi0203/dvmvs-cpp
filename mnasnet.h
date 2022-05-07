@@ -5,19 +5,19 @@
 #include "activation.h"
 
 void _InvertedResidual(const float* x, float* y,
-                        const string param_path,
-                        const int in_channels, const int in_height, const int in_width,
-                        const int out_channels, const int out_height, const int out_width,
-                        const int kernel_size, const int stride, const int expansion_factor) {
+                       const string param_path,
+                       const int in_channels, const int in_height, const int in_width,
+                       const int out_channels, const int out_height, const int out_width,
+                       const int kernel_size, const int stride, const int expansion_factor) {
 
     const int mid_channels = in_channels * expansion_factor;
-    const bool apply_bias = false;
+    constexpr bool apply_bias = false;
 
     // Pointwise
-    const int l0_kernel_size = 1;
-    const int l0_stride = 1;
-    const int l0_padding = 0;
-    const int l0_groups = 1;
+    constexpr int l0_kernel_size = 1;
+    constexpr int l0_stride = 1;
+    constexpr int l0_padding = 0;
+    constexpr int l0_groups = 1;
     const int l0_out_channels = mid_channels;
     const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
     const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
@@ -56,10 +56,10 @@ void _InvertedResidual(const float* x, float* y,
     ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     // Linear pointwise. Note that there's no activation.
-    const int l6_kernel_size = 1;
-    const int l6_stride = 1;
-    const int l6_padding = 0;
-    const int l6_groups = 1;
+    constexpr int l6_kernel_size = 1;
+    constexpr int l6_stride = 1;
+    constexpr int l6_padding = 0;
+    constexpr int l6_groups = 1;
     const int l6_out_channels = out_channels;
     const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
     const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
