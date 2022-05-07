@@ -85,9 +85,9 @@ int KeyframeBuffer::get_best_measurement_frames(const float reference_pose[4 * 4
     // indices = np.argpartition(penalties, n_requested_measurement_frames - 1)[:n_requested_measurement_frames]
 
     for (int f = 0; f < n_requested_measurement_frames; f++) {
-        for (int idx = 0; idx < 4 * 4; idx++) measurement_poses[f * 4 * 4 + idx] = buffer_poses[penalties[f].second][4 * 4 + idx];
+        for (int idx = 0; idx < 4 * 4; idx++) measurement_poses[f * (4 * 4) + idx] = buffer_poses[penalties[f].second][idx];
         for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-            measurement_feature_halfs[f * fpn_output_channels * height_2 * width_2 + idx] = buffer_feature_halfs[penalties[f].second][fpn_output_channels * height_2 * width_2 + idx];
+            measurement_feature_halfs[f * (fpn_output_channels * height_2 * width_2) + idx] = buffer_feature_halfs[penalties[f].second][idx];
     }
     return n_requested_measurement_frames;
 }
