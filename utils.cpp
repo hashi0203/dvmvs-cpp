@@ -1,5 +1,5 @@
 #include "config.h"
-#include "model.h"
+#include "functional.h"
 #include "kornia.h"
 #include <Eigen/Dense>
 #include <Eigen/Core>
