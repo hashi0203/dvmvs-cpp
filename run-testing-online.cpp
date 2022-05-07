@@ -1,25 +1,30 @@
 #include "config.h"
 #include "model.h"
 
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/LU>
+using namespace Eigen;
+
 void read_params(const string dirname, const int n_files, float* params, unordered_map<string, int>& mp) {
     ifstream fv("params/" + dirname + "_values");
     int n_params[n_files];
     fv.read((char*) n_params, sizeof(int) * n_files);
-    int end_idx[n_files];
-    end_idx[0] = n_params[0];
-    for (int i = 1; i < n_files; i++) {
-        end_idx[i] = end_idx[i-1] + n_params[i];
+    int start_idx[n_files + 1];
+    start_idx[0] = 0;
+    for (int i = 0; i < n_files; i++) {
+        start_idx[i+1] = start_idx[i] + n_params[i];
     }
 
     ifstream fk("params/" + dirname + "_keys");
     for (int i = 0; i < n_files; i++) {
         string filename;
         getline(fk, filename);
-        mp[filename] = end_idx[i];
+        mp[filename] = start_idx[i];
     }
 
     ifstream fp("params/" + dirname + "_params");
-    fp.read((char*) params, sizeof(float) * end_idx[n_files-1]);
+    fp.read((char*) params, sizeof(float) * start_idx[n_files]);
 }
 
 void predict(const float reference_image[3 * test_image_height * test_image_width],
@@ -52,39 +57,39 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     read_params("3_lstm_fusion", 1, params3, mp3);
     read_params("4_decoder", 80, params4, mp4);
 
-    FeatureExtractor feature_extractor("params/0_feature_extractor");
-    float layer1[channels_1][height_2][width_2];
-    float layer2[channels_2][height_4][width_4];
-    float layer3[channels_3][height_8][width_8];
-    float layer4[channels_4][height_16][width_16];
-    float layer5[channels_5][height_32][width_32];
+    // FeatureExtractor feature_extractor("params/0_feature_extractor");
+    float layer1[channels_1 * height_2 * width_2];
+    float layer2[channels_2 * height_4 * width_4];
+    float layer3[channels_3 * height_8 * width_8];
+    float layer4[channels_4 * height_16 * width_16];
+    float layer5[channels_5 * height_32 * width_32];
+    FeatureExtractor(reference_image, params0, mp0, layer1, layer2, layer3, layer4, layer5);
 
-    FeatureShrinker feature_shrinker("params/1_feature_pyramid");
-    float reference_feature_quarter[fpn_output_channels][height_4][width_4];
-    float reference_feature_one_eight[fpn_output_channels][height_8][width_8];
-    float reference_feature_one_sixteen[fpn_output_channels][height_16][width_16];
-    feature_extractor.forward(reference_image, layer1, layer2, layer3, layer4, layer5);
-    feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    // FeatureShrinker feature_shrinker("params/1_feature_pyramid");
+    // float reference_feature_quarter[fpn_output_channels][height_4][width_4];
+    // float reference_feature_one_eight[fpn_output_channels][height_8][width_8];
+    // float reference_feature_one_sixteen[fpn_output_channels][height_16][width_16];
+    // feature_shrinker.forward(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
     if (n_measurement_frames == 0) return;
 
-    float cost_volume[n_depth_levels][height_2][width_2];
-    cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose, measurement_poses, half_K, warp_grid, n_measurement_frames, cost_volume);
+    // float cost_volume[n_depth_levels][height_2][width_2];
+    // cost_volume_fusion(reference_feature_half, measurement_feature_halfs, reference_pose, measurement_poses, half_K, warp_grid, n_measurement_frames, cost_volume);
 
-    float skip0[hyper_channels][height_2][width_2];
-    float skip1[hyper_channels * 2][height_4][width_4];
-    float skip2[hyper_channels * 4][height_8][width_8];
-    float skip3[hyper_channels * 8][height_16][width_16];
-    float bottom[hyper_channels * 16][height_32][width_32];
-    CostVolumeEncoder cost_volume_encoder("params/2_encoder");
-    cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
-                                skip0, skip1, skip2, skip3, bottom);
+    // float skip0[hyper_channels][height_2][width_2];
+    // float skip1[hyper_channels * 2][height_4][width_4];
+    // float skip2[hyper_channels * 4][height_8][width_8];
+    // float skip3[hyper_channels * 8][height_16][width_16];
+    // float bottom[hyper_channels * 16][height_32][width_32];
+    // CostVolumeEncoder cost_volume_encoder("params/2_encoder");
+    // cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
+    //                             skip0, skip1, skip2, skip3, bottom);
 
-    LSTMFusion lstm_fusion("params/3_lstm_fusion");
-    lstm_fusion.forward(bottom, hidden_state, cell_state);
+    // LSTMFusion lstm_fusion("params/3_lstm_fusion");
+    // lstm_fusion.forward(bottom, hidden_state, cell_state);
 
-    CostVolumeDecoder cost_volume_decoder("params/4_decoder");
-    cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
+    // CostVolumeDecoder cost_volume_decoder("params/4_decoder");
+    // cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
 
     // if (f == 6) {
     //     printvi(prediction[10], test_image_width);
@@ -173,7 +178,7 @@ int main() {
     float hidden_state[hid_channels][height_32][width_32];
     float cell_state[hid_channels][height_32][width_32];
 
-    for (int f = 0; f < n_test_frames; f++) {
+    for (int f = 6; f < n_test_frames; f++) { // fix later
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -236,7 +241,7 @@ int main() {
         float prediction[test_image_height][test_image_width];
         predict(reference_image, reference_pose, n_measurement_frames, measurement_poses, measurement_feature_halfs,
                 half_K, warp_grid, hidden_state, cell_state, reference_feature_half, prediction);
-        return 0;
+        return 0; // fix later
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
