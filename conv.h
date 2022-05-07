@@ -24,8 +24,8 @@ void Conv2d(const float* input,
         for (int oc = 0; oc < ocpg; oc++) {
             for (int oh = 0; oh < out_height; oh++) {
                 for (int ow = 0; ow < out_width; ow++) {
-                    float sum = 0.f;
                     const int och = g * ocpg + oc;
+                    float sum = (apply_bias) ? bias[och] : 0.f;
 
                     for (int ic = 0; ic < icpg; ic++) {
                         const int ich = g * icpg + ic;
@@ -38,13 +38,12 @@ void Conv2d(const float* input,
                                 const int input_idx = (ich * in_height + ih) * in_width + iw;
                                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
 
-                                sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0 :
+                                sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0.f :
                                         input[input_idx] * weight[weight_idx];
                             }
                         }
                     }
 
-                    sum += (apply_bias) ? bias[och] : 0.f;
                     const int output_idx = (och * out_height + oh) * out_width + ow;
                     output[output_idx] = sum;
                 }
