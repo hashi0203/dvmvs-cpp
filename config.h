@@ -60,6 +60,20 @@ const int channels_3 = 40;
 const int channels_4 = 96;
 const int channels_5 = 320;
 
+extern float* params;
+extern float* params0;
+extern float* params1;
+extern float* params2;
+extern float* params3;
+extern float* params4;
+
+extern unordered_map<string, int> mp;
+extern unordered_map<string, int> mp0;
+extern unordered_map<string, int> mp1;
+extern unordered_map<string, int> mp2;
+extern unordered_map<string, int> mp3;
+extern unordered_map<string, int> mp4;
+
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 #define invres_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), (kernel_size) / 2)

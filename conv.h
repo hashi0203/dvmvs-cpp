@@ -4,8 +4,6 @@
 
 void Conv2d(const float* input,
             float* output,
-            const float *params,
-            unordered_map<string, int> mp,
             const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,

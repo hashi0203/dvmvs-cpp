@@ -163,8 +163,6 @@
 
 
 void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
-                        const float *params,
-                        unordered_map<string, int> mp,
                         float layer1[channels_1 * height_2 * width_2],
                         float layer2[channels_2 * height_4 * width_4],
                         float layer3[channels_3 * height_8 * width_8],
@@ -187,12 +185,12 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l0_out_height = conv_out_size(test_image_height, l0_kernel_size, l0_stride, l0_padding);
     const int l0_out_width = conv_out_size(test_image_width, l0_kernel_size, l0_stride, l0_padding);
     float y0[l0_out_channels * l0_out_height * l0_out_width];
-    Conv2d(x0, y0, params, mp, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_bias);
+    Conv2d(x0, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_bias);
 
     const int l1_out_channels = depths[0];
     const int l1_out_height = l0_out_height;
     const int l1_out_width = l0_out_width;
-    BatchNorm2d(y0, params, mp, "layer1.1", l1_out_channels, l1_out_height, l1_out_width);
+    BatchNorm2d(y0, "layer1.1", l1_out_channels, l1_out_height, l1_out_width);
 
     const int l2_out_channels = depths[0];
     const int l2_out_height = l1_out_height;
@@ -208,12 +206,12 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
     const int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
     float y3[l3_out_channels * l3_out_height * l3_out_width];
-    Conv2d(y0, y3, params, mp, "layer1.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_bias);
+    Conv2d(y0, y3, "layer1.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_bias);
 
     const int l4_out_channels = depths[0];
     const int l4_out_height = l3_out_height;
     const int l4_out_width = l3_out_width;
-    BatchNorm2d(y3, params, mp, "layer1.4", l4_out_channels, l4_out_height, l4_out_width);
+    BatchNorm2d(y3, "layer1.4", l4_out_channels, l4_out_height, l4_out_width);
 
     const int l5_out_channels = depths[0];
     const int l5_out_height = l4_out_height;
@@ -227,12 +225,12 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l6_out_channels = depths[1];
     const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
     const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
-    Conv2d(y3, layer1, params, mp, "layer1.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_bias);
+    Conv2d(y3, layer1, "layer1.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_bias);
 
     const int l7_out_channels = depths[1];
     const int l7_out_height = l6_out_height;
     const int l7_out_width = l6_out_width;
-    BatchNorm2d(layer1, params, mp, "layer1.7", l7_out_channels, l7_out_height, l7_out_width);
+    BatchNorm2d(layer1, "layer1.7", l7_out_channels, l7_out_height, l7_out_width);
 
     // MNASNet blocks: stacks of inverted residuals.
     const int l8_kernel_size = 3;
@@ -242,7 +240,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l8_out_channels = depths[2];
     const int l8_out_height = stack_out_size(l7_out_height, l8_kernel_size, l8_stride);
     const int l8_out_width = stack_out_size(l7_out_width, l8_kernel_size, l8_stride);
-    _stack(layer1, layer2, params, mp, "layer2.0", l7_out_channels, l7_out_height, l7_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats);
+    _stack(layer1, layer2, "layer2.0", l7_out_channels, l7_out_height, l7_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats);
 
     const int l9_kernel_size = 5;
     const int l9_stride = 2;
@@ -251,7 +249,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l9_out_channels = depths[3];
     const int l9_out_height = stack_out_size(l8_out_height, l9_kernel_size, l9_stride);
     const int l9_out_width = stack_out_size(l8_out_width, l9_kernel_size, l9_stride);
-    _stack(layer2, layer3, params, mp, "layer3.0", l8_out_channels, l8_out_height, l8_out_width, l9_out_channels, l9_out_height, l9_out_width, l9_kernel_size, l9_stride, l9_expansion_factor, l9_repeats);
+    _stack(layer2, layer3, "layer3.0", l8_out_channels, l8_out_height, l8_out_width, l9_out_channels, l9_out_height, l9_out_width, l9_kernel_size, l9_stride, l9_expansion_factor, l9_repeats);
 
     const int l10_kernel_size = 5;
     const int l10_stride = 2;
@@ -261,7 +259,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l10_out_height = stack_out_size(l9_out_height, l10_kernel_size, l10_stride);
     const int l10_out_width = stack_out_size(l9_out_width, l10_kernel_size, l10_stride);
     float y10[l10_out_channels * l10_out_height * l10_out_width];
-    _stack(layer3, y10, params, mp, "layer4.0", l9_out_channels, l9_out_height, l9_out_width, l10_out_channels, l10_out_height, l10_out_width, l10_kernel_size, l10_stride, l10_expansion_factor, l10_repeats);
+    _stack(layer3, y10, "layer4.0", l9_out_channels, l9_out_height, l9_out_width, l10_out_channels, l10_out_height, l10_out_width, l10_kernel_size, l10_stride, l10_expansion_factor, l10_repeats);
 
     const int l11_kernel_size = 3;
     const int l11_stride = 1;
@@ -270,7 +268,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l11_out_channels = depths[5];
     const int l11_out_height = stack_out_size(l10_out_height, l11_kernel_size, l11_stride);
     const int l11_out_width = stack_out_size(l10_out_width, l11_kernel_size, l11_stride);
-    _stack(y10, layer4, params, mp, "layer4.1", l10_out_channels, l10_out_height, l10_out_width, l11_out_channels, l11_out_height, l11_out_width, l11_kernel_size, l11_stride, l11_expansion_factor, l11_repeats);
+    _stack(y10, layer4, "layer4.1", l10_out_channels, l10_out_height, l10_out_width, l11_out_channels, l11_out_height, l11_out_width, l11_kernel_size, l11_stride, l11_expansion_factor, l11_repeats);
 
     const int l12_kernel_size = 5;
     const int l12_stride = 2;
@@ -280,7 +278,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l12_out_height = stack_out_size(l11_out_height, l12_kernel_size, l12_stride);
     const int l12_out_width = stack_out_size(l11_out_width, l12_kernel_size, l12_stride);
     float y12[l12_out_channels * l12_out_height * l12_out_width];
-    _stack(layer4, y12, params, mp, "layer5.0", l11_out_channels, l11_out_height, l11_out_width, l12_out_channels, l12_out_height, l12_out_width, l12_kernel_size, l12_stride, l12_expansion_factor, l12_repeats);
+    _stack(layer4, y12, "layer5.0", l11_out_channels, l11_out_height, l11_out_width, l12_out_channels, l12_out_height, l12_out_width, l12_kernel_size, l12_stride, l12_expansion_factor, l12_repeats);
 
     const int l13_kernel_size = 3;
     const int l13_stride = 1;
@@ -289,7 +287,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     const int l13_out_channels = depths[7];
     const int l13_out_height = stack_out_size(l12_out_height, l13_kernel_size, l13_stride);
     const int l13_out_width = stack_out_size(l12_out_width, l13_kernel_size, l13_stride);
-    _stack(y12, layer5, params, mp, "layer5.1", l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats);
+    _stack(y12, layer5, "layer5.1", l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats);
 
 }
 

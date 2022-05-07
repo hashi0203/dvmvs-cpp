@@ -1,8 +1,7 @@
 #pragma once
 #include "settings.h"
 
-void BatchNorm2d(float* x,
-                const float *params, unordered_map<string, int> mp, const string param_path,
+void BatchNorm2d(float* x, const string param_path,
                 const int channels, const int height, const int width) {
 
     if (mp.find(param_path + ".running_mean") == mp.end())
