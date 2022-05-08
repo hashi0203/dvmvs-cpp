@@ -622,24 +622,3 @@ void LSTMFusion(const float current_encoding[(hyper_channels * 16) * height_32 *
         hidden_state[idx] *= oo[idx];
 
 }
-
-
-// class LSTMFusion{
-// public:
-//     LSTMFusion(const string param_path) : param_path(param_path) {}
-
-//     void forward(const float current_encoding[hyper_channels * 16][height_32][width_32],
-//                  float hidden_state[hyper_channels * 16][height_32][width_32],
-//                  float cell_state[hyper_channels * 16][height_32][width_32]) {
-
-//         const int in_channels = hyper_channels * 16;
-//         const int hid_channels = hyper_channels * 16;
-
-//         const int kernel_size = 3;
-//         MVSLayernormConvLSTMCell<in_channels, hid_channels, height_32, width_32, kernel_size> lstm_cell(param_path + "/lstm_cell");
-//         lstm_cell.forward(current_encoding, hidden_state, cell_state);
-//     }
-
-// private:
-//     string param_path;
-// };
