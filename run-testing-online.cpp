@@ -83,21 +83,29 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float cost_volume[n_depth_levels * height_2 * width_2];
     cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
 
-    ofstream ofsc("cost_volume.txt");
-    // ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
+    // ofstream ofsc("cost_volume.txt");
+    ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-        ofsc << cost_volume[idx] << "\n";
-        // ofsc.write((char*) &cost_volume[idx], sizeof(float));
+        // ofsc << cost_volume[idx] << "\n";
+        ofsc.write((char*) &cost_volume[idx], sizeof(float));
     ofsc.close();
 
-    // float skip0[hyper_channels][height_2][width_2];
-    // float skip1[hyper_channels * 2][height_4][width_4];
-    // float skip2[hyper_channels * 4][height_8][width_8];
-    // float skip3[hyper_channels * 8][height_16][width_16];
-    // float bottom[hyper_channels * 16][height_32][width_32];
-    // CostVolumeEncoder cost_volume_encoder("params/2_encoder");
-    // cost_volume_encoder.forward(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
-    //                             skip0, skip1, skip2, skip3, bottom);
+    float skip0[hyper_channels * height_2 * width_2];
+    float skip1[(hyper_channels * 2) * height_4 * width_4];
+    float skip2[(hyper_channels * 4) * height_8 * width_8];
+    float skip3[(hyper_channels * 8) * height_16 * width_16];
+    float bottom[(hyper_channels * 16) * height_32 * width_32];
+    params = params2;
+    mp = mp2;
+    CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
+                      skip0, skip1, skip2, skip3, bottom);
+
+    // ofstream ofsb("bottom.txt");
+    ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
+    for (int idx = 0; idx < (hyper_channels * 16) * height_32 * width_32; idx++)
+        // ofsb << bottom[idx] << "\n";
+        ofsb.write((char*) &bottom[idx], sizeof(float));
+    ofsb.close();
 
     // LSTMFusion lstm_fusion("params/3_lstm_fusion");
     // lstm_fusion.forward(bottom, hidden_state, cell_state);
