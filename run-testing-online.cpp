@@ -32,6 +32,7 @@ void read_params(const string dirname, const int n_files, float* params, unorder
     ifs.open("params/" + dirname + "_values");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
+
     int start_idx[n_files + 1];
     start_idx[0] = 0;
     for (int i = 0; i < n_files; i++) {
@@ -51,6 +52,7 @@ void read_params(const string dirname, const int n_files, float* params, unorder
     ifs.close();
 }
 
+
 void predict(const float reference_image[3 * test_image_height * test_image_width],
              const int n_measurement_frames,
              const float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
@@ -69,13 +71,12 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     mp = mp0;
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
 
-    ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-        // ofs5 << layer5[idx] << "\n";
-        ofs5.write((char*) &layer5[idx], sizeof(float));
-    ofs5.close();
+    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
+    //     // ofs5 << layer5[idx] << "\n";
+    //     ofs5.write((char*) &layer5[idx], sizeof(float));
+    // ofs5.close();
 
-    // FeatureShrinker feature_shrinker("params/1_feature_pyramid");
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
@@ -83,23 +84,23 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     mp = mp1;
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
-    ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-        // ofsf << reference_feature_half[idx] << "\n";
-        ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
-    ofsf.close();
+    // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+    //     // ofsf << reference_feature_half[idx] << "\n";
+    //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
+    // ofsf.close();
 
     if (n_measurement_frames == 0) return;
 
     float cost_volume[n_depth_levels * height_2 * width_2];
     cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
 
-    // ofstream ofsc("cost_volume.txt");
-    ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-        // ofsc << cost_volume[idx] << "\n";
-        ofsc.write((char*) &cost_volume[idx], sizeof(float));
-    ofsc.close();
+    // // ofstream ofsc("cost_volume.txt");
+    // ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
+    //     // ofsc << cost_volume[idx] << "\n";
+    //     ofsc.write((char*) &cost_volume[idx], sizeof(float));
+    // ofsc.close();
 
     float skip0[hyper_channels * height_2 * width_2];
     float skip1[(hyper_channels * 2) * height_4 * width_4];
@@ -111,32 +112,27 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                       skip0, skip1, skip2, skip3, bottom);
 
-    // ofstream ofsb("bottom.txt");
-    ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        // ofsb << bottom[idx] << "\n";
-        ofsb.write((char*) &bottom[idx], sizeof(float));
-    ofsb.close();
+    // // ofstream ofsb("bottom.txt");
+    // ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+    //     // ofsb << bottom[idx] << "\n";
+    //     ofsb.write((char*) &bottom[idx], sizeof(float));
+    // ofsb.close();
 
     params = params3;
     mp = mp3;
     LSTMFusion(bottom, hidden_state, cell_state);
 
-    // ofstream ofsh("hidden_state.txt");
-    ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        // ofsh << hidden_state[idx] << "\n";
-        ofsh.write((char*) &hidden_state[idx], sizeof(float));
-    ofsh.close();
+    // // ofstream ofsh("hidden_state.txt");
+    // ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+    //     // ofsh << hidden_state[idx] << "\n";
+    //     ofsh.write((char*) &hidden_state[idx], sizeof(float));
+    // ofsh.close();
 
     params = params4;
     mp = mp4;
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
-
-    // if (f == 6) {
-    //     printvi(prediction[10], test_image_width);
-    // }
-    // break;
 }
 
 
