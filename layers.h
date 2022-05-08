@@ -21,6 +21,20 @@ void conv_layer(const float* x, float* y, const string param_path,
 }
 
 
+void depth_layer_3x3(const float* x, float* y, const string param_path,
+                     const int in_channels, const int height, const int width) {
+
+    constexpr int out_channels = 1;
+    constexpr int kernel_size = 3;
+    constexpr int stride = 1;
+    constexpr int padding = (kernel_size - 1) / 2;
+    constexpr int groups = 1;
+    constexpr bool apply_bias = true;
+    Conv2d(x, y, param_path + ".0", in_channels, height, width, out_channels, height, width, kernel_size, stride, padding, groups, apply_bias);
+    Sigmoid(y, out_channels, height, width);
+}
+
+
 // template <int in_channels, int height, int width>
 // class depth_layer_3x3{
 // public:

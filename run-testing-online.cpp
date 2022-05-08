@@ -47,7 +47,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              float reference_feature_half[fpn_output_channels * height_2 * width_2],
              float hidden_state[hid_channels * height_32 * width_32],
              float cell_state[hid_channels * height_32 * width_32],
-             float prediction[test_image_height][test_image_width]) {
+             float prediction[test_image_height * test_image_width]) {
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
@@ -107,7 +107,6 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
         ofsb.write((char*) &bottom[idx], sizeof(float));
     ofsb.close();
 
-    // LSTMFusion lstm_fusion("params/3_lstm_fusion");
     params = params3;
     mp = mp3;
     LSTMFusion(bottom, hidden_state, cell_state);
@@ -119,8 +118,9 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
         ofsh.write((char*) &hidden_state[idx], sizeof(float));
     ofsh.close();
 
-    // CostVolumeDecoder cost_volume_decoder("params/4_decoder");
-    // cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
+    params = params4;
+    mp = mp4;
+    CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
 
     // if (f == 6) {
     //     printvi(prediction[10], test_image_width);
@@ -332,30 +332,30 @@ int main() {
         }
 
         float reference_feature_half[fpn_output_channels * height_2 * width_2];
-        float prediction[test_image_height][test_image_width];
+        float prediction[test_image_height * test_image_width];
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
                 warpings, reference_feature_half, hidden_state, cell_state, prediction);
         delete[] warpings;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
-        return 0; // fix later
+        // return 0; // fix later
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
-            previous_depth[i][j] = prediction[i][j];
+            previous_depth[i][j] = prediction[i * test_image_width + j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
             previous_pose[i * 4 + j] = reference_pose[i * 4 + j];
         previous_exists = true;
 
         state_exists = true;
 
-        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), prediction);
+        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), previous_depth);
 
         ofstream ofs("./results-hw/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
-                ofs << prediction[i][j] << " ";
-            ofs << prediction[i][test_image_width-1] << "\n";
+                ofs << previous_depth[i][j] << " ";
+            ofs << previous_depth[i][test_image_width-1] << "\n";
         }
     }
 

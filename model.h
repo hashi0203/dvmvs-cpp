@@ -27,6 +27,21 @@ void DownconvolutionLayer(const float* x, float* y, const string param_path,
 }
 
 
+void UpconvolutionLayer(const float* x, float* y, const string param_path,
+                        const int in_channels, const int in_height, const int in_width,
+                        const int out_channels, const int kernel_size) {
+
+    const int out_height = in_height * 2;
+    const int out_width = in_width * 2;
+    float up_x[in_channels * out_height * out_width];
+    interpolate(x, up_x, "bilinear", in_channels, in_height, in_width, out_height, out_width);
+
+    constexpr int stride = 1;
+    constexpr bool apply_bn_relu = true;
+    conv_layer(up_x, y, param_path + ".conv", in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, apply_bn_relu);
+}
+
+
 // template <int in_channels, int in_height, int in_width, int out_channels, int kernel_size>
 // class UpconvolutionLayer{
 // public:
@@ -67,6 +82,39 @@ void EncoderBlock(const float* x, float* y, const string param_path,
     StandardLayer(y0, y, param_path + ".standard_convolution", out_channels, out_height, out_width, kernel_size, apply_bn_relu);
 }
 
+
+void DecoderBlock(const float* x, const float* skip, const float* depth, float* y, const string param_path,
+                  const int in_channels, const int in_height, const int in_width,
+                  const int kernel_size, const bool apply_bn_relu, const bool plus_one) {
+
+    const int out_height = in_height * 2;
+    const int out_width = in_width * 2;
+    const int out_channels = in_channels / 2;
+
+    float y0[out_channels * out_height * out_width];
+    UpconvolutionLayer(x, y0, param_path + ".up_convolution", in_channels, in_height, in_width, out_channels, kernel_size);
+
+    // Aggregate skip and upsampled input
+    const int l1_in_channels = plus_one ? in_channels + 1 : in_channels;
+    float x1[l1_in_channels * out_height * out_width];
+    for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        x1[idx] = y0[idx];
+    for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        x1[idx + (out_channels * out_height * out_width)] = skip[idx];
+    if (plus_one) {
+        interpolate(depth, x1 + (in_channels * out_height * out_width), "bilinear", 1, in_height, in_width, out_height, out_width);
+    }
+
+    constexpr int stride = 1;
+
+    constexpr bool l1_apply_bn_relu = true;
+    float y1[out_channels * out_height * out_width];
+    conv_layer(x1, y1, param_path + ".convolution1", l1_in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l1_apply_bn_relu);
+
+    // Learn from aggregation
+    const bool l2_apply_bn_relu = apply_bn_relu;
+    conv_layer(y1, y, param_path + ".convolution2", out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l2_apply_bn_relu);
+}
 
 // template <int in_channels, int in_height, int in_width, int kernel_size, bool apply_bn_relu, bool plus_one>
 // class DecoderBlock{
@@ -344,10 +392,11 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 
 
     // 1st set
-    constexpr int l0_kernel_size = 5;
     constexpr int l0_in_channels = fpn_output_channels + n_depth_levels;
     constexpr int l0_in_height = height_2;
     constexpr int l0_in_width = width_2;
+
+    constexpr int l0_kernel_size = 5;
     constexpr int l0_mid_channels = hyper_channels;
     float l0_in[l0_in_channels * l0_in_height * l0_in_width];
     for (int idx = 0; idx < fpn_output_channels * l0_in_height * l0_in_width; idx++)
@@ -364,10 +413,11 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 
 
     // 2nd set
-    constexpr int l1_kernel_size = 3;
     constexpr int l1_in_channels = fpn_output_channels + l0_out_channels;
     constexpr int l1_in_height = height_4;
     constexpr int l1_in_width = width_4;
+
+    constexpr int l1_kernel_size = 3;
     constexpr int l1_mid_channels = hyper_channels * 2;
     float l1_in[l1_in_channels * l1_in_height * l1_in_width];
     for (int idx = 0; idx < fpn_output_channels * l1_in_height * l1_in_width; idx++)
@@ -384,10 +434,11 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 
 
     // 3rd set
-    constexpr int l2_kernel_size = 3;
     constexpr int l2_in_channels = fpn_output_channels + l1_out_channels;
     constexpr int l2_in_height = height_8;
     constexpr int l2_in_width = width_8;
+
+    constexpr int l2_kernel_size = 3;
     constexpr int l2_mid_channels = hyper_channels * 4;
     float l2_in[l2_in_channels * l2_in_height * l2_in_width];
     for (int idx = 0; idx < fpn_output_channels * l2_in_height * l2_in_width; idx++)
@@ -404,10 +455,11 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 
 
     // 4th set
-    constexpr int l3_kernel_size = 3;
     constexpr int l3_in_channels = fpn_output_channels + l2_out_channels;
     constexpr int l3_in_height = height_16;
     constexpr int l3_in_width = width_16;
+
+    constexpr int l3_kernel_size = 3;
     constexpr int l3_mid_channels = hyper_channels * 8;
     float l3_in[l3_in_channels * l3_in_height * l3_in_width];
     for (int idx = 0; idx < fpn_output_channels * l3_in_height * l3_in_width; idx++)
@@ -420,6 +472,114 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     constexpr int l3_out_height = height_32;
     constexpr int l3_out_width = width_32;
     EncoderBlock(skip3, bottom, "encoder_block3", l3_mid_channels, l3_in_height, l3_in_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size);
+}
+
+
+void CostVolumeDecoder(const float image[3 * test_image_height * test_image_width],
+                       const float skip0[hyper_channels * height_2 * width_2],
+                       const float skip1[(hyper_channels * 2) * height_4 * width_4],
+                       const float skip2[(hyper_channels * 4) * height_8 * width_8],
+                       const float skip3[(hyper_channels * 8) * height_16 * width_16],
+                       const float bottom[(hyper_channels * 16) * height_32 * width_32],
+                       float depth_full[test_image_height * test_image_width]) {
+
+    constexpr float inverse_depth_base = 1 / max_depth;
+    constexpr float inverse_depth_multiplier = 1 / min_depth - 1 / max_depth;
+
+    constexpr bool apply_bn_relu = true;
+
+    // 1st set
+    constexpr int l0_in_channels = hyper_channels * 16;
+    constexpr int l0_in_height = height_32;
+    constexpr int l0_in_width = width_32;
+
+    constexpr int l0_kernel_size = 3;
+    constexpr bool l0_plus_one = false;
+    constexpr int l0_out_channels = hyper_channels * 8;
+    constexpr int l0_out_height = height_16;
+    constexpr int l0_out_width = width_16;
+    float null_depth[1 * l0_in_height * l0_in_width];
+    float decoder_block1[l0_out_channels * l0_out_height * l0_out_width];
+    DecoderBlock(bottom, skip3, null_depth, decoder_block1, "decoder_block1", l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, apply_bn_relu, l0_plus_one);
+
+    float sigmoid_depth_one_sixteen[1 * l0_out_height * l0_out_width];
+    depth_layer_3x3(decoder_block1, sigmoid_depth_one_sixteen, "depth_layer_one_sixteen", l0_out_channels, l0_out_height, l0_out_width);
+
+
+    // 2nd set
+    constexpr int l1_kernel_size = 3;
+    constexpr bool l1_plus_one = true;
+    constexpr int l1_out_channels = hyper_channels * 4;
+    constexpr int l1_out_height = height_8;
+    constexpr int l1_out_width = width_8;
+    float decoder_block2[l1_out_channels * l1_out_height * l1_out_width];
+    DecoderBlock(decoder_block1, skip2, sigmoid_depth_one_sixteen, decoder_block2, "decoder_block2", l0_out_channels, l0_out_height, l0_out_width, l1_kernel_size, apply_bn_relu, l1_plus_one);
+
+    float sigmoid_depth_one_eight[1 * l1_out_height * l1_out_width];
+    depth_layer_3x3(decoder_block2, sigmoid_depth_one_eight, "depth_layer_one_eight", l1_out_channels, l1_out_height, l1_out_width);
+
+
+    // 3rd set
+    constexpr int l2_kernel_size = 3;
+    constexpr bool l2_plus_one = true;
+    constexpr int l2_out_channels = hyper_channels * 2;
+    constexpr int l2_out_height = height_4;
+    constexpr int l2_out_width = width_4;
+    float decoder_block3[l2_out_channels * l2_out_height * l2_out_width];
+    DecoderBlock(decoder_block2, skip1, sigmoid_depth_one_eight, decoder_block3, "decoder_block3", l1_out_channels, l1_out_height, l1_out_width, l2_kernel_size, apply_bn_relu, l2_plus_one);
+
+    float sigmoid_depth_quarter[1 * l2_out_height * l2_out_width];
+    depth_layer_3x3(decoder_block3, sigmoid_depth_quarter, "depth_layer_quarter", l2_out_channels, l2_out_height, l2_out_width);
+
+
+    // 4th set
+    constexpr int l3_kernel_size = 5;
+    constexpr bool l3_plus_one = true;
+    constexpr int l3_out_channels = hyper_channels;
+    constexpr int l3_out_height = height_2;
+    constexpr int l3_out_width = width_2;
+    float decoder_block4[l3_out_channels * l3_out_height * l3_out_width];
+    DecoderBlock(decoder_block3, skip0, sigmoid_depth_quarter, decoder_block4, "decoder_block4", l2_out_channels, l2_out_height, l2_out_width, l3_kernel_size, apply_bn_relu, l3_plus_one);
+
+    float sigmoid_depth_half[1 * l3_out_height * l3_out_width];
+    depth_layer_3x3(decoder_block4, sigmoid_depth_half, "depth_layer_half", l3_out_channels, l3_out_height, l3_out_width);
+
+
+    // 5th set
+    constexpr int l4_in_height = l3_out_height * 2;
+    constexpr int l4_in_width = l3_out_width * 2;
+    float scaled_depth[1 * l4_in_height * l4_in_width];
+    interpolate(sigmoid_depth_half, scaled_depth, "bilinear", 1, l3_out_height, l3_out_width, l4_in_height, l4_in_width);
+
+    float scaled_decoder[l3_out_channels * l4_in_height * l4_in_width];
+    interpolate(decoder_block4, scaled_decoder, "bilinear", l3_out_channels, l3_out_height, l3_out_width, l4_in_height, l4_in_width);
+
+    constexpr int l4_in_channels = l3_out_channels + 4;
+    float scaled_combined[l4_in_channels * l4_in_height * l4_in_width];
+    for (int idx = 0; idx < l3_out_channels * l4_in_height * l4_in_width; idx++)
+        scaled_combined[idx] = scaled_decoder[idx];
+    for (int idx = 0; idx < 1 * l4_in_height * l4_in_width; idx++)
+        scaled_combined[idx + (l3_out_channels * l4_in_height * l4_in_width)] = scaled_depth[idx];
+    for (int idx = 0; idx < 3 * l4_in_height * l4_in_width; idx++)
+        scaled_combined[idx + ((l3_out_channels+1) * l4_in_height * l4_in_width)] = image[idx];
+
+    constexpr int l4_kernel_size = 5;
+    constexpr int l4_stride = 1;
+    constexpr int l4_out_channels = hyper_channels;
+    constexpr int l4_out_height = test_image_height;
+    constexpr int l4_out_width = test_image_width;
+
+    float refined0[l4_out_channels * l4_out_height * l4_out_width];
+    conv_layer(scaled_combined, refined0, "refine.0", l4_in_channels, l4_in_height, l4_in_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu);
+
+    float refined1[l4_out_channels * l4_out_height * l4_out_width];
+    conv_layer(refined0, refined1, "refine.1", l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu);
+
+    depth_layer_3x3(refined1, depth_full, "depth_layer_full", l4_out_channels, l4_out_height, l4_out_width);
+
+    for (int idx = 0; idx < l4_out_height * l4_out_width; idx++)
+        depth_full[idx] = 1.0 / (inverse_depth_multiplier * depth_full[idx] + inverse_depth_base);
+
 }
 
 
