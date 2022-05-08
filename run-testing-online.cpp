@@ -20,24 +20,29 @@ unordered_map<string, int> mp3;
 unordered_map<string, int> mp4;
 
 void read_params(const string dirname, const int n_files, float* params, unordered_map<string, int>& mp) {
-    ifstream fv("params/" + dirname + "_values");
+    ifstream ifs;
+
     int n_params[n_files];
-    fv.read((char*) n_params, sizeof(int) * n_files);
+    ifs.open("params/" + dirname + "_values");
+    ifs.read((char*) n_params, sizeof(int) * n_files);
+    ifs.close();
     int start_idx[n_files + 1];
     start_idx[0] = 0;
     for (int i = 0; i < n_files; i++) {
         start_idx[i+1] = start_idx[i] + n_params[i];
     }
 
-    ifstream fk("params/" + dirname + "_keys");
+    ifs.open("params/" + dirname + "_keys");
     for (int i = 0; i < n_files; i++) {
         string filename;
-        getline(fk, filename);
+        getline(ifs, filename);
         mp[filename] = start_idx[i];
     }
+    ifs.close();
 
-    ifstream fp("params/" + dirname + "_params");
-    fp.read((char*) params, sizeof(float) * start_idx[n_files]);
+    ifs.open("params/" + dirname + "_params");
+    ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
+    ifs.close();
 }
 
 void predict(const float reference_image[3 * test_image_height * test_image_width],
@@ -143,7 +148,7 @@ int main() {
     ifstream ifs;
     string file_buf;
 
-    ifs = open_file(scene_folder + "/K.txt");
+    ifs.open(scene_folder + "/K.txt");
     float K[3][3];
     for (int i = 0; i < 3; i++) {
         getline(ifs, file_buf);
@@ -154,6 +159,7 @@ int main() {
             K[i][j] = stof(tmp);
         }
     }
+    ifs.close();
 
     float full_K[3][3];
     get_updated_intrinsics(K, full_K);
@@ -166,7 +172,7 @@ int main() {
     for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) lstm_K_bottom[i][j] = full_K[i][j] / 32.0;
     for (int j = 0; j < 3; j++) lstm_K_bottom[2][j] = full_K[2][j];
 
-    ifs = open_file(scene_folder + "/poses.txt");
+    ifs.open(scene_folder + "/poses.txt");
     vector<float> tmp_poses;
     while (getline(ifs, file_buf)) {
         istringstream iss(file_buf);
@@ -176,6 +182,7 @@ int main() {
             tmp_poses.push_back(stof(tmp));
         }
     }
+    ifs.close();
 
     // const int n_poses = tmp_poses.size() / 16;
     float poses[n_test_frames][4 * 4];

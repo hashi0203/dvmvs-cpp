@@ -1,6 +1,9 @@
 #pragma once
 #include "config.h"
 
+void layer_norm(float* x, const int channels, const int height, const int width);
+
+
 template<int channels, int in_height, int in_width, int out_height, int out_width>
 void interpolate(float*** input, float output[channels][out_height][out_width]) {
     if (in_height > out_height) {
