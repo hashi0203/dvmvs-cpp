@@ -422,92 +422,80 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     // 1st set
     constexpr int l0_kernel_size = 5;
     constexpr int l0_in_channels = fpn_output_channels + n_depth_levels;
-
+    constexpr int l0_in_height = height_2;
+    constexpr int l0_in_width = width_2;
     constexpr int l0_mid_channels = hyper_channels;
-    constexpr int l0_mid_height = height_2;
-    constexpr int l0_mid_width = width_2;
+    float l0_in[l0_in_channels * l0_in_height * l0_in_width];
+    for (int idx = 0; idx < fpn_output_channels * l0_in_height * l0_in_width; idx++)
+        l0_in[idx] = features_half[idx];
+    for (int idx = 0; idx < n_depth_levels * l0_in_height * l0_in_width; idx++)
+        l0_in[idx + (fpn_output_channels * l0_in_height * l0_in_width)] = cost_volume[idx];
+    conv_layer(l0_in, skip0, "aggregator0", l0_in_channels, l0_in_height, l0_in_width, l0_mid_channels, l0_in_height, l0_in_width, l0_kernel_size, stride, apply_bn_relu);
 
     constexpr int l0_out_channels = hyper_channels * 2;
     constexpr int l0_out_height = height_4;
     constexpr int l0_out_width = width_4;
-
-    float l0_in[l0_in_channels * l0_mid_height * l0_mid_width];
-    for (int idx = 0; idx < fpn_output_channels * l0_mid_height * l0_mid_width; idx++)
-        l0_in[idx] = features_half[idx];
-    for (int idx = 0; idx < n_depth_levels * l0_mid_height * l0_mid_width; idx++)
-        l0_in[idx + (fpn_output_channels * l0_mid_height * l0_mid_width)] = cost_volume[idx];
-    conv_layer(l0_in, skip0, "aggregator0", l0_in_channels, l0_mid_height, l0_mid_width, l0_mid_channels, l0_mid_height, l0_mid_width, l0_kernel_size, stride, apply_bn_relu);
-
     float l0_out[l0_out_channels * l0_out_height * l0_out_width];
-    EncoderBlock(skip0, l0_out, "encoder_block0", l0_mid_channels, l0_mid_height, l0_mid_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size);
+    EncoderBlock(skip0, l0_out, "encoder_block0", l0_mid_channels, l0_in_height, l0_in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size);
 
 
     // 2nd set
     constexpr int l1_kernel_size = 3;
     constexpr int l1_in_channels = fpn_output_channels + l0_out_channels;
-
+    constexpr int l1_in_height = height_4;
+    constexpr int l1_in_width = width_4;
     constexpr int l1_mid_channels = hyper_channels * 2;
-    constexpr int l1_mid_height = height_4;
-    constexpr int l1_mid_width = width_4;
+    float l1_in[l1_in_channels * l1_in_height * l1_in_width];
+    for (int idx = 0; idx < fpn_output_channels * l1_in_height * l1_in_width; idx++)
+        l1_in[idx] = features_quarter[idx];
+    for (int idx = 0; idx < l0_out_channels * l1_in_height * l1_in_width; idx++)
+        l1_in[idx + (fpn_output_channels * l1_in_height * l1_in_width)] = l0_out[idx];
+    conv_layer(l1_in, skip1, "aggregator1", l1_in_channels, l1_in_height, l1_in_width, l1_mid_channels, l1_in_height, l1_in_width, l1_kernel_size, stride, apply_bn_relu);
 
     constexpr int l1_out_channels = hyper_channels * 4;
     constexpr int l1_out_height = height_8;
     constexpr int l1_out_width = width_8;
-
-    float l1_in[l1_in_channels * l1_mid_height * l1_mid_width];
-    for (int idx = 0; idx < fpn_output_channels * l1_mid_height * l1_mid_width; idx++)
-        l1_in[idx] = features_quarter[idx];
-    for (int idx = 0; idx < l0_out_channels * l1_mid_height * l1_mid_width; idx++)
-        l1_in[idx + (fpn_output_channels * l1_mid_height * l1_mid_width)] = l0_out[idx];
-    conv_layer(l1_in, skip1, "aggregator1", l1_in_channels, l1_mid_height, l1_mid_width, l1_mid_channels, l1_mid_height, l1_mid_width, l1_kernel_size, stride, apply_bn_relu);
-
     float l1_out[l1_out_channels * l1_out_height * l1_out_width];
-    EncoderBlock(skip1, l1_out, "encoder_block1", l1_mid_channels, l1_mid_height, l1_mid_width, l1_out_channels, l1_out_height, l1_out_width, l1_kernel_size);
+    EncoderBlock(skip1, l1_out, "encoder_block1", l1_mid_channels, l1_in_height, l1_in_width, l1_out_channels, l1_out_height, l1_out_width, l1_kernel_size);
 
 
     // 3rd set
     constexpr int l2_kernel_size = 3;
     constexpr int l2_in_channels = fpn_output_channels + l1_out_channels;
-
+    constexpr int l2_in_height = height_8;
+    constexpr int l2_in_width = width_8;
     constexpr int l2_mid_channels = hyper_channels * 4;
-    constexpr int l2_mid_height = height_8;
-    constexpr int l2_mid_width = width_8;
+    float l2_in[l2_in_channels * l2_in_height * l2_in_width];
+    for (int idx = 0; idx < fpn_output_channels * l2_in_height * l2_in_width; idx++)
+        l2_in[idx] = features_one_eight[idx];
+    for (int idx = 0; idx < l1_out_channels * l2_in_height * l2_in_width; idx++)
+        l2_in[idx + (fpn_output_channels * l2_in_height * l2_in_width)] = l1_out[idx];
+    conv_layer(l2_in, skip2, "aggregator2", l2_in_channels, l2_in_height, l2_in_width, l2_mid_channels, l2_in_height, l2_in_width, l2_kernel_size, stride, apply_bn_relu);
 
     constexpr int l2_out_channels = hyper_channels * 8;
     constexpr int l2_out_height = height_16;
     constexpr int l2_out_width = width_16;
-
-    float l2_in[l2_in_channels * l2_mid_height * l2_mid_width];
-    for (int idx = 0; idx < fpn_output_channels * l2_mid_height * l2_mid_width; idx++)
-        l2_in[idx] = features_one_eight[idx];
-    for (int idx = 0; idx < l1_out_channels * l2_mid_height * l2_mid_width; idx++)
-        l2_in[idx + (fpn_output_channels * l2_mid_height * l2_mid_width)] = l1_out[idx];
-    conv_layer(l2_in, skip2, "aggregator2", l2_in_channels, l2_mid_height, l2_mid_width, l2_mid_channels, l2_mid_height, l2_mid_width, l2_kernel_size, stride, apply_bn_relu);
-
     float l2_out[l2_out_channels * l2_out_height * l2_out_width];
-    EncoderBlock(skip2, l2_out, "encoder_block2", l2_mid_channels, l2_mid_height, l2_mid_width, l2_out_channels, l2_out_height, l2_out_width, l2_kernel_size);
+    EncoderBlock(skip2, l2_out, "encoder_block2", l2_mid_channels, l2_in_height, l2_in_width, l2_out_channels, l2_out_height, l2_out_width, l2_kernel_size);
 
 
     // 4th set
     constexpr int l3_kernel_size = 3;
     constexpr int l3_in_channels = fpn_output_channels + l2_out_channels;
-
+    constexpr int l3_in_height = height_16;
+    constexpr int l3_in_width = width_16;
     constexpr int l3_mid_channels = hyper_channels * 8;
-    constexpr int l3_mid_height = height_16;
-    constexpr int l3_mid_width = width_16;
+    float l3_in[l3_in_channels * l3_in_height * l3_in_width];
+    for (int idx = 0; idx < fpn_output_channels * l3_in_height * l3_in_width; idx++)
+        l3_in[idx] = features_one_sixteen[idx];
+    for (int idx = 0; idx < l2_out_channels * l3_in_height * l3_in_width; idx++)
+        l3_in[idx + (fpn_output_channels * l3_in_height * l3_in_width)] = l2_out[idx];
+    conv_layer(l3_in, skip3, "aggregator3", l3_in_channels, l3_in_height, l3_in_width, l3_mid_channels, l3_in_height, l3_in_width, l3_kernel_size, stride, apply_bn_relu);
 
     constexpr int l3_out_channels = hyper_channels * 16;
     constexpr int l3_out_height = height_32;
     constexpr int l3_out_width = width_32;
-
-    float l3_in[l3_in_channels * l3_mid_height * l3_mid_width];
-    for (int idx = 0; idx < fpn_output_channels * l3_mid_height * l3_mid_width; idx++)
-        l3_in[idx] = features_one_sixteen[idx];
-    for (int idx = 0; idx < l2_out_channels * l3_mid_height * l3_mid_width; idx++)
-        l3_in[idx + (fpn_output_channels * l3_mid_height * l3_mid_width)] = l2_out[idx];
-    conv_layer(l3_in, skip3, "aggregator3", l3_in_channels, l3_mid_height, l3_mid_width, l3_mid_channels, l3_mid_height, l3_mid_width, l3_kernel_size, stride, apply_bn_relu);
-
-    EncoderBlock(skip3, bottom, "encoder_block3", l3_mid_channels, l3_mid_height, l3_mid_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size);
+    EncoderBlock(skip3, bottom, "encoder_block3", l3_mid_channels, l3_in_height, l3_in_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size);
 }
 
 
@@ -535,20 +523,20 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 //         const int l0_in_channels = fpn_output_channels + n_depth_levels;
 
 //         const int l0_mid_channels = hyper_channels;
-//         const int l0_mid_height = height_2;
-//         const int l0_mid_width = width_2;
+//         const int l0_in_height = height_2;
+//         const int l0_in_width = width_2;
 
 //         const int l0_out_channels = hyper_channels * 2;
 //         const int l0_out_height = height_4;
 //         const int l0_out_width = width_4;
 
-//         conv_layer<l0_in_channels, l0_mid_height, l0_mid_width, l0_mid_channels, l0_mid_height, l0_mid_width, l0_kernel_size, stride, apply_bn_relu> l0_aggregator(param_path + "/aggregator0");
-//         EncoderBlock<l0_mid_channels, l0_mid_height, l0_mid_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size> l0_encoder_block(param_path + "/encoder_block0");
+//         conv_layer<l0_in_channels, l0_in_height, l0_in_width, l0_mid_channels, l0_in_height, l0_in_width, l0_kernel_size, stride, apply_bn_relu> l0_aggregator(param_path + "/aggregator0");
+//         EncoderBlock<l0_mid_channels, l0_in_height, l0_in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size> l0_encoder_block(param_path + "/encoder_block0");
 
 //         float l0_in[l0_in_channels][height_2][width_2];
-//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l0_mid_height; j++) for (int k = 0; k < l0_mid_width; k++)
+//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l0_in_height; j++) for (int k = 0; k < l0_in_width; k++)
 //             l0_in[i][j][k] = features_half[i][j][k];
-//         for (int i = 0; i < n_depth_levels; i++) for (int j = 0; j < l0_mid_height; j++) for (int k = 0; k < l0_mid_width; k++)
+//         for (int i = 0; i < n_depth_levels; i++) for (int j = 0; j < l0_in_height; j++) for (int k = 0; k < l0_in_width; k++)
 //             l0_in[i+fpn_output_channels][j][k] = cost_volume[i][j][k];
 //         l0_aggregator.forward(l0_in, skip0);
 
@@ -561,20 +549,20 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 //         const int l1_in_channels = fpn_output_channels + l0_out_channels;
 
 //         const int l1_mid_channels = hyper_channels * 2;
-//         const int l1_mid_height = height_4;
-//         const int l1_mid_width = width_4;
+//         const int l1_in_height = height_4;
+//         const int l1_in_width = width_4;
 
 //         const int l1_out_channels = hyper_channels * 4;
 //         const int l1_out_height = height_8;
 //         const int l1_out_width = width_8;
 
-//         conv_layer<l1_in_channels, l1_mid_height, l1_mid_width, l1_mid_channels, l1_mid_height, l1_mid_width, l1_kernel_size, stride, apply_bn_relu> l1_aggregator(param_path + "/aggregator1");
-//         EncoderBlock<l1_mid_channels, l1_mid_height, l1_mid_width, l1_out_channels, l1_out_height, l1_out_width, l1_kernel_size> l1_encoder_block(param_path + "/encoder_block1");
+//         conv_layer<l1_in_channels, l1_in_height, l1_in_width, l1_mid_channels, l1_in_height, l1_in_width, l1_kernel_size, stride, apply_bn_relu> l1_aggregator(param_path + "/aggregator1");
+//         EncoderBlock<l1_mid_channels, l1_in_height, l1_in_width, l1_out_channels, l1_out_height, l1_out_width, l1_kernel_size> l1_encoder_block(param_path + "/encoder_block1");
 
 //         float l1_in[l1_in_channels][height_4][width_4];
-//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l1_mid_height; j++) for (int k = 0; k < l1_mid_width; k++)
+//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l1_in_height; j++) for (int k = 0; k < l1_in_width; k++)
 //             l1_in[i][j][k] = features_quarter[i][j][k];
-//         for (int i = 0; i < l0_out_channels; i++) for (int j = 0; j < l1_mid_height; j++) for (int k = 0; k < l1_mid_width; k++)
+//         for (int i = 0; i < l0_out_channels; i++) for (int j = 0; j < l1_in_height; j++) for (int k = 0; k < l1_in_width; k++)
 //             l1_in[i+fpn_output_channels][j][k] = l0_out[i][j][k];
 //         l1_aggregator.forward(l1_in, skip1);
 
@@ -587,20 +575,20 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 //         const int l2_in_channels = fpn_output_channels + l1_out_channels;
 
 //         const int l2_mid_channels = hyper_channels * 4;
-//         const int l2_mid_height = height_8;
-//         const int l2_mid_width = width_8;
+//         const int l2_in_height = height_8;
+//         const int l2_in_width = width_8;
 
 //         const int l2_out_channels = hyper_channels * 8;
 //         const int l2_out_height = height_16;
 //         const int l2_out_width = width_16;
 
-//         conv_layer<l2_in_channels, l2_mid_height, l2_mid_width, l2_mid_channels, l2_mid_height, l2_mid_width, l2_kernel_size, stride, apply_bn_relu> l2_aggregator(param_path + "/aggregator2");
-//         EncoderBlock<l2_mid_channels, l2_mid_height, l2_mid_width, l2_out_channels, l2_out_height, l2_out_width, l2_kernel_size> l2_encoder_block(param_path + "/encoder_block2");
+//         conv_layer<l2_in_channels, l2_in_height, l2_in_width, l2_mid_channels, l2_in_height, l2_in_width, l2_kernel_size, stride, apply_bn_relu> l2_aggregator(param_path + "/aggregator2");
+//         EncoderBlock<l2_mid_channels, l2_in_height, l2_in_width, l2_out_channels, l2_out_height, l2_out_width, l2_kernel_size> l2_encoder_block(param_path + "/encoder_block2");
 
 //         float l2_in[l2_in_channels][height_8][width_8];
-//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l2_mid_height; j++) for (int k = 0; k < l2_mid_width; k++)
+//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l2_in_height; j++) for (int k = 0; k < l2_in_width; k++)
 //             l2_in[i][j][k] = features_one_eight[i][j][k];
-//         for (int i = 0; i < l1_out_channels; i++) for (int j = 0; j < l2_mid_height; j++) for (int k = 0; k < l2_mid_width; k++)
+//         for (int i = 0; i < l1_out_channels; i++) for (int j = 0; j < l2_in_height; j++) for (int k = 0; k < l2_in_width; k++)
 //             l2_in[i+fpn_output_channels][j][k] = l1_out[i][j][k];
 //         l2_aggregator.forward(l2_in, skip2);
 
@@ -613,20 +601,20 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 //         const int l3_in_channels = fpn_output_channels + l2_out_channels;
 
 //         const int l3_mid_channels = hyper_channels * 8;
-//         const int l3_mid_height = height_16;
-//         const int l3_mid_width = width_16;
+//         const int l3_in_height = height_16;
+//         const int l3_in_width = width_16;
 
 //         const int l3_out_channels = hyper_channels * 16;
 //         const int l3_out_height = height_32;
 //         const int l3_out_width = width_32;
 
-//         conv_layer<l3_in_channels, l3_mid_height, l3_mid_width, l3_mid_channels, l3_mid_height, l3_mid_width, l3_kernel_size, stride, apply_bn_relu> l3_aggregator(param_path + "/aggregator3");
-//         EncoderBlock<l3_mid_channels, l3_mid_height, l3_mid_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size> l3_encoder_block(param_path + "/encoder_block3");
+//         conv_layer<l3_in_channels, l3_in_height, l3_in_width, l3_mid_channels, l3_in_height, l3_in_width, l3_kernel_size, stride, apply_bn_relu> l3_aggregator(param_path + "/aggregator3");
+//         EncoderBlock<l3_mid_channels, l3_in_height, l3_in_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size> l3_encoder_block(param_path + "/encoder_block3");
 
 //         float l3_in[l3_in_channels][height_16][width_16];
-//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l3_mid_height; j++) for (int k = 0; k < l3_mid_width; k++)
+//         for (int i = 0; i < fpn_output_channels; i++) for (int j = 0; j < l3_in_height; j++) for (int k = 0; k < l3_in_width; k++)
 //             l3_in[i][j][k] = features_one_sixteen[i][j][k];
-//         for (int i = 0; i < l2_out_channels; i++) for (int j = 0; j < l3_mid_height; j++) for (int k = 0; k < l3_mid_width; k++)
+//         for (int i = 0; i < l2_out_channels; i++) for (int j = 0; j < l3_in_height; j++) for (int k = 0; k < l3_in_width; k++)
 //             l3_in[i+fpn_output_channels][j][k] = l2_out[i][j][k];
 //         l3_aggregator.forward(l3_in, skip3);
 
