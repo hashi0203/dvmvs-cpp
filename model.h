@@ -3,7 +3,6 @@
 #include "functional.h"
 #include "layers.h"
 #include "mnasnet.h"
-#include "convlstm.h"
 
 void StandardLayer(const float* x, float* y, const string param_path,
                    const int channels, const int height, const int width,
@@ -576,6 +575,53 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
 // private:
 //     string param_path;
 // };
+
+
+void LSTMFusion(const float current_encoding[(hyper_channels * 16) * height_32 * width_32],
+                float hidden_state[hid_channels * height_32 * width_32],
+                float cell_state[hid_channels * height_32 * width_32]) {
+
+    constexpr int in_channels = hyper_channels * 16;
+    constexpr int l0_in_channels = in_channels + hid_channels;
+    constexpr int l0_out_channels = 4 * hid_channels;
+    float combined[l0_in_channels * height_32 * width_32];
+    for (int idx = 0; idx < in_channels * height_32 * width_32; idx++)
+        combined[idx] = current_encoding[idx];
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        combined[idx + (in_channels * height_32 * width_32)] = hidden_state[idx];
+
+    constexpr int kernel_size = 3;
+    constexpr int stride = 1;
+    constexpr int padding = (kernel_size - 1) / 2;
+    constexpr int groups = 1;
+    constexpr bool apply_bias = false;
+    float combined_conv[l0_out_channels * height_32 * width_32];
+    Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_bias);
+
+    float* ii = combined_conv;
+    float* ff = combined_conv + 1 * (hid_channels * height_32 * width_32);
+    float* oo = combined_conv + 2 * (hid_channels * height_32 * width_32);
+    float* gg = combined_conv + 3 * (hid_channels * height_32 * width_32);
+
+    Sigmoid(ii, hid_channels, height_32, width_32);
+    Sigmoid(ff, hid_channels, height_32, width_32);
+    Sigmoid(oo, hid_channels, height_32, width_32);
+
+    layer_norm(gg, hid_channels, height_32, width_32);
+    celu(gg, hid_channels, height_32, width_32);
+
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        cell_state[idx] = ff[idx] * cell_state[idx] + ii[idx] * gg[idx];
+
+    layer_norm(cell_state, hid_channels, height_32, width_32);
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        hidden_state[idx] = cell_state[idx];
+
+    celu(hidden_state, hid_channels, height_32, width_32);
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        hidden_state[idx] *= oo[idx];
+
+}
 
 
 // class LSTMFusion{

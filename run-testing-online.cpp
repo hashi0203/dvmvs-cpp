@@ -44,9 +44,9 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              const int n_measurement_frames,
              const float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
              const float* warpings,
-             float hidden_state[hyper_channels * 16][height_32][width_32],
-             float cell_state[hyper_channels * 16][height_32][width_32],
              float reference_feature_half[fpn_output_channels * height_2 * width_2],
+             float hidden_state[hid_channels * height_32 * width_32],
+             float cell_state[hid_channels * height_32 * width_32],
              float prediction[test_image_height][test_image_width]) {
 
     float layer1[channels_1 * height_2 * width_2];
@@ -102,13 +102,22 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     // ofstream ofsb("bottom.txt");
     ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
-    for (int idx = 0; idx < (hyper_channels * 16) * height_32 * width_32; idx++)
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
         // ofsb << bottom[idx] << "\n";
         ofsb.write((char*) &bottom[idx], sizeof(float));
     ofsb.close();
 
     // LSTMFusion lstm_fusion("params/3_lstm_fusion");
-    // lstm_fusion.forward(bottom, hidden_state, cell_state);
+    params = params3;
+    mp = mp3;
+    LSTMFusion(bottom, hidden_state, cell_state);
+
+    // ofstream ofsh("hidden_state.txt");
+    ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        // ofsh << hidden_state[idx] << "\n";
+        ofsh.write((char*) &hidden_state[idx], sizeof(float));
+    ofsh.close();
 
     // CostVolumeDecoder cost_volume_decoder("params/4_decoder");
     // cost_volume_decoder.forward(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
@@ -203,8 +212,8 @@ int main() {
     float previous_pose[4 * 4];
 
     bool state_exists = false;
-    float hidden_state[hid_channels][height_32][width_32];
-    float cell_state[hid_channels][height_32][width_32];
+    float hidden_state[hid_channels * height_32 * width_32];
+    float cell_state[hid_channels * height_32 * width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
@@ -297,10 +306,10 @@ int main() {
 
         // initialize ConvLSTM params if needed
         if (!state_exists) {
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                hidden_state[i][j][k] = 0;
-            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                cell_state[i][j][k] = 0;
+            for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+                hidden_state[idx] = 0;
+            for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+                cell_state[idx] = 0;
         }
 
         if (previous_exists) {
@@ -312,17 +321,20 @@ int main() {
             float trans[4][4];
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) trans[i][j] = transformation(i, j);
 
-            float tmp_hidden_state[hid_channels][height_32][width_32];
-            warp_from_depth(hidden_state, depth_estimation[0], trans, lstm_K_bottom, tmp_hidden_state);
+            float in_hidden_state[hid_channels][height_32][width_32];
+            for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
+                in_hidden_state[i][j][k] = hidden_state[(i * height_32 + j) * width_32 + k];
+            float out_hidden_state[hid_channels][height_32][width_32];
+            warp_from_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
 
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                hidden_state[i][j][k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : tmp_hidden_state[i][j][k];
+                hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k];
         }
 
         float reference_feature_half[fpn_output_channels * height_2 * width_2];
         float prediction[test_image_height][test_image_width];
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
-                warpings, hidden_state, cell_state, reference_feature_half, prediction);
+                warpings, reference_feature_half, hidden_state, cell_state, prediction);
         delete[] warpings;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);

@@ -18,24 +18,26 @@ void pad_input(const float input[channels][in_height][in_width], float output[ch
 }
 
 
-template<int channels, int height, int width>
-void layer_norm(const float input[channels][height][width], float output[channels][height][width]) {
-    const float eps = 1e-5;
-    const int n1 = height * width;
-    for (int i = 0; i < channels; i++) {
-        float e = 0;
-        float v = 0;
-        for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
-            e += input[i][j][k];
-            v += input[i][j][k] * input[i][j][k];
-        }
-        e /= n1;
-        v /= n1;
-        v -= e * e;
-        for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
-            output[i][j][k] = (input[i][j][k] - e) / sqrt(v + eps);
-    }
-}
+void layer_norm(float* x, const int channels, const int height, const int width);
+
+// template<int channels, int height, int width>
+// void layer_norm(const float input[channels][height][width], float output[channels][height][width]) {
+//     const float eps = 1e-5;
+//     const int n1 = height * width;
+//     for (int i = 0; i < channels; i++) {
+//         float e = 0;
+//         float v = 0;
+//         for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
+//             e += input[i][j][k];
+//             v += input[i][j][k] * input[i][j][k];
+//         }
+//         e /= n1;
+//         v /= n1;
+//         v -= e * e;
+//         for (int j = 0; j < height; j++) for (int k = 0; k < width; k++)
+//             output[i][j][k] = (input[i][j][k] - e) / sqrt(v + eps);
+//     }
+// }
 
 
 float calculate_gain(const float a);
