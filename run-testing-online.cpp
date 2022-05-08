@@ -240,11 +240,6 @@ int main() {
         // prepare for cost volume fusion
         float* warpings = new float[n_measurement_frames * n_depth_levels * height_2 * width_2 * 2];
 
-        constexpr float inverse_depth_base = 1.0 / max_depth;
-        constexpr float inverse_depth_step = (1.0 / min_depth - 1.0 / max_depth) / (n_depth_levels - 1);
-
-        constexpr float width_normalizer = width_2 / 2.0;
-        constexpr float height_normalizer = height_2 / 2.0;
         for (int m = 0; m < n_measurement_frames; m++) {
             Matrix4f pose1, pose2;
             for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) pose1(i, j) = reference_pose[i * 4 + j];
@@ -339,7 +334,6 @@ int main() {
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
-        // return 0; // fix later
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i * test_image_width + j];

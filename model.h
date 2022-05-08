@@ -42,34 +42,6 @@ void UpconvolutionLayer(const float* x, float* y, const string param_path,
 }
 
 
-// template <int in_channels, int in_height, int in_width, int out_channels, int kernel_size>
-// class UpconvolutionLayer{
-// public:
-//     UpconvolutionLayer(const string param_path) : param_path(param_path) {}
-
-//     void forward(const float x[in_channels][in_height][in_width], float y[out_channels][in_height * 2][in_width * 2]) {
-//         const int out_height = in_height * 2;
-//         const int out_width = in_width * 2;
-//         float up_x[in_channels][out_height][out_width];
-//         interpolate<in_channels, in_height, in_width, out_height, out_width>(x, up_x, "bilinear");
-
-//         const int stride = 1;
-//         const bool apply_bn_relu = true;
-
-//         conv_layer<in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, apply_bn_relu> l0_conv_layer(param_path + ".conv");
-
-//         // float y0[out_channels][out_height][out_width];
-//         l0_conv_layer.forward(up_x, y);
-
-//         // for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-//         //     y[i][j][k] = y0[i][j][k];
-//     }
-
-// private:
-//     string param_path;
-// };
-
-
 void EncoderBlock(const float* x, float* y, const string param_path,
                   const int in_channels, const int in_height, const int in_width,
                   const int out_channels, const int out_height, const int out_width,
@@ -115,56 +87,6 @@ void DecoderBlock(const float* x, const float* skip, const float* depth, float* 
     const bool l2_apply_bn_relu = apply_bn_relu;
     conv_layer(y1, y, param_path + ".convolution2", out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l2_apply_bn_relu);
 }
-
-// template <int in_channels, int in_height, int in_width, int kernel_size, bool apply_bn_relu, bool plus_one>
-// class DecoderBlock{
-// public:
-//     DecoderBlock(const string param_path) : param_path(param_path) {}
-
-//     void forward(const float x[in_channels][in_height][in_width],
-//                  const float skip[in_channels / 2][in_height * 2][in_width * 2],
-//                  const float depth[1][in_height][in_width],
-//                  float y[in_channels / 2][in_height * 2][in_width * 2]) {
-
-//         const int out_height = in_height * 2;
-//         const int out_width = in_width * 2;
-//         const int out_channels = in_channels / 2;
-
-//         UpconvolutionLayer<in_channels, in_height, in_width, out_channels, kernel_size> l0_up_convolution(param_path + ".up_convolution");
-//         float y0[out_channels][out_height][out_width];
-//         l0_up_convolution.forward(x, y0);
-
-//         const int stride = 1;
-
-//         // Aggregate skip and upsampled input
-//         const int l1_in_channels = plus_one ? in_channels +  1 : in_channels;
-
-//         float x1[l1_in_channels][out_height][out_width];
-//         for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-//             x1[i][j][k] = y0[i][j][k];
-//         for (int i = 0; i < out_channels; i++) for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-//             x1[i+out_channels][j][k] = skip[i][j][k];
-//         if (plus_one) {
-//             float up_depth[1][out_height][out_width];
-//             interpolate<1, in_height, in_width, out_height, out_width>(depth, up_depth, "bilinear");
-//             for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++)
-//                 x1[in_channels][j][k] = up_depth[0][j][k];
-//         }
-
-//         const bool l1_apply_bn_relu = true;
-//         conv_layer<l1_in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l1_apply_bn_relu> l1_conv_layer(param_path + ".convolution1");
-//         float y1[out_channels][out_height][out_width];
-//         l1_conv_layer.forward(x1, y1);
-
-//         // Learn from aggregation
-//         const bool l2_apply_bn_relu = apply_bn_relu;
-//         conv_layer<out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, l2_apply_bn_relu> l2_conv_layer(param_path + ".convolution2");
-//         l2_conv_layer.forward(y1, y);
-//     }
-
-// private:
-//     string param_path;
-// };
 
 
 void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
@@ -483,9 +405,6 @@ void CostVolumeDecoder(const float image[3 * test_image_height * test_image_widt
                        const float bottom[(hyper_channels * 16) * height_32 * width_32],
                        float depth_full[test_image_height * test_image_width]) {
 
-    constexpr float inverse_depth_base = 1 / max_depth;
-    constexpr float inverse_depth_multiplier = 1 / min_depth - 1 / max_depth;
-
     constexpr bool apply_bn_relu = true;
 
     // 1st set
@@ -581,160 +500,6 @@ void CostVolumeDecoder(const float image[3 * test_image_height * test_image_widt
         depth_full[idx] = 1.0 / (inverse_depth_multiplier * depth_full[idx] + inverse_depth_base);
 
 }
-
-
-// class CostVolumeDecoder{
-// public:
-//     CostVolumeDecoder(const string param_path) : param_path(param_path) {}
-
-//     void forward(const float image[3 * test_image_height * test_image_width],
-//                  const float skip0[hyper_channels][height_2][width_2],
-//                  const float skip1[hyper_channels * 2][height_4][width_4],
-//                  const float skip2[hyper_channels * 4][height_8][width_8],
-//                  const float skip3[hyper_channels * 8][height_16][width_16],
-//                  const float bottom[hyper_channels * 16][height_32][width_32],
-//                  float depth_full[test_image_height][test_image_width]) {
-
-//         const float inverse_depth_base = 1 / max_depth;
-//         const float inverse_depth_multiplier = 1 / min_depth - 1 / max_depth;
-
-//         const bool apply_bn_relu = true;
-
-//         // 1st set
-//         const int l0_in_channels = hyper_channels * 16;
-//         const int l0_in_height = height_32;
-//         const int l0_in_width = width_32;
-
-//         const int l0_kernel_size = 3;
-//         const bool l0_plus_one = false;
-//         DecoderBlock<l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, apply_bn_relu, l0_plus_one> l0_decoder_block(param_path + "/decoder_block1");
-
-//         const int l0_out_channels = hyper_channels * 8;
-//         const int l0_out_height = height_16;
-//         const int l0_out_width = width_16;
-//         depth_layer_3x3<l0_out_channels, l0_out_height, l0_out_width> l0_depth_layer_one_sixteen(param_path + "/depth_layer_one_sixteen");
-
-//         float null_depth[1][l0_in_height][l0_in_width];
-//         float decoder_block1[l0_out_channels][l0_out_height][l0_out_width];
-//         l0_decoder_block.forward(bottom, skip3, null_depth, decoder_block1);
-
-//         float sigmoid_depth_one_sixteen[1][l0_out_height][l0_out_width];
-//         l0_depth_layer_one_sixteen.forward(decoder_block1, sigmoid_depth_one_sixteen);
-
-//         // float depth_one_sixteen[l0_out_height][l0_out_width];
-//         // for (int j = 0; j < l0_out_height; j++) for (int k = 0; k < l0_out_width; k++)
-//         //     depth_one_sixteen[j][k] = 1.0 / (inverse_depth_multiplier * sigmoid_depth_one_sixteen[0][j][k] + inverse_depth_base);
-
-
-//         // 2nd set
-//         const int l1_kernel_size = 3;
-//         const bool l1_plus_one = true;
-//         DecoderBlock<l0_out_channels, l0_out_height, l0_out_width, l1_kernel_size, apply_bn_relu, l1_plus_one> l1_decoder_block(param_path + "/decoder_block2");
-
-//         const int l1_out_channels = hyper_channels * 4;
-//         const int l1_out_height = height_8;
-//         const int l1_out_width = width_8;
-//         depth_layer_3x3<l1_out_channels, l1_out_height, l1_out_width> l1_depth_layer_one_eight(param_path + "/depth_layer_one_eight");
-
-//         float decoder_block2[l1_out_channels][l1_out_height][l1_out_width];
-//         l1_decoder_block.forward(decoder_block1, skip2, sigmoid_depth_one_sixteen, decoder_block2);
-
-//         float sigmoid_depth_one_eight[1][l1_out_height][l1_out_width];
-//         l1_depth_layer_one_eight.forward(decoder_block2, sigmoid_depth_one_eight);
-
-//         // float depth_one_eight[l1_out_height][l1_out_width];
-//         // for (int j = 0; j < l1_out_height; j++) for (int k = 0; k < l1_out_width; k++)
-//         //     depth_one_eight[j][k] = 1.0 / (inverse_depth_multiplier * sigmoid_depth_one_eight[0][j][k] + inverse_depth_base);
-
-
-//         // 3rd set
-//         const int l2_kernel_size = 3;
-//         const bool l2_plus_one = true;
-//         DecoderBlock<l1_out_channels, l1_out_height, l1_out_width, l2_kernel_size, apply_bn_relu, l2_plus_one> l2_decoder_block(param_path + "/decoder_block3");
-
-//         const int l2_out_channels = hyper_channels * 2;
-//         const int l2_out_height = height_4;
-//         const int l2_out_width = width_4;
-//         depth_layer_3x3<l2_out_channels, l2_out_height, l2_out_width> l2_depth_layer_quarter(param_path + "/depth_layer_quarter");
-
-//         float decoder_block3[l2_out_channels][l2_out_height][l2_out_width];
-//         l2_decoder_block.forward(decoder_block2, skip1, sigmoid_depth_one_eight, decoder_block3);
-
-//         float sigmoid_depth_quarter[1][l2_out_height][l2_out_width];
-//         l2_depth_layer_quarter.forward(decoder_block3, sigmoid_depth_quarter);
-
-//         // float depth_quarter[l2_out_height][l2_out_width];
-//         // for (int j = 0; j < l2_out_height; j++) for (int k = 0; k < l2_out_width; k++)
-//         //     depth_quarter[j][k] = 1.0 / (inverse_depth_multiplier * sigmoid_depth_quarter[0][j][k] + inverse_depth_base);
-
-
-//         // 4th set
-//         const int l3_kernel_size = 5;
-//         const bool l3_plus_one = true;
-//         DecoderBlock<l2_out_channels, l2_out_height, l2_out_width, l3_kernel_size, apply_bn_relu, l3_plus_one> l3_decoder_block(param_path + "/decoder_block4");
-
-//         const int l3_out_channels = hyper_channels;
-//         const int l3_out_height = height_2;
-//         const int l3_out_width = width_2;
-//         depth_layer_3x3<l3_out_channels, l3_out_height, l3_out_width> l3_depth_layer_half(param_path + "/depth_layer_half");
-
-//         float decoder_block4[l3_out_channels][l3_out_height][l3_out_width];
-//         l3_decoder_block.forward(decoder_block3, skip0, sigmoid_depth_quarter, decoder_block4);
-
-//         float sigmoid_depth_half[1][l3_out_height][l3_out_width];
-//         l3_depth_layer_half.forward(decoder_block4, sigmoid_depth_half);
-
-//         // float depth_half[l3_out_height][l3_out_width];
-//         // for (int j = 0; j < l3_out_height; j++) for (int k = 0; k < l3_out_width; k++)
-//         //     depth_half[j][k] = 1.0 / (inverse_depth_multiplier * sigmoid_depth_half[0][j][k] + inverse_depth_base);
-
-
-//         // 5th set
-//         const int l4_in_height = l3_out_height * 2;
-//         const int l4_in_width = l3_out_width * 2;
-//         float scaled_depth[1][l4_in_height][l4_in_width];
-//         interpolate<1, l3_out_height, l3_out_width, l4_in_height, l4_in_width>(sigmoid_depth_half, scaled_depth, "bilinear");
-
-//         float scaled_decoder[l3_out_channels][l4_in_height][l4_in_width];
-//         interpolate<l3_out_channels, l3_out_height, l3_out_width, l4_in_height, l4_in_width>(decoder_block4, scaled_decoder, "bilinear");
-
-//         const int l4_in_channels = l3_out_channels + 4;
-//         float scaled_combined[l4_in_channels][l4_in_height][l4_in_width];
-//         for (int i = 0; i < l3_out_channels; i++) for (int j = 0; j < l4_in_height; j++) for (int k = 0; k < l4_in_width; k++)
-//             scaled_combined[i][j][k] = scaled_decoder[i][j][k];
-//         for (int j = 0; j < l4_in_height; j++) for (int k = 0; k < l4_in_width; k++)
-//             scaled_combined[l3_out_channels][j][k] = scaled_depth[0][j][k];
-//         for (int i = 0; i < 3; i++) for (int j = 0; j < l4_in_height; j++) for (int k = 0; k < l4_in_width; k++)
-//             scaled_combined[i+l3_out_channels+1][j][k] = image[(i * test_image_height + j) * test_image_width + k];
-
-//         const int l4_kernel_size = 5;
-//         const int l4_stride = 1;
-
-//         const int l4_out_channels = hyper_channels;
-//         const int l4_out_height = test_image_height;
-//         const int l4_out_width = test_image_width;
-//         conv_layer<l4_in_channels, l4_in_height, l4_in_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu> l4_refine0(param_path + "/refine.0");
-//         conv_layer<l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, apply_bn_relu> l4_refine1(param_path + "/refine.1");
-//         depth_layer_3x3<l4_out_channels, l4_out_height, l4_out_width> l4_depth_layer_full(param_path + "/depth_layer_full");
-
-//         float refined0[l4_out_channels][l4_out_height][l4_out_width];
-//         l4_refine0.forward(scaled_combined, refined0);
-
-//         float refined1[l4_out_channels][l4_out_height][l4_out_width];
-//         l4_refine1.forward(refined0, refined1);
-
-//         float sigmoid_depth_full[1][l4_out_height][l4_out_width];
-//         l4_depth_layer_full.forward(refined1, sigmoid_depth_full);
-
-//         // float depth_full[l4_out_height][l4_out_width];
-//         for (int j = 0; j < l4_out_height; j++) for (int k = 0; k < l4_out_width; k++)
-//             depth_full[j][k] = 1.0 / (inverse_depth_multiplier * sigmoid_depth_full[0][j][k] + inverse_depth_base);
-
-//     }
-
-// private:
-//     string param_path;
-// };
 
 
 void LSTMFusion(const float current_encoding[(hyper_channels * 16) * height_32 * width_32],

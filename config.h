@@ -39,9 +39,19 @@ constexpr float min_depth = 0.25;
 constexpr float max_depth = 20.0;
 constexpr int n_depth_levels = 64;
 
+constexpr float inverse_depth_base = 1.0 / max_depth;
+constexpr float inverse_depth_multiplier = 1.0 / min_depth - 1.0 / max_depth;
+constexpr float inverse_depth_step = inverse_depth_multiplier / (n_depth_levels - 1);
+
 constexpr int fpn_output_channels = 32;
 constexpr int hyper_channels = 32;
 constexpr int hid_channels = hyper_channels * 16;
+
+constexpr int channels_1 = 16;
+constexpr int channels_2 = 24;
+constexpr int channels_3 = 40;
+constexpr int channels_4 = 96;
+constexpr int channels_5 = 320;
 
 constexpr int height_2 = test_image_height / 2;
 constexpr int height_4 = test_image_height / 4;
@@ -55,11 +65,8 @@ constexpr int width_8 = test_image_width / 8;
 constexpr int width_16 = test_image_width / 16;
 constexpr int width_32 = test_image_width / 32;
 
-constexpr int channels_1 = 16;
-constexpr int channels_2 = 24;
-constexpr int channels_3 = 40;
-constexpr int channels_4 = 96;
-constexpr int channels_5 = 320;
+constexpr float height_normalizer = height_2 / 2.0;
+constexpr float width_normalizer = width_2 / 2.0;
 
 extern float* params;
 extern float* params0;
