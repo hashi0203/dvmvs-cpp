@@ -1,4 +1,10 @@
 #include "config.h"
+#include "functional.h"
+#include "conv.h"
+#include "activation.h"
+#include "batchnorm.h"
+#include "layers.h"
+#include "mnasnet.h"
 #include "model.h"
 
 #include <Eigen/Dense>

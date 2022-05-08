@@ -1,5 +1,4 @@
 #pragma once
-#include "config.h"
 
 void layer_norm(float* x, const int channels, const int height, const int width);
 

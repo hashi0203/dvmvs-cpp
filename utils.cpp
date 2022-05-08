@@ -1,10 +1,11 @@
-#include "config.h"
-#include "functional.h"
-#include "kornia.h"
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <Eigen/LU>
 using namespace Eigen;
+
+#include "config.h"
+#include "functional.h"
+#include "kornia.h"
 
 // GEOMETRIC UTILS
 void pose_distance(const float reference_pose[4 * 4], const float measurement_pose[4 * 4], float &combined_measure, float &R_measure, float &t_measure) {

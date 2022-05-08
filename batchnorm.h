@@ -1,5 +1,4 @@
 #pragma once
-#include "settings.h"
 
 void BatchNorm2d(float* x, const string param_path,
                  const int channels, const int height, const int width) {

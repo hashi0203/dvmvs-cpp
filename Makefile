@@ -4,8 +4,8 @@ OPENCV := `pkg-config --cflags --libs opencv4`
 # OPENCV := -I/usr/local/include/opencv2 -I/usr/local/include/opencv -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui
 EIGEN := -I /usr/include/eigen3
 
-main: torch.o functional.o dataset_loader.o keyframe_buffer.o utils.o run-testing-online.o
-	$(CC) $(CFLAGS) torch.o functional.o dataset_loader.o keyframe_buffer.o utils.o run-testing-online.o $(OPENCV) && ./a.out
+main: functional.o dataset_loader.o keyframe_buffer.o utils.o run-testing-online.o
+	$(CC) $(CFLAGS) functional.o dataset_loader.o keyframe_buffer.o utils.o run-testing-online.o $(OPENCV) && ./a.out
 
 run-testing-online.o: run-testing-online.cpp
 	$(CC) $(CFLAGS) $(EIGEN) -c run-testing-online.cpp
@@ -22,17 +22,11 @@ dataset_loader.o: dataset_loader.cpp
 functional.o: functional.cpp
 	$(CC) $(CFLAGS) -c functional.cpp
 
-torch.o: torch.cpp
-	$(CC) $(CFLAGS) -c torch.cpp
-
 test:
 	$(CC) $(CFLAGS) $(EIGEN) test.cpp $(OPENCV) && ./a.out
 
 conv-test:
 	$(CC) $(CFLAGS) conv-test.cpp && ./a.out
-
-torch-test: torch.o
-	$(CC) $(CFLAGS) torch.o torch-test.cpp && ./a.out
 
 mnasnet-test:
 	$(CC) $(CFLAGS) mnasnet-test.cpp && ./a.out

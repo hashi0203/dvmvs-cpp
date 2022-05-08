@@ -1,8 +1,4 @@
 #pragma once
-#include "config.h"
-#include "conv.h"
-#include "batchnorm.h"
-#include "activation.h"
 
 void _InvertedResidual(const float* x, float* y, const string param_path,
                        const int in_channels, const int in_height, const int in_width,

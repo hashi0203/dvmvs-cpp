@@ -1,5 +1,4 @@
 #pragma once
-#include "settings.h"
 
 void ReLU(float* x, const int channels, const int height, const int width) {
     for (int idx = 0; idx < channels * height * width; idx++)

@@ -1,8 +1,4 @@
 #pragma once
-#include "config.h"
-#include "functional.h"
-#include "layers.h"
-#include "mnasnet.h"
 
 void StandardLayer(const float* x, float* y, const string param_path,
                    const int channels, const int height, const int width,

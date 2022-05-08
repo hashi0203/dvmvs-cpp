@@ -1,6 +1,5 @@
 #include "config.h"
 
-
 float KeyframeBuffer::calculate_penalty(const float t_score, const float R_score) {
     float degree = 2.0;
     float R_penalty = pow(abs(R_score - optimal_R_score), degree);

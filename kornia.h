@@ -1,9 +1,4 @@
 #pragma once
-#include "config.h"
-#include <Eigen/Dense>
-#include <Eigen/Core>
-#include <Eigen/LU>
-using namespace Eigen;
 
 template <int height, int width>
 void create_meshgrid(float meshgrid[height][width][2]) {
