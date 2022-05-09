@@ -8,13 +8,18 @@ void Conv2d(const float* input,
             const int kernel_size, const int stride, const int padding, const int groups, const bool apply_bias) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
-    if (mp.find(param_path + ".weight") == mp.end())
-        cout << param_path + ".weight" << "\n";
-    if (mp.find(param_path + ".bias") == mp.end() && apply_bias)
-        cout << param_path + ".bias" << "\n";
+    // if (mp.find(param_path + ".weight") == mp.end())
+    //     cout << param_path + ".weight" << "\n";
+    // if (mp.find(param_path + ".bias") == mp.end() && apply_bias)
+    //     cout << param_path + ".bias" << "\n";
 
-    const float* weight = params + mp[param_path + ".weight"];
-    const float* bias = params + mp[param_path + ".bias"]; // maybe invalid pointer
+    // const float* weight = params + mp[param_path + ".weight"];
+    // const float* bias = params + mp[param_path + ".bias"]; // maybe invalid pointer
+
+    const float* weight = params + start_idx[param_cnt++];
+    const float* bias = apply_bias ? params + start_idx[param_cnt++] : nullptr;
+    // print1(param_path + ".weight");
+    // if (apply_bias) print1(param_path + ".bias");
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;

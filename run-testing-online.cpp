@@ -12,42 +12,48 @@
 #include <Eigen/LU>
 using namespace Eigen;
 
-float* params;
-float* params0 = new float[2725512];
-float* params1 = new float[62272];
-float* params2 = new float[8990848];
-float* params3 = new float[18874368];
-float* params4 = new float[4066277];
-unordered_map<string, int> mp;
-unordered_map<string, int> mp0;
-unordered_map<string, int> mp1;
-unordered_map<string, int> mp2;
-unordered_map<string, int> mp3;
-unordered_map<string, int> mp4;
+float* params = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
+int start_idx[n_files + 1];
+int param_cnt;
 
-void read_params(const string dirname, const int n_files, float* params, unordered_map<string, int>& mp) {
+// float* params0 = new float[2725512];
+// float* params1 = new float[62272];
+// float* params2 = new float[8990848];
+// float* params3 = new float[18874368];
+// float* params4 = new float[4066277];
+// unordered_map<string, int> mp;
+// unordered_map<string, int> mp0;
+// unordered_map<string, int> mp1;
+// unordered_map<string, int> mp2;
+// unordered_map<string, int> mp3;
+// unordered_map<string, int> mp4;
+
+// void read_params(const string dirname, const int n_files, float* params, unordered_map<string, int>& mp) {
+void read_params() {
     ifstream ifs;
 
     int n_params[n_files];
-    ifs.open("params/" + dirname + "_values");
+    // ifs.open("params/" + dirname + "_values");
+    ifs.open("params/values");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
-    int start_idx[n_files + 1];
+    // int start_idx[n_files + 1];
     start_idx[0] = 0;
     for (int i = 0; i < n_files; i++) {
         start_idx[i+1] = start_idx[i] + n_params[i];
     }
 
-    ifs.open("params/" + dirname + "_keys");
-    for (int i = 0; i < n_files; i++) {
-        string filename;
-        getline(ifs, filename);
-        mp[filename] = start_idx[i];
-    }
-    ifs.close();
+    // ifs.open("params/" + dirname + "_keys");
+    // for (int i = 0; i < n_files; i++) {
+    //     string filename;
+    //     getline(ifs, filename);
+    //     mp[filename] = start_idx[i];
+    // }
+    // ifs.close();
 
-    ifs.open("params/" + dirname + "_params");
+    // ifs.open("params/" + dirname + "_params");
+    ifs.open("params/params");
     ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
     ifs.close();
 }
@@ -62,15 +68,16 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              float cell_state[hid_channels * height_32 * width_32],
              float prediction[test_image_height * test_image_width]) {
 
+    param_cnt = 0;
+
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
     float layer3[channels_3 * height_8 * width_8];
     float layer4[channels_4 * height_16 * width_16];
     float layer5[channels_5 * height_32 * width_32];
-    params = params0;
-    mp = mp0;
+    // params = params0;
+    // mp = mp0;
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
-
     // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
     //     // ofs5 << layer5[idx] << "\n";
@@ -80,8 +87,8 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    params = params1;
-    mp = mp1;
+    // params = params1;
+    // mp = mp1;
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
     // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
@@ -107,8 +114,8 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float skip2[(hyper_channels * 4) * height_8 * width_8];
     float skip3[(hyper_channels * 8) * height_16 * width_16];
     float bottom[(hyper_channels * 16) * height_32 * width_32];
-    params = params2;
-    mp = mp2;
+    // params = params2;
+    // mp = mp2;
     CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                       skip0, skip1, skip2, skip3, bottom);
 
@@ -119,8 +126,8 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     //     ofsb.write((char*) &bottom[idx], sizeof(float));
     // ofsb.close();
 
-    params = params3;
-    mp = mp3;
+    // params = params3;
+    // mp = mp3;
     LSTMFusion(bottom, hidden_state, cell_state);
 
     // // ofstream ofsh("hidden_state.txt");
@@ -130,8 +137,8 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     //     ofsh.write((char*) &hidden_state[idx], sizeof(float));
     // ofsh.close();
 
-    params = params4;
-    mp = mp4;
+    // params = params4;
+    // mp = mp4;
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
 }
 
@@ -210,11 +217,12 @@ int main() {
     print1(image_filenames[0]);
 
     // read params
-    read_params("0_feature_extractor", 255, params0, mp0);
-    read_params("1_feature_pyramid", 20, params1, mp1);
-    read_params("2_encoder", 80, params2, mp2);
-    read_params("3_lstm_fusion", 1, params3, mp3);
-    read_params("4_decoder", 80, params4, mp4);
+    // read_params("0_feature_extractor", 255, params0, mp0);
+    // read_params("1_feature_pyramid", 20, params1, mp1);
+    // read_params("2_encoder", 80, params2, mp2);
+    // read_params("3_lstm_fusion", 1, params3, mp3);
+    // read_params("4_decoder", 80, params4, mp4);
+    read_params();
 
     bool previous_exists = false;
     float previous_depth[test_image_height][test_image_width];

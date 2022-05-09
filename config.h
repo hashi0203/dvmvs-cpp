@@ -69,18 +69,22 @@ constexpr float height_normalizer = height_2 / 2.0;
 constexpr float width_normalizer = width_2 / 2.0;
 
 extern float* params;
-extern float* params0;
-extern float* params1;
-extern float* params2;
-extern float* params3;
-extern float* params4;
+constexpr int n_files = 255 + 18 + 80 + 1 + 80;
+extern int start_idx[n_files + 1];
+extern int param_cnt;
 
-extern unordered_map<string, int> mp;
-extern unordered_map<string, int> mp0;
-extern unordered_map<string, int> mp1;
-extern unordered_map<string, int> mp2;
-extern unordered_map<string, int> mp3;
-extern unordered_map<string, int> mp4;
+// extern float* params0;
+// extern float* params1;
+// extern float* params2;
+// extern float* params3;
+// extern float* params4;
+
+// extern unordered_map<string, int> mp;
+// extern unordered_map<string, int> mp0;
+// extern unordered_map<string, int> mp1;
+// extern unordered_map<string, int> mp2;
+// extern unordered_map<string, int> mp3;
+// extern unordered_map<string, int> mp4;
 
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
