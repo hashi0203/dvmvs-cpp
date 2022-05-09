@@ -413,7 +413,7 @@ void CostVolumeDecoder(const float image[3 * test_image_height * test_image_widt
     constexpr int l0_out_channels = hyper_channels * 8;
     constexpr int l0_out_height = height_16;
     constexpr int l0_out_width = width_16;
-    float null_depth[1 * l0_in_height * l0_in_width];
+    float* null_depth = nullptr;
     float decoder_block1[l0_out_channels * l0_out_height * l0_out_width];
     DecoderBlock(bottom, skip3, null_depth, decoder_block1, "decoder_block1", l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, apply_bn_relu, l0_plus_one);
 
