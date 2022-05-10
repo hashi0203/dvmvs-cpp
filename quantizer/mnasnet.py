@@ -9,7 +9,7 @@ def save_acts(seq, x, activations):
     for l in seq:
         x = l(x)
         if isinstance(l, torch.nn.modules.conv.Conv2d) or isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-            activations.append(x)
+            activations.append(x.cpu().numpy().squeeze().reshape(-1))
     return x, activations
 
 
@@ -39,7 +39,7 @@ class _InvertedResidual(nn.Module):
     def forward(self, input, activations):
         x, activations = save_acts(self.layers, input, activations)
         if self.apply_residual:
-            activations[-1] += input
+            activations[-1] += input.cpu().numpy().squeeze().reshape(-1)
             return x + input, activations
             # return self.layers(input) + input
         else:

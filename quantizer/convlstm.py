@@ -42,7 +42,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
 
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
         combined_conv = self.conv(combined)
-        activations.append(combined_conv)
+        activations.append(combined_conv.cpu().numpy().squeeze().reshape(-1))
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
         b, c, h, w = h_cur.size()

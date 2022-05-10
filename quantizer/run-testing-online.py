@@ -99,7 +99,7 @@ def predict(evaluate):
         depth_filenames = None
 
     with torch.no_grad():
-        for i in tqdm(range(0, len(poses))):
+        for i in tqdm(range(20, len(poses))):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -162,8 +162,10 @@ def predict(evaluate):
             #     measurement_feature_half, _, _, _ = feature_shrinker(*feature_extractor(measurement_image_torch))
             #     measurement_feature_halfs.append(measurement_feature_half)
 
+            layer1, layer2, layer3, layer4, layer5 = feature_extractor(reference_image_torch)
+
             reference_feature_half, reference_feature_quarter, \
-            reference_feature_one_eight, reference_feature_one_sixteen = feature_shrinker(*feature_extractor(reference_image_torch))
+            reference_feature_one_eight, reference_feature_one_sixteen = feature_shrinker(layer1, layer2, layer3, layer4, layer5)
 
             keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half)
 

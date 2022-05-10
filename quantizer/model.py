@@ -20,8 +20,9 @@ def save_acts(seq, x, activations):
         else:
             x = l(x)
             if isinstance(l, torch.nn.modules.conv.Conv2d) or isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-                activations.append(x)
+                activations.append(x.cpu().numpy().squeeze().reshape(-1))
     return x, activations
+
 
 class StandardLayer(torch.nn.Module):
     def __init__(self, channels, kernel_size, apply_bn_relu):

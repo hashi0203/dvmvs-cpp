@@ -3,6 +3,8 @@ import numpy as np
 import torch
 from path import Path
 from tqdm import tqdm
+import os
+import struct
 
 from config import Config
 from dataset_loader import PreprocessImage, load_image
@@ -12,12 +14,13 @@ from utils import cost_volume_fusion, get_non_differentiable_rectangle_depth_est
 
 INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767]
 
-def quantize(act, bit, alpha=0.9):
+def quantize(f, act, bit, alpha=0.95):
     act = np.abs(act)
     act = np.sort(act)
     idx = int(round(len(act) * alpha))
     scale = float(INTMAX[bit] / act[idx])
     shift = int(np.floor(np.log2(scale)))
+    f.write(struct.pack('i', shift))
     return act[idx], scale, shift
 
 
@@ -96,10 +99,11 @@ def predict():
     previous_pose = None
 
     predictions = []
+    base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("..")
 
     with torch.no_grad():
         acts = None
-        for i in tqdm(range(0, len(poses) // 4)):
+        for i in tqdm(range(20, len(poses) // 3)):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -204,21 +208,24 @@ def predict():
             prediction = prediction.cpu().numpy().squeeze()
             predictions.append(prediction)
 
-            save_path = Path("/home/nhsmt1123/master-thesis/dvmvs-cpp/results-py")
-            cv2.imwrite(save_path / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
-            with open(save_path / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
+            cv2.imwrite(base_dir / "results-py" / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
+            with open(base_dir / "results-py" / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
                 for p in prediction:
                     f.write(' '.join(map(str, p)) + '\n')
 
+
             if acts is None:
-                acts = [act.cpu().numpy().squeeze().reshape(-1) for act in activations]
+                acts = activations.copy()
             else:
                 for idx, act in enumerate(activations):
-                    act = act.cpu().numpy().squeeze().reshape(-1)
+                    # act = act.cpu().numpy().squeeze().reshape(-1)
                     acts[idx] = np.concatenate([acts[idx], act])
 
-        for act in acts:
-            print(quantize(act, 16))
+    f = open(base_dir / "params" / "actshifts_quantized", "wb")
+    for act in acts:
+        print(quantize(f, act, 16))
+    f.close()
+    print(len(acts))
 
 
 if __name__ == '__main__':
