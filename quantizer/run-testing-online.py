@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from config import Config
 from dataset_loader import PreprocessImage, load_image
-from model import FeatureExtractor, FeatureShrinker, CostVolumeEncoder, LSTMFusion, CostVolumeDecoder
+from model_org import FeatureExtractor, FeatureShrinker, CostVolumeEncoder, LSTMFusion, CostVolumeDecoder
 from keyframe_buffer2 import KeyframeBuffer
 from utils import cost_volume_fusion, save_results, visualize_predictions, InferenceTimer, get_non_differentiable_rectangle_depth_estimation, \
     get_warp_grid_for_cost_volume_calculation
@@ -225,10 +225,11 @@ def predict(evaluate):
             prediction = prediction.cpu().numpy().squeeze()
             predictions.append(prediction)
 
-            cv2.imwrite(Path(Config.save_path) / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
-            with open(Path(Config.save_path) / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
+            save_path = Path("/home/nhsmt1123/master-thesis/dvmvs-cpp/results-org")
+            cv2.imwrite(save_path / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
+            with open(save_path / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
                 for p in prediction:
-                    f.write(' '.join(map(str, p)))
+                    f.write(' '.join(map(str, p)) + '\n')
 
             # if Config.test_visualize:
             #     visualize_predictions(numpy_reference_image=reference_image,

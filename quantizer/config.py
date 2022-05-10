@@ -67,8 +67,6 @@ class Config:
     # test_dataset_name = "hololens-dataset"  # or None
     test_dataset_name = "hololens"  # or None
 
-    save_path = "/home/nhsmt1123/master-thesis/dvmvs-cpp/results-py"
-
     # test_result_folder = "/home/nhsmt1123/master-thesis/deep-video-mvs/results/"
 
     # n_test_frames = 50

@@ -10,6 +10,16 @@ from model import FeatureExtractor, FeatureShrinker, CostVolumeEncoder, LSTMFusi
 from keyframe_buffer2 import KeyframeBuffer
 from utils import cost_volume_fusion, get_non_differentiable_rectangle_depth_estimation, get_warp_grid_for_cost_volume_calculation
 
+INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767]
+
+def quantize(act, bit, alpha=0.9):
+    act = np.abs(act)
+    act = np.sort(act)
+    idx = int(round(len(act) * alpha))
+    scale = float(INTMAX[bit] / act[idx])
+    shift = int(np.floor(np.log2(scale)))
+    return act[idx], scale, shift
+
 
 def predict():
     dataset_name = Config.test_online_scene_path.split("/")[-2]
@@ -88,7 +98,8 @@ def predict():
     predictions = []
 
     with torch.no_grad():
-        for i in tqdm(range(20, len(poses))):
+        acts = None
+        for i in tqdm(range(0, len(poses) // 4)):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -193,10 +204,21 @@ def predict():
             prediction = prediction.cpu().numpy().squeeze()
             predictions.append(prediction)
 
+            save_path = Path("/home/nhsmt1123/master-thesis/dvmvs-cpp/results-py")
             cv2.imwrite(Path(Config.save_path) / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
             with open(Path(Config.save_path) / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
                 for p in prediction:
-                    f.write(' '.join(map(str, p)))
+                    f.write(' '.join(map(str, p)) + '\n')
+
+            if acts is None:
+                acts = [act.cpu().numpy().squeeze().reshape(-1) for act in activations]
+            else:
+                for idx, act in enumerate(activations):
+                    act = act.cpu().numpy().squeeze().reshape(-1)
+                    acts[idx] = np.concatenate([acts[idx], act])
+
+        for act in acts:
+            print(quantize(act, 16))
 
 
 if __name__ == '__main__':
