@@ -16,6 +16,7 @@ qwint* params = new qwint[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 int start_idx[n_files + 1];
 int param_cnt;
 int shifts[n_files];
+int offset_cnt;
 
 float* params_f = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 
@@ -55,6 +56,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              float prediction[test_image_height * test_image_width]) {
 
     param_cnt = 0;
+    offset_cnt = 0;
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
@@ -62,13 +64,13 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float layer4[channels_4 * height_16 * width_16];
     float layer5[channels_5 * height_32 * width_32];
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
-    // ofstream ofs5("layer5.txt");
-    // // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
-    // // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
-    // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-    //     ofs5 << layer5[idx] << "\n";
-    //     // ofs5.write((char*) &layer5[idx], sizeof(float));
-    // ofs5.close();
+    ofstream ofs5("layer5.txt");
+    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
+    for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
+        ofs5 << layer5[idx] << "\n";
+        // ofs5.write((char*) &layer5[idx], sizeof(float));
+    ofs5.close();
 
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];

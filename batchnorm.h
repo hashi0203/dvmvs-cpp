@@ -13,6 +13,7 @@ void BatchNorm2d(float* x, const string param_path,
     const qwint* running_mean = params + start_idx[param_cnt++];
     const int vshift = shifts[param_cnt];
     const qwint* running_var = params + start_idx[param_cnt++];
+    const int voffset = offsets[offset_cnt++];
     const int wshift = shifts[param_cnt];
     const qwint* weight = params + start_idx[param_cnt++];
     const int bshift = shifts[param_cnt];
@@ -39,7 +40,8 @@ void BatchNorm2d(float* x, const string param_path,
     for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
         const int idx = (i * height + j) * width + k;
         const float xc = x[idx] - (running_mean[i] * mm);
-        const float xn = xc / sqrt((running_var[i] * vv) + 1e-5);
+        const float rv = (vshift > 0) ? (running_var[i] + voffset) * vv : (running_var[i] * vv) + voffset;
+        const float xn = xc / sqrt(rv + 1e-5);
         x[idx] = ((weight[i] * xn) / (float) (1 << wshift)) + (bias[i] / (float) (1 << bshift));
     }
 }
