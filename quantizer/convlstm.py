@@ -23,7 +23,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=False)
 
-    def forward(self, input_tensor, cur_state, previous_pose, current_pose, estimated_current_depth, camera_matrix):
+    def forward(self, input_tensor, cur_state, previous_pose, current_pose, estimated_current_depth, camera_matrix, activations):
         h_cur, c_cur = cur_state
 
         if previous_pose is not None:
@@ -42,6 +42,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
 
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
         combined_conv = self.conv(combined)
+        activations.append(combined_conv)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
         b, c, h, w = h_cur.size()
@@ -56,7 +57,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
         c_next = torch.layer_norm(c_next, [h, w])
         h_next = o * self.activation_function(c_next)
 
-        return h_next, c_next
+        return h_next, c_next, activations
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
