@@ -3,6 +3,15 @@
 
 #include <unordered_map>
 
+constexpr int qwbit = 8;
+typedef short qwint;
+// constexpr int qabit = 16;
+// typedef short qaint;
+// constexpr qaint QA_MIN = -32768;
+
+// constexpr int bufbit = 8;
+// typedef int qmint;
+
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
 // constexpr int test_image_width = 320;
@@ -68,10 +77,13 @@ constexpr int width_32 = test_image_width / 32;
 constexpr float height_normalizer = height_2 / 2.0;
 constexpr float width_normalizer = width_2 / 2.0;
 
-extern float* params;
+extern qwint* params;
 constexpr int n_files = 255 + 18 + 80 + 1 + 80;
 extern int start_idx[n_files + 1];
 extern int param_cnt;
+extern int shifts[n_files];
+
+extern float* params_f;
 
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1

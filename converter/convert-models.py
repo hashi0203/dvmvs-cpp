@@ -21,18 +21,10 @@ def convert():
                 d = bytearray()
                 for v in val:
                     d += struct.pack('f', v)
-                open(save_dir / Path(key), 'wb').write(d)
+                with open(save_dir / Path(key), 'wb') as f:
+                    f.write(d)
             else:
                 print(key)
-            if "layer1.1." in key:
-                print(key)
-                print(val)
-            # if key == "layer1.0.weight":
-            #     print(val[:10])
-            #     print(format(d[0], 'b'))
-            #     print(d[:20])
-            # else:
-            #     print(val.dtype, key, checkpoint.split("/")[-1])
 
 if __name__ == '__main__':
     convert()

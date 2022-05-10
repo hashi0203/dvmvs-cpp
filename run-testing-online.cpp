@@ -12,15 +12,18 @@
 #include <Eigen/LU>
 using namespace Eigen;
 
-float* params = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
+qwint* params = new qwint[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 int start_idx[n_files + 1];
 int param_cnt;
+int shifts[n_files];
+
+float* params_f = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 
 void read_params() {
     ifstream ifs;
 
     int n_params[n_files];
-    ifs.open("params/values");
+    ifs.open("params/values_quantized");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
@@ -28,8 +31,16 @@ void read_params() {
     for (int i = 0; i < n_files; i++)
         start_idx[i+1] = start_idx[i] + n_params[i];
 
+    ifs.open("params/params_quantized");
+    ifs.read((char*) params, sizeof(qwint) * start_idx[n_files]);
+    ifs.close();
+
     ifs.open("params/params");
-    ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
+    ifs.read((char*) params_f, sizeof(float) * start_idx[n_files]);
+    ifs.close();
+
+    ifs.open("params/shifts_quantized");
+    ifs.read((char*) shifts, sizeof(int) * n_files);
     ifs.close();
 }
 
@@ -51,10 +62,12 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float layer4[channels_4 * height_16 * width_16];
     float layer5[channels_5 * height_32 * width_32];
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
-    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    // ofstream ofs5("layer5.txt");
+    // // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
+    // // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
     // for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-    //     // ofs5 << layer5[idx] << "\n";
-    //     ofs5.write((char*) &layer5[idx], sizeof(float));
+    //     ofs5 << layer5[idx] << "\n";
+    //     // ofs5.write((char*) &layer5[idx], sizeof(float));
     // ofs5.close();
 
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
@@ -320,9 +333,9 @@ int main() {
 
         state_exists = true;
 
-        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), previous_depth);
+        save_image("./results-qt/" + image_filenames[f].substr(len_image_filedir), previous_depth);
 
-        ofstream ofs("./results-hw/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        ofstream ofs("./results-qt/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << previous_depth[i][j] << " ";
@@ -331,6 +344,9 @@ int main() {
     }
 
     keyframe_buffer.close();
+
+    delete[] params;
+    delete[] params_f;
 
     return 0;
 }
