@@ -205,8 +205,8 @@ def predict():
             predictions.append(prediction)
 
             save_path = Path("/home/nhsmt1123/master-thesis/dvmvs-cpp/results-py")
-            cv2.imwrite(Path(Config.save_path) / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
-            with open(Path(Config.save_path) / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
+            cv2.imwrite(save_path / image_filenames[i].split("/")[-1], (prediction * 25).astype(np.uint8))
+            with open(save_path / image_filenames[i].split("/")[-1][:-4] + ".txt", 'w') as f:
                 for p in prediction:
                     f.write(' '.join(map(str, p)) + '\n')
 
