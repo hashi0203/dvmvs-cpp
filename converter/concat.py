@@ -1,39 +1,32 @@
+import os
 from path import Path
 import struct
 
 def convert():
-    checkpoints = sorted(Path("../params").dirs())
+    base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("../params")
 
-    fpp = open(Path("../params") / "params", "wb")
-    fvv = open(Path("../params") / "values", "wb")
+    checkpoints = sorted(base_dir.dirs())
+    fpp = open(base_dir / "params", "wb")
+    fvv = open(base_dir / "values", "wb")
 
     for checkpoint in checkpoints:
-        with open(Path("../params") / checkpoint.name + "_files", 'r') as f:
-            params = f.read().split()
-        # params = sorted(checkpoint.files())
+        if checkpoint.name == "files":
+            continue
 
-        fp = open(Path("../params") / checkpoint.name + "_params", "wb")
-        fk = open(Path("../params") / checkpoint.name + "_keys", "w")
-        fv = open(Path("../params") / checkpoint.name + "_values", "wb")
+        with open(base_dir / "files" / checkpoint.name, 'r') as f:
+            params = f.read().split()
 
         cnt = 0
         n_files = 0
         for param in params:
-            with open(Path("../params") / checkpoint.name / param, "rb") as ft:
+            with open(base_dir / checkpoint.name / param, "rb") as ft:
                 data = ft.read()
-            fp.write(data)
             fpp.write(data)
-            fk.write(param + "\n")
-            fv.write(struct.pack('i', len(data) // 4))
             fvv.write(struct.pack('i', len(data) // 4))
             cnt += len(data) // 4
             n_files += 1
         print("cnt: %d" % cnt)
         print("n_files: %d" % n_files)
-
-        fp.close()
-        fk.close()
-        fv.close()
 
     fpp.close()
     fvv.close()
