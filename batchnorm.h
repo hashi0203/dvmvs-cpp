@@ -46,17 +46,21 @@ void BatchNorm2d(qaint* x, const string param_path,
     // https://www.anarchive-beta.com/entry/2020/08/16/180000
     for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
         const int idx = (i * height + j) * width + k;
-        // const qaint rv = (vshift > 0) ? running_var[i] + voffset : (running_var[i] << (-vshift)) + voffset;
-        const float rv = (vshift > 0) ? (running_var[i] + voffset) * vv : (running_var[i] * vv) + voffset;
+        const qmint rv = (vshift > 0) ? running_var[i] + voffset : (((qmint) running_var[i]) << (-vshift)) + voffset;
+        // const float rv = (vshift > 0) ? (running_var[i] + voffset) * vv : (running_var[i] * vv) + voffset;
 
         // const float xc = x[idx] - (running_mean[i] * mm);
         // const float xn = xc / sqrt(rv + 1e-5);
-        const float xx = x[idx] / (float) (1 << xshift);
-        const float xn = xx * rv - (running_mean[i] * mm);
-        const float yy = ((weight[i] * xn) / (float) (1 << wshift)) + (bias[i] / (float) (1 << bshift));
-        if (i == 0 && j == 0 && k == 0) print4(rv, xx, xn, yy);
-        x[idx] = yy * (1 << yshift);
-        if (i == 0 && j == 0 && k == 0) print2(idx, x[idx]);
+        // const float rm = running_mean[i] * mm * weight[i];
+
+        const qmint rm = (xshift > mshift) ? ((qmint) running_mean[i]) << (xshift - mshift) : running_mean[i] >> (mshift - xshift);
+        const qmint xn = x[idx] * rv - rm;
+        const qmint xnw = (vshift > 0) ? (xn * weight[i]) >> vshift : xn * weight[i];
+        const qmint b = ((qmint) bias[i]) << (xshift + wshift - bshift);
+        x[idx] = (xnw + b) >> (xshift + wshift - yshift);
+        // const float yy = ((xnw - rm) / (float) ((1 << wshift) * (1 << xshift))) + (bias[i] / (float) (1 << bshift));
+        // x[idx] = yy * (1 << yshift);
+
         // const float xn = (x[idx] / (float) (1 << xshift)) * rv - (running_mean[i] * mm);
         // x[idx] = (((weight[i] * xn) / (float) (1 << wshift)) + (bias[i] / (float) (1 << bshift))) * (1 << yshift);
 
@@ -74,8 +78,4 @@ void BatchNorm2d(qaint* x, const string param_path,
         // const qaint xnw = (vshift > 0) ? (xn * weight[i]) >> vshift : xn * weight[i];
         // x[idx] = (xnw - rm + (bias[i] << (xshift + wshift - bshift))) >> (xshift + wshift - yshift);
     }
-
-    print4(running_var[0], running_mean[0], vv, mm);
-    print4(weight[0], wshift, bias[0], bshift);
-
 }

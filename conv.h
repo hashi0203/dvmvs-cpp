@@ -57,12 +57,8 @@ void Conv2d(const qaint* input,
                         }
                     }
 
-                    // sum /= (1 << wshift) * (1 << xshift);
-                    // sum += (apply_bias) ? bias[och] / (float) (1 << bshift) : 0.f;
-
                     const qmint b = (apply_bias) ? ((qmint) bias[och]) << (xshift + wshift - bshift) : 0;
                     const int output_idx = (och * out_height + oh) * out_width + ow;
-                    // output[output_idx] = sum * (1 << yshift);
                     output[output_idx] = (sum + b) >> (xshift + wshift - yshift);
                 }
             }
