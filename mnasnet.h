@@ -1,12 +1,14 @@
 #pragma once
 
-void _InvertedResidual(const float* x, float* y, const string param_path,
+void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
                        const int in_channels, const int in_height, const int in_width,
                        const int out_channels, const int out_height, const int out_width,
                        const int kernel_size, const int stride, const int expansion_factor) {
 
     constexpr bool apply_bias = false;
     const int mid_channels = in_channels * expansion_factor;
+
+    const int xshift = actshifts[act_cnt];
 
     // Pointwise
     constexpr int l0_kernel_size = 1;
@@ -16,7 +18,7 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
     const int l0_out_channels = mid_channels;
     const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
     const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
-    float y0[l0_out_channels * l0_out_height * l0_out_width];
+    qaint y0[l0_out_channels * l0_out_height * l0_out_width];
     Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_bias);
 
     const int l1_out_channels = mid_channels;
@@ -37,7 +39,7 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
     const int l3_out_channels = mid_channels;
     const int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
     const int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
-    float y3[l3_out_channels * l3_out_height * l3_out_width];
+    qaint y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, param_path + ".layers.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_bias);
 
     const int l4_out_channels = mid_channels;
@@ -67,13 +69,18 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {
-        for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
-            y[idx] += x[idx];
+        const int yshift = actshifts[act_cnt];
+        const int shift = (xshift > yshift) ? xshift - yshift : yshift - xshift;
+        for (int idx = 0; idx < out_channels * out_height * out_width; idx++) {
+            y[idx] = (xshift > yshift) ? (((qmint) y[idx] << shift) + x[idx]) >> shift :
+                                         (((qmint) x[idx] << shift) + y[idx]) >> shift;
+            actshifts[act_cnt] = (xshift > yshift) ? yshift : xshift;
+        }
     }
 }
 
 
-void _stack(const float* x, float* y, const string param_path,
+void _stack(const qaint* x, qaint* y, const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,
             const int kernel_size, const int stride, const int expansion_factor, const int repeats) {
@@ -82,7 +89,7 @@ void _stack(const float* x, float* y, const string param_path,
     _InvertedResidual(x, y, param_path + ".0", in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, expansion_factor);
 
     for (int i = 1; i < repeats; i++) {
-        float yi[out_channels * out_height * out_width];
+        qaint yi[out_channels * out_height * out_width];
         for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
             yi[idx] = y[idx];
         _InvertedResidual(yi, y, param_path + "." + to_string(i), out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, 1, expansion_factor);

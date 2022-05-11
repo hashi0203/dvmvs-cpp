@@ -1,7 +1,7 @@
 #pragma once
 
-void Conv2d(const float* input,
-            float* output,
+void Conv2d(const qaint* input,
+            qaint* output,
             const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,
@@ -12,6 +12,9 @@ void Conv2d(const float* input,
     // to check order of layers
     // print1(param_path + ".weight");
     // if (apply_bias) print1(param_path + ".bias");
+
+    const int xshift = actshifts[act_cnt++];
+    const int yshift = actshifts[act_cnt];
 
     const int wshift = shifts[param_cnt];
     const qwint* weight = params + start_idx[param_cnt++];
@@ -26,6 +29,8 @@ void Conv2d(const float* input,
     // const int bshift = 0;
     // const float* bias = apply_bias ? params_f + start_idx[param_cnt++] : nullptr;
 
+    if (xshift + wshift - bshift < 0) print1("(xshift + wshift - bshift) is negative");
+
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;
     for (int g = 0; g < groups; g++) {
@@ -33,7 +38,7 @@ void Conv2d(const float* input,
             for (int oh = 0; oh < out_height; oh++) {
                 for (int ow = 0; ow < out_width; ow++) {
                     const int och = g * ocpg + oc;
-                    float sum = 0.f;
+                    qmint sum = 0;
 
                     for (int ic = 0; ic < icpg; ic++) {
                         const int ich = g * icpg + ic;
@@ -46,17 +51,19 @@ void Conv2d(const float* input,
                                 const int input_idx = (ich * in_height + ih) * in_width + iw;
                                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
 
-                                sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0.f :
-                                        input[input_idx] * weight[weight_idx];
+                                sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0 :
+                                        input[input_idx] * (qmint) weight[weight_idx];
                             }
                         }
                     }
 
-                    sum /= 1 << wshift;
-                    sum += (apply_bias) ? bias[och] / (float) (1 << bshift) : 0.f;
+                    // sum /= (1 << wshift) * (1 << xshift);
+                    // sum += (apply_bias) ? bias[och] / (float) (1 << bshift) : 0.f;
 
+                    const qmint b = (apply_bias) ? ((qmint) bias[och]) << (xshift + wshift - bshift) : 0;
                     const int output_idx = (och * out_height + oh) * out_width + ow;
-                    output[output_idx] = sum;
+                    // output[output_idx] = sum * (1 << yshift);
+                    output[output_idx] = (sum + b) >> (xshift + wshift - yshift);
                 }
             }
         }

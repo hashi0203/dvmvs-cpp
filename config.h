@@ -11,7 +11,7 @@ typedef int qaint;
 // constexpr qaint QA_MIN = -32768;
 
 // constexpr int bufbit = 8;
-// typedef int qmint;
+typedef long long qmint;
 
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
