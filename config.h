@@ -5,7 +5,8 @@
 
 constexpr int qwbit = 8;
 typedef short qwint;
-// constexpr int qabit = 16;
+constexpr int qabit = 16;
+typedef int qaint;
 // typedef short qaint;
 // constexpr qaint QA_MIN = -32768;
 
@@ -90,12 +91,16 @@ constexpr int offsets[81] = {20249, 20272, 25322, 27197, 26266, 28856, 20246, 20
 // constexpr int offsets[81] = {316, 317, 396, 425, 411, 451, 316, 318, 710, 394, 318, 464, 449, 283, 558, 507, 317, 440, 316, 317, 575, 369, 542, 511, 317, 318, 554, 316, 318, 692, 316, 318, 506, 317, 320, 633, 317, 317, 502, 317, 319, 598, 317, 318, 680, 316, 318, 561, 316, 318, 770, 446, 335, 429, 430, 510, 616, 328, 386, 484, 378, 444, 453, 560, 348, 524, 620, 507, 318, 466, 374, 401, 433, 322, 306, 536, 411, 312, 559, 362, 390};
 extern int offset_cnt;
 extern float* params_f;
+const int n_acts = 178;
+extern int actshifts[n_acts];
+extern int act_cnt;
 
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1
 #define invres_out_size(size, kernel_size, stride) conv_out_size((size), (kernel_size), (stride), (kernel_size) / 2)
 #define stack_out_size(size, kernel_size, stride) invres_out_size((size), (kernel_size), (stride))
 
+#define new_2d_qaint(arr, d0, d1) for (int iii2 = 0; iii2 < (d0); iii2++) {(arr)[iii2] = new qaint[(d1)];}
 #define new_2d(arr, d0, d1) for (int iii2 = 0; iii2 < (d0); iii2++) {(arr)[iii2] = new float[(d1)];}
 #define new_3d(arr, d0, d1, d2) for (int iii3 = 0; iii3 < (d0); iii3++) {(arr)[iii3] = new float*[(d1)]; new_2d((arr)[iii3], (d1), (d2));}
 #define new_4d(arr, d0, d1, d2, d3) for (int iii4 = 0; iii4 < (d0); iii4++) {(arr)[iii4] = new float**[(d1)]; new_3d((arr)[iii4], (d1), (d2), (d3));}
@@ -135,12 +140,12 @@ class KeyframeBuffer{
 public:
     KeyframeBuffer(){
         new_2d(buffer_poses, buffer_size, 4 * 4);
-        new_2d(buffer_feature_halfs, buffer_size, fpn_output_channels * height_2 * width_2);
+        new_2d_qaint(buffer_feature_halfs, buffer_size, fpn_output_channels * height_2 * width_2);
     }
 
     int try_new_keyframe(const float pose[4 * 4]);
-    void add_new_keyframe(const float pose[4 * 4], const float feature_half[fpn_output_channels * height_2 * width_2]);
-    int get_best_measurement_frames(const float reference_pose[4 * 4], float measurement_poses[test_n_measurement_frames * 4 * 4], float measurement_feature_halfs[test_keyframe_buffer_size * fpn_output_channels * height_2 * width_2]);
+    void add_new_keyframe(const float pose[4 * 4], const qaint feature_half[fpn_output_channels * height_2 * width_2]);
+    int get_best_measurement_frames(const float reference_pose[4 * 4], float measurement_poses[test_n_measurement_frames * 4 * 4], qaint measurement_feature_halfs[test_keyframe_buffer_size * fpn_output_channels * height_2 * width_2]);
 
     void close() {
         delete_2d(buffer_poses, buffer_size, 4 * 4);
@@ -152,7 +157,7 @@ private:
     int buffer_idx = 0;
     int buffer_cnt = 0;
     float **buffer_poses = new float*[test_keyframe_buffer_size];
-    float **buffer_feature_halfs = new float*[test_keyframe_buffer_size];
+    qaint **buffer_feature_halfs = new qaint*[test_keyframe_buffer_size];
     const float optimal_R_score = test_optimal_R_measure;
     const float optimal_t_score = test_optimal_t_measure;
     const float keyframe_pose_distance = test_keyframe_pose_distance;

@@ -17,6 +17,8 @@ int start_idx[n_files + 1];
 int param_cnt;
 int shifts[n_files];
 int offset_cnt;
+int actshifts[n_acts];
+int act_cnt;
 
 float* params_f = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 
@@ -43,27 +45,42 @@ void read_params() {
     ifs.open("params/shifts_quantized");
     ifs.read((char*) shifts, sizeof(int) * n_files);
     ifs.close();
+
+    ifs.open("params/actshifts_quantized");
+    ifs.read((char*) actshifts, sizeof(int) * n_acts);
+    ifs.close();
+
+    for (int idx = 0; idx < n_acts; idx++)
+        actshifts[idx] += 4;
 }
 
 
-void predict(const float reference_image[3 * test_image_height * test_image_width],
+void predict(const qaint reference_image[3 * test_image_height * test_image_width],
              const int n_measurement_frames,
-             const float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
+             const qaint measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
              const float* warpings,
-             float reference_feature_half[fpn_output_channels * height_2 * width_2],
+             qaint reference_feature_half[fpn_output_channels * height_2 * width_2],
              float hidden_state[hid_channels * height_32 * width_32],
              float cell_state[hid_channels * height_32 * width_32],
              float prediction[test_image_height * test_image_width]) {
 
     param_cnt = 0;
     offset_cnt = 0;
+    act_cnt = 1;
+
+
+    int ashift;
+    float reference_image_float[3 * test_image_height * test_image_width];
+    ashift = actshifts[0];
+    for (int idx = 0; idx < 3 * test_image_height * test_image_width; idx++)
+        reference_image_float[idx] = reference_image[idx] / (float) (1 << ashift);
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
     float layer3[channels_3 * height_8 * width_8];
     float layer4[channels_4 * height_16 * width_16];
     float layer5[channels_5 * height_32 * width_32];
-    FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
+    FeatureExtractor(reference_image_float, layer1, layer2, layer3, layer4, layer5);
     ofstream ofs5("layer5.txt");
     // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
@@ -72,10 +89,16 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
         // ofs5.write((char*) &layer5[idx], sizeof(float));
     ofs5.close();
 
+    float reference_feature_half_float[fpn_output_channels * height_2 * width_2];
+
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+
+    ashift = actshifts[6];
+    for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+        reference_feature_half[idx] = reference_feature_half_float[idx] * (1 << ashift);
 
     // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
@@ -85,8 +108,13 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     if (n_measurement_frames == 0) return;
 
+    float measurement_feature_halfs_float[test_n_measurement_frames * fpn_output_channels * height_2 * width_2];
+    ashift = actshifts[6];
+    for (int idx = 0; idx < test_n_measurement_frames * fpn_output_channels * height_2 * width_2; idx++)
+        measurement_feature_halfs_float[idx] = measurement_feature_halfs[idx] / (float) (1 << ashift);
+
     float cost_volume[n_depth_levels * height_2 * width_2];
-    cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
+    cost_volume_fusion(reference_feature_half_float, n_measurement_frames, measurement_feature_halfs_float, warpings, cost_volume);
 
     // // ofstream ofsc("cost_volume.txt");
     // ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);
@@ -100,7 +128,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float skip2[(hyper_channels * 4) * height_8 * width_8];
     float skip3[(hyper_channels * 8) * height_16 * width_16];
     float bottom[(hyper_channels * 16) * height_32 * width_32];
-    CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
+    CostVolumeEncoder(reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                       skip0, skip1, skip2, skip3, bottom);
 
     // // ofstream ofsb("bottom.txt");
@@ -119,7 +147,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     //     ofsh.write((char*) &hidden_state[idx], sizeof(float));
     // ofsh.close();
 
-    CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
+    CostVolumeDecoder(reference_image_float, skip0, skip1, skip2, skip3, hidden_state, prediction);
 }
 
 
@@ -222,11 +250,15 @@ int main() {
             continue;
         }
 
-        float reference_image[3 * test_image_height * test_image_width];
-        load_image(image_filenames[f], reference_image);
+        float reference_image_float[3 * test_image_height * test_image_width];
+        load_image(image_filenames[f], reference_image_float);
+        qaint reference_image[3 * test_image_height * test_image_width];
+        const int ashift = actshifts[0];
+        for (int idx = 0; idx < 3 * test_image_height * test_image_width; idx++)
+            reference_image[idx] = reference_image_float[idx] * (1 << ashift);
 
         float measurement_poses[test_n_measurement_frames * 4 * 4];
-        float measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2];
+        qaint measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2];
         const int n_measurement_frames = keyframe_buffer.get_best_measurement_frames(reference_pose, measurement_poses, measurement_feature_halfs);
 
         // prepare for cost volume fusion
@@ -318,7 +350,7 @@ int main() {
                 hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k];
         }
 
-        float reference_feature_half[fpn_output_channels * height_2 * width_2];
+        qaint reference_feature_half[fpn_output_channels * height_2 * width_2];
         float prediction[test_image_height * test_image_width];
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
                 warpings, reference_feature_half, hidden_state, cell_state, prediction);
@@ -335,9 +367,9 @@ int main() {
 
         state_exists = true;
 
-        save_image("./results-qt/" + image_filenames[f].substr(len_image_filedir), previous_depth);
+        save_image("./results-qt2/" + image_filenames[f].substr(len_image_filedir), previous_depth);
 
-        ofstream ofs("./results-qt/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        ofstream ofs("./results-qt2/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << previous_depth[i][j] << " ";
