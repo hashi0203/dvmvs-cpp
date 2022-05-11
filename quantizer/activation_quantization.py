@@ -141,7 +141,7 @@ def predict():
             lstm_K_bottom = full_K_torch.clone().cuda()
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
 
-            activations = []
+            activations = [reference_image_torch.cpu().numpy().squeeze().reshape(-1)]
             layer1, layer2, layer3, layer4, layer5, activations = feature_extractor(reference_image_torch, activations)
 
             reference_feature_half, reference_feature_quarter, reference_feature_one_eight, \
