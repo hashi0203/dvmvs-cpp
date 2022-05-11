@@ -53,11 +53,25 @@ void BatchNorm2d(qaint* x, const string param_path,
         // const float xn = xc / sqrt(rv + 1e-5);
         // const float rm = running_mean[i] * mm * weight[i];
 
-        const qmint rm = (xshift > mshift) ? ((qmint) running_mean[i]) << (xshift - mshift) : running_mean[i] >> (mshift - xshift);
-        const qmint xn = x[idx] * rv - rm;
+        const qmint rm = (xshift > mshift) ? (running_mean[i] * (qmint) weight[i]) << (xshift - mshift) : (running_mean[i] * (qmint) weight[i]) >> (mshift - xshift);
+        const qmint xn = x[idx] * rv;
         const qmint xnw = (vshift > 0) ? (xn * weight[i]) >> vshift : xn * weight[i];
         const qmint b = ((qmint) bias[i]) << (xshift + wshift - bshift);
-        x[idx] = (xnw + b) >> (xshift + wshift - yshift);
+        x[idx] = (xnw - rm + b) >> (xshift + wshift - yshift);
+
+        // x[idx] = yy * (1 << yshift);
+
+        // const float xx = x[idx] / (float) (1 << xshift);
+        // const float xn = xx * rv - (running_mean[i] * mm);
+        // const float yy = ((weight[i] * xn) / (float) (1 << wshift)) + (bias[i] / (float) (1 << bshift));
+        // x[idx] = yy * (1 << yshift);
+
+        // const qmint rm = (xshift > mshift) ? ((qmint) running_mean[i]) << (xshift - mshift) : running_mean[i] >> (mshift - xshift);
+        // const qmint xn = x[idx] * rv - rm;
+        // const qmint xnw = (vshift > 0) ? (xn * weight[i]) >> vshift : xn * weight[i];
+        // const qmint b = ((qmint) bias[i]) << (xshift + wshift - bshift);
+        // x[idx] = (xnw + b) >> (xshift + wshift - yshift);
+
         // const float yy = ((xnw - rm) / (float) ((1 << wshift) * (1 << xshift))) + (bias[i] / (float) (1 << bshift));
         // x[idx] = yy * (1 << yshift);
 

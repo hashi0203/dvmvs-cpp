@@ -72,9 +72,9 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
         const int yshift = actshifts[act_cnt];
         const int shift = (xshift > yshift) ? xshift - yshift : yshift - xshift;
         for (int idx = 0; idx < out_channels * out_height * out_width; idx++) {
-            y[idx] = (xshift > yshift) ? (((qmint) y[idx] << shift) + x[idx]) >> shift :
-                                         (((qmint) x[idx] << shift) + y[idx]) >> shift;
-            actshifts[act_cnt] = (xshift > yshift) ? yshift : xshift;
+            y[idx] = (xshift > yshift) ? (((qmint) y[idx] << shift) + x[idx]) >> (shift + 1) :
+                                         (((qmint) x[idx] << shift) + y[idx]) >> (shift + 1);
+            actshifts[act_cnt] = (xshift > yshift) ? yshift - 1 : xshift - 1;
         }
     }
 }
