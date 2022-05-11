@@ -33,10 +33,21 @@ def main():
             files = f.read().split()
 
         cnt = 0
-        for key in files:
-            bit = 10
-            param = params[key].to('cpu').detach().numpy().copy().reshape(-1)
+        for i, key in enumerate(files):
+            if ".running_mean" in key:
+                param = params[key].to('cpu').detach().numpy().copy().reshape(-1)
+                rv = 1.0 / np.sqrt(params[files[i+1]].to('cpu').detach().numpy().copy().reshape(-1) + 1e-5)
+                param *= rv
+                bit = 12
+            elif ".running_var" in key:
+                param = rv
+                bit = 16
+            else: # ".weight" or ".bias"
+                param = params[key].to('cpu').detach().numpy().copy().reshape(-1)
+                bit = 10
+
             scale, shift, scaled_param = quantize(param, bit)
+
             if ".running_var" in key:
                 shift += 1
                 if shift > 0:

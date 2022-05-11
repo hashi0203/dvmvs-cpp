@@ -39,9 +39,11 @@ void BatchNorm2d(float* x, const string param_path,
     // https://www.anarchive-beta.com/entry/2020/08/16/180000
     for (int i = 0; i < channels; i++) for (int j = 0; j < height; j++) for (int k = 0; k < width; k++) {
         const int idx = (i * height + j) * width + k;
-        const float xc = x[idx] - (running_mean[i] * mm);
         const float rv = (vshift > 0) ? (running_var[i] + voffset) * vv : (running_var[i] * vv) + voffset;
-        const float xn = xc / sqrt(rv + 1e-5);
+
+        // const float xc = x[idx] - (running_mean[i] * mm);
+        // const float xn = xc / sqrt(rv + 1e-5);
+        const float xn = x[idx] * rv - (running_mean[i] * mm);
         x[idx] = ((weight[i] * xn) / (float) (1 << wshift)) + (bias[i] / (float) (1 << bshift));
     }
 }
