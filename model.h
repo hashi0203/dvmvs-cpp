@@ -60,6 +60,7 @@ void DecoderBlock(const float* x, const float* skip, const float* depth, float* 
     // Aggregate skip and upsampled input
     const int l1_in_channels = plus_one ? in_channels + 1 : in_channels;
     float x1[l1_in_channels * out_height * out_width];
+    ascale_cnt++;
     for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
         x1[idx] = y0[idx];
     for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
@@ -223,6 +224,7 @@ void FeatureShrinker(const float layer1[channels_1 * height_2 * width_2],
 
     float top_down4[fpn_output_channels * height_16 * width_16];
     interpolate(inner5, top_down4, "nearest", fpn_output_channels, height_32, width_32, height_16, width_16);
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * height_16 * width_16; idx++)
         inner4[idx] += top_down4[idx];
 
@@ -235,6 +237,7 @@ void FeatureShrinker(const float layer1[channels_1 * height_2 * width_2],
 
     float top_down3[fpn_output_channels * height_8 * width_8];
     interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * height_8 * width_8; idx++)
         inner3[idx] += top_down3[idx];
 
@@ -247,6 +250,7 @@ void FeatureShrinker(const float layer1[channels_1 * height_2 * width_2],
 
     float top_down2[fpn_output_channels * height_4 * width_4];
     interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * height_4 * width_4; idx++)
         inner2[idx] += top_down2[idx];
 
@@ -259,6 +263,7 @@ void FeatureShrinker(const float layer1[channels_1 * height_2 * width_2],
 
     float top_down1[fpn_output_channels * height_2 * width_2];
     interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2);
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
         inner1[idx] += top_down1[idx];
 
@@ -287,6 +292,7 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     constexpr int l0_kernel_size = 5;
     constexpr int l0_mid_channels = hyper_channels;
     float l0_in[l0_in_channels * l0_in_height * l0_in_width];
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * l0_in_height * l0_in_width; idx++)
         l0_in[idx] = features_half[idx];
     for (int idx = 0; idx < n_depth_levels * l0_in_height * l0_in_width; idx++)
@@ -308,6 +314,7 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     constexpr int l1_kernel_size = 3;
     constexpr int l1_mid_channels = hyper_channels * 2;
     float l1_in[l1_in_channels * l1_in_height * l1_in_width];
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * l1_in_height * l1_in_width; idx++)
         l1_in[idx] = features_quarter[idx];
     for (int idx = 0; idx < l0_out_channels * l1_in_height * l1_in_width; idx++)
@@ -329,6 +336,7 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     constexpr int l2_kernel_size = 3;
     constexpr int l2_mid_channels = hyper_channels * 4;
     float l2_in[l2_in_channels * l2_in_height * l2_in_width];
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * l2_in_height * l2_in_width; idx++)
         l2_in[idx] = features_one_eight[idx];
     for (int idx = 0; idx < l1_out_channels * l2_in_height * l2_in_width; idx++)
@@ -350,6 +358,7 @@ void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 
     constexpr int l3_kernel_size = 3;
     constexpr int l3_mid_channels = hyper_channels * 8;
     float l3_in[l3_in_channels * l3_in_height * l3_in_width];
+    ascale_cnt++;
     for (int idx = 0; idx < fpn_output_channels * l3_in_height * l3_in_width; idx++)
         l3_in[idx] = features_one_sixteen[idx];
     for (int idx = 0; idx < l2_out_channels * l3_in_height * l3_in_width; idx++)
@@ -439,6 +448,7 @@ void CostVolumeDecoder(const float image[3 * test_image_height * test_image_widt
 
     constexpr int l4_in_channels = l3_out_channels + 4;
     float scaled_combined[l4_in_channels * l4_in_height * l4_in_width];
+    ascale_cnt++;
     for (int idx = 0; idx < l3_out_channels * l4_in_height * l4_in_width; idx++)
         scaled_combined[idx] = scaled_decoder[idx];
     for (int idx = 0; idx < 1 * l4_in_height * l4_in_width; idx++)
@@ -474,6 +484,7 @@ void LSTMFusion(const float current_encoding[(hyper_channels * 16) * height_32 *
     constexpr int l0_in_channels = in_channels + hid_channels;
     constexpr int l0_out_channels = 4 * hid_channels;
     float combined[l0_in_channels * height_32 * width_32];
+    ascale_cnt++;
     for (int idx = 0; idx < in_channels * height_32 * width_32; idx++)
         combined[idx] = current_encoding[idx];
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
@@ -494,6 +505,9 @@ void LSTMFusion(const float current_encoding[(hyper_channels * 16) * height_32 *
     Sigmoid(ii, hid_channels, height_32, width_32);
     Sigmoid(ff, hid_channels, height_32, width_32);
     Sigmoid(oo, hid_channels, height_32, width_32);
+    ascale_cnt--;
+    ascale_cnt--;
+    ascale_cnt--;
 
     layer_norm(gg, hid_channels, height_32, width_32);
     celu(gg, hid_channels, height_32, width_32);

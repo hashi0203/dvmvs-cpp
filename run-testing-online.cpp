@@ -19,6 +19,9 @@ float param_scales[n_files];
 int pscale_cnt;
 // int param_shifts[n_files];
 // int pshift_cnt;
+
+int ascale_cnt;
+
 float* params_f = new float[2725512 + 53024 + 8990848 + 18874368 + 4066277];
 
 const string save_dir = "./results-wq/";
@@ -65,6 +68,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     param_cnt = 0;
     pscale_cnt = 0;
     // pshift_cnt = 0;
+    ascale_cnt = 1;
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
@@ -78,12 +82,14 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     //     ofs5.write((char*) &layer5[idx], sizeof(float));
     // ofs5.close();
     print1(param_cnt);
+    print1(ascale_cnt);
 
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
     print1(param_cnt);
+    print1(ascale_cnt);
 
     // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
@@ -111,6 +117,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                       skip0, skip1, skip2, skip3, bottom);
     print1(param_cnt);
+    print1(ascale_cnt);
 
     // // ofstream ofsb("bottom.txt");
     // ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
@@ -121,6 +128,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     LSTMFusion(bottom, hidden_state, cell_state);
     print1(param_cnt);
+    print1(ascale_cnt);
 
     // // ofstream ofsh("hidden_state.txt");
     // ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
@@ -131,6 +139,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
     print1(param_cnt);
+    print1(ascale_cnt);
 }
 
 

@@ -11,6 +11,7 @@ void Conv2d(const float* input,
     const qwint* weight = params + start_idx[param_cnt++];
     const qwint* bias = params + start_idx[param_cnt++];
 
+    ascale_cnt++;
     // const int wshift = param_shifts[pshift_cnt++];
     // const int bshift = param_shifts[pshift_cnt++];
     // const float wscale = wshift > 0 ? 1 / (float) (1 << wshift) : 1 << -wshift;

@@ -1,0 +1,46 @@
+import numpy as np
+from path import Path
+
+from path import Path
+import os
+import sys
+
+def fileopen(filepath):
+    with open(filepath, 'r') as f:
+        data = np.array(list(map(float, f.read().split())))
+    return data
+
+def compare_results(base_dir, i):
+    filename = "%05d.txt" % i
+    try:
+        data1 = fileopen(base_dir / "results-hw" / filename)
+        data2 = fileopen(base_dir / "results-wq" / filename)
+        print(filename + ":", np.corrcoef(data1, data2)[0, 1])
+    except:
+        pass
+
+def compare_interm(base_dir, filename1, filename2):
+    data1 = fileopen(base_dir / filename1)
+    data2 = fileopen(base_dir / "../dvmvs-cpp2" / filename2)
+    print(filename1 + ", " + filename2 + ":", np.corrcoef(data1, data2)[0, 1])
+
+
+def main(args):
+    base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+
+    assert len(args) <= 2
+
+    if len(args) == 0:
+        for i in range(9, 23):
+            compare_results(base_dir, i)
+    elif len(args) == 1:
+        try:
+            compare_results(base_dir, int(args[0]))
+        except ValueError:
+            compare_interm(base_dir, args[0], args[0])
+    else:
+        compare_interm(base_dir, args[0], args[1])
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

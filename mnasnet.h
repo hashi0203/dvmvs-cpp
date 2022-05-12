@@ -51,6 +51,7 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {
+        ascale_cnt++;
         for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
             y[idx] += x[idx];
     }

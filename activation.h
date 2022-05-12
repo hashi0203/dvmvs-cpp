@@ -15,4 +15,5 @@ void celu(float* x, const int channels, const int height, const int width) {
 void Sigmoid(float* x, const int channels, const int height, const int width) {
     for (int idx = 0; idx < channels * height * width; idx++)
         x[idx] = 1.0 / (1.0 + exp(-x[idx]));
+    ascale_cnt++;
 }
