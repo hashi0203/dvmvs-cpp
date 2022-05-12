@@ -17,8 +17,8 @@ int param_cnt;
 
 float param_scales[n_files];
 int pscale_cnt;
-int param_shifts[n_files];
-int pshift_cnt;
+// int param_shifts[n_files];
+// int pshift_cnt;
 float* params_f = new float[2725512 + 53024 + 8990848 + 18874368 + 4066277];
 
 const string save_dir = "./results-wq/";
@@ -47,9 +47,9 @@ void read_params() {
     ifs.read((char*) param_scales, sizeof(float) * n_files);
     ifs.close();
 
-    ifs.open("params/param_shifts");
-    ifs.read((char*) param_shifts, sizeof(int) * n_files);
-    ifs.close();
+    // ifs.open("params/param_shifts");
+    // ifs.read((char*) param_shifts, sizeof(int) * n_files);
+    // ifs.close();
 }
 
 
@@ -64,7 +64,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
 
     param_cnt = 0;
     pscale_cnt = 0;
-    pshift_cnt = 0;
+    // pshift_cnt = 0;
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];

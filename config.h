@@ -83,8 +83,8 @@ extern int param_cnt;
 
 extern float param_scales[n_files];
 extern int pscale_cnt;
-extern int param_shifts[n_files];
-extern int pshift_cnt;
+// extern int param_shifts[n_files];
+// extern int pshift_cnt;
 
 extern float* params_f;
 
