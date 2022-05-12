@@ -2,7 +2,6 @@
 #include "functional.h"
 #include "conv.h"
 #include "activation.h"
-#include "batchnorm.h"
 #include "layers.h"
 #include "mnasnet.h"
 #include "model.h"
@@ -56,11 +55,13 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     //     // ofs5 << layer5[idx] << "\n";
     //     ofs5.write((char*) &layer5[idx], sizeof(float));
     // ofs5.close();
+    print1(param_cnt);
 
     float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    print1(param_cnt);
 
     // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
@@ -87,6 +88,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     float bottom[(hyper_channels * 16) * height_32 * width_32];
     CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
                       skip0, skip1, skip2, skip3, bottom);
+    print1(param_cnt);
 
     // // ofstream ofsb("bottom.txt");
     // ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
@@ -96,6 +98,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     // ofsb.close();
 
     LSTMFusion(bottom, hidden_state, cell_state);
+    print1(param_cnt);
 
     // // ofstream ofsh("hidden_state.txt");
     // ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
@@ -105,6 +108,7 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
     // ofsh.close();
 
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, prediction);
+    print1(param_cnt);
 }
 
 

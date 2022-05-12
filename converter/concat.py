@@ -9,6 +9,7 @@ def convert():
     fpp = open(base_dir / "params", "wb")
     fvv = open(base_dir / "values", "wb")
 
+    cnts = []
     for checkpoint in checkpoints:
         if checkpoint.name == "files":
             continue
@@ -17,17 +18,15 @@ def convert():
             params = f.read().split()
 
         cnt = 0
-        n_files = 0
         for param in params:
             with open(base_dir / checkpoint.name / param, "rb") as ft:
                 data = ft.read()
             fpp.write(data)
             fvv.write(struct.pack('i', len(data) // 4))
             cnt += len(data) // 4
-            n_files += 1
-        print("cnt: %d" % cnt)
-        print("n_files: %d" % n_files)
+        cnts.append(cnt)
 
+    print(cnts)
     fpp.close()
     fvv.close()
 

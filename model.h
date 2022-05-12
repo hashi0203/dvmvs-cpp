@@ -113,7 +113,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     constexpr int l1_out_channels = depths[0];
     constexpr int l1_out_height = l0_out_height;
     constexpr int l1_out_width = l0_out_width;
-    BatchNorm2d(y0, "layer1.1", l1_out_channels, l1_out_height, l1_out_width);
+    // BatchNorm2d(y0, "layer1.1", l1_out_channels, l1_out_height, l1_out_width);
 
     constexpr int l2_out_channels = depths[0];
     constexpr int l2_out_height = l1_out_height;
@@ -134,7 +134,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     constexpr int l4_out_channels = depths[0];
     constexpr int l4_out_height = l3_out_height;
     constexpr int l4_out_width = l3_out_width;
-    BatchNorm2d(y3, "layer1.4", l4_out_channels, l4_out_height, l4_out_width);
+    // BatchNorm2d(y3, "layer1.4", l4_out_channels, l4_out_height, l4_out_width);
 
     constexpr int l5_out_channels = depths[0];
     constexpr int l5_out_height = l4_out_height;
@@ -153,7 +153,7 @@ void FeatureExtractor(const float x[3 * test_image_height * test_image_width],
     constexpr int l7_out_channels = depths[1];
     constexpr int l7_out_height = l6_out_height;
     constexpr int l7_out_width = l6_out_width;
-    BatchNorm2d(layer1, "layer1.7", l7_out_channels, l7_out_height, l7_out_width);
+    // BatchNorm2d(layer1, "layer1.7", l7_out_channels, l7_out_height, l7_out_width);
 
     // MNASNet blocks: stacks of inverted residuals.
     constexpr int l8_kernel_size = 3;

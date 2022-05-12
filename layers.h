@@ -11,7 +11,7 @@ void conv_layer(const float* x, float* y, const string param_path,
     Conv2d(x, y, param_path + ".0", in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, padding, groups, apply_bias);
 
     if (apply_bn_relu) {
-        BatchNorm2d(y, param_path + ".1", out_channels, out_height, out_width);
+        // BatchNorm2d(y, param_path + ".1", out_channels, out_height, out_width);
         ReLU(y, out_channels, out_height, out_width);
     }
 }
