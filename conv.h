@@ -8,8 +8,16 @@ void Conv2d(const float* input,
             const int kernel_size, const int stride, const int padding, const int groups) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
-    const float* weight = params + start_idx[param_cnt++];
-    const float* bias = params + start_idx[param_cnt++];
+    const qwint* weight = params + start_idx[param_cnt++];
+    const qwint* bias = params + start_idx[param_cnt++];
+
+    // const int wshift = param_shifts[pshift_cnt++];
+    // const int bshift = param_shifts[pshift_cnt++];
+    // const float wscale = wshift > 0 ? 1 / (float) (1 << wshift) : 1 << -wshift;
+    // const float bscale = bshift > 0 ? 1 / (float) (1 << bshift) : 1 << -bshift;
+
+    const float wscale = param_scales[pscale_cnt++] / (float) (1 << (qwbit-1));
+    const float bscale = param_scales[pscale_cnt++] / (float) (1 << (qwbit-1));
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;
@@ -19,7 +27,7 @@ void Conv2d(const float* input,
             for (int oh = 0; oh < out_height; oh++) {
                 for (int ow = 0; ow < out_width; ow++) {
                     const int och = g * ocpg + oc;
-                    float sum = bias[och];
+                    float sum = bias[och] * bscale;
 
                     for (int ic = 0; ic < icpg; ic++) {
                         const int ich = g * icpg + ic;
@@ -33,7 +41,7 @@ void Conv2d(const float* input,
                                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
 
                                 sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0.f :
-                                        input[input_idx] * weight[weight_idx];
+                                        input[input_idx] * weight[weight_idx] * wscale;
                             }
                         }
                     }

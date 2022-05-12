@@ -11,9 +11,17 @@
 #include <Eigen/LU>
 using namespace Eigen;
 
-float* params = new float[2672472 + 53024 + 8980768 + 18876416 + 4061765];
+qwint* params = new qwint[2672472 + 53024 + 8980768 + 18876416 + 4061765];
 int start_idx[n_files + 1];
 int param_cnt;
+
+float param_scales[n_files];
+int pscale_cnt;
+int param_shifts[n_files];
+int pshift_cnt;
+float* params_f = new float[2725512 + 53024 + 8990848 + 18874368 + 4066277];
+
+const string save_dir = "./results-wq/";
 
 void read_params() {
     ifstream ifs;
@@ -27,8 +35,20 @@ void read_params() {
     for (int i = 0; i < n_files; i++)
         start_idx[i+1] = start_idx[i] + n_params[i];
 
+    ifs.open("params/params_quantized");
+    ifs.read((char*) params, sizeof(qwint) * start_idx[n_files]);
+    ifs.close();
+
     ifs.open("params/params");
-    ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
+    ifs.read((char*) params_f, sizeof(float) * start_idx[n_files]);
+    ifs.close();
+
+    ifs.open("params/param_scales");
+    ifs.read((char*) param_scales, sizeof(float) * n_files);
+    ifs.close();
+
+    ifs.open("params/param_shifts");
+    ifs.read((char*) param_shifts, sizeof(int) * n_files);
     ifs.close();
 }
 
@@ -43,6 +63,8 @@ void predict(const float reference_image[3 * test_image_height * test_image_widt
              float prediction[test_image_height * test_image_width]) {
 
     param_cnt = 0;
+    pscale_cnt = 0;
+    pshift_cnt = 0;
 
     float layer1[channels_1 * height_2 * width_2];
     float layer2[channels_2 * height_4 * width_4];
@@ -324,9 +346,9 @@ int main() {
 
         state_exists = true;
 
-        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), previous_depth);
+        save_image(save_dir + image_filenames[f].substr(len_image_filedir), previous_depth);
 
-        ofstream ofs("./results-hw/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        ofstream ofs(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << previous_depth[i][j] << " ";
@@ -335,6 +357,9 @@ int main() {
     }
 
     keyframe_buffer.close();
+
+    delete[] params;
+    delete[] params_f;
 
     return 0;
 }
