@@ -18,14 +18,9 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
     float y0[l0_out_channels * l0_out_height * l0_out_width];
     Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups);
 
-    const int l1_out_channels = mid_channels;
-    const int l1_out_height = l0_out_height;
-    const int l1_out_width = l0_out_width;
-    // BatchNorm2d(y0, param_path + ".layers.1", l1_out_channels, l1_out_height, l1_out_width);
-
     const int l2_out_channels = mid_channels;
-    const int l2_out_height = l1_out_height;
-    const int l2_out_width = l1_out_width;
+    const int l2_out_height = l0_out_height;
+    const int l2_out_width = l0_out_width;
     ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
 
     // Depthwise
@@ -39,14 +34,9 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
     float y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, param_path + ".layers.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups);
 
-    const int l4_out_channels = mid_channels;
-    const int l4_out_height = l3_out_height;
-    const int l4_out_width = l3_out_width;
-    // BatchNorm2d(y3, param_path + ".layers.4", l4_out_channels, l4_out_height, l4_out_width);
-
     const int l5_out_channels = mid_channels;
-    const int l5_out_height = l4_out_height;
-    const int l5_out_width = l4_out_width;
+    const int l5_out_height = l3_out_height;
+    const int l5_out_width = l3_out_width;
     ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     // Linear pointwise. Note that there's no activation.
@@ -58,11 +48,6 @@ void _InvertedResidual(const float* x, float* y, const string param_path,
     const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
     const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
     Conv2d(y3, y, param_path + ".layers.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups);
-
-    const int l7_out_channels = out_channels;
-    const int l7_out_height = l6_out_height;
-    const int l7_out_width = l6_out_width;
-    // BatchNorm2d(y, param_path + ".layers.7", l7_out_channels, l7_out_height, l7_out_width);
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {

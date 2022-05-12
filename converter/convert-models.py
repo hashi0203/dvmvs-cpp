@@ -19,9 +19,6 @@ def convert():
         with open(base_dir / "files" / checkpoint.name, 'r') as f:
             files = f.read().split()
 
-        # save_dir = base_dir / checkpoint.split("/")[-1]
-        # os.makedirs(save_dir, exist_ok=True)
-
         weights = torch.load(checkpoint)
         params = [weights[key].to('cpu').detach().numpy().copy() for key in files]
         params_out = []
@@ -34,8 +31,6 @@ def convert():
                 running_var = params[idx+1]
                 weight = params[idx+2]
                 bias = params[idx+3]
-
-                # print(running_mean.shape, running_var.shape, weight.shape, bias.shape, params[idx-1].shape)
 
                 wrv = weight / np.sqrt(running_var + 1e-5)
                 params_out[-1] *= wrv[:, None, None, None]
@@ -59,36 +54,6 @@ def convert():
             cnt += len(param)
         print(cnt)
         print(len(params_out))
-
-        # for (int och = 0; och < out_channels; och++) {
-
-        #     float sum = 0.f;
-        #     const float wrv = bn ? weightB[och] / sqrt(running_var[och] + 1e-5) : 1.0f;
-        #     if (bn) {
-        #         sum *= wrv;
-        #         sum += biasB[och];
-        #         sum -= running_mean[och] * wrv;
-        #     }
-        #     bias[och] = sum;
-
-        #     for (int ic = 0; ic < icpg; ic++) {
-        #         for (int kh = 0; kh <= 2*padding; kh++) {
-        #             for (int kw = 0; kw <= 2*padding; kw++) {
-        #                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
-        #                 weight[weight_idx] = weightC[weight_idx] * wrv;
-        #             }
-        #         }
-        #     }
-        # }
-
-            # if val.dtype == 'float32':
-            #     d = bytearray()
-            #     for v in val:
-            #         d += struct.pack('f', v)
-            #     with open(save_dir / Path(key), 'wb') as f:
-            #         f.write(d)
-            # else:
-            #     print(key)
 
     fp.close()
     fn.close()
