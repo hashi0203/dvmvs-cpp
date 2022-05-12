@@ -11,8 +11,8 @@ void Conv2d(const float* input,
             const int kernel_size, const int stride, const int padding, const int groups, const bool apply_bias) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
-    const float* weight = params + start_idx[param_cnt++];
-    const float* bias = apply_bias ? params + start_idx[param_cnt++] : nullptr;
+    const float* weightC = params + start_idx[param_cnt++];
+    const float* biasC = apply_bias ? params + start_idx[param_cnt++] : nullptr;
     // print1(param_path + ".weight");
     // if (apply_bias) print1(param_path + ".bias");
 
@@ -35,25 +35,36 @@ void Conv2d(const float* input,
         biasB = params + start_idx[param_cnt++];
     }
 
+    float* weight = new float[out_channels * icpg * kernel_size * kernel_size];
+    float* bias = new float[out_channels];
+    for (int och = 0; och < out_channels; och++) {
+
+        float sum = (apply_bias) ? biasC[och] : 0.f;
+        const float wrv = bn ? weightB[och] / sqrt(running_var[och] + 1e-5) : 1.0f;
+        if (bn) {
+            sum *= wrv;
+            sum += biasB[och];
+            sum -= running_mean[och] * wrv;
+        }
+        bias[och] = sum;
+
+        for (int ic = 0; ic < icpg; ic++) {
+            for (int kh = 0; kh <= 2*padding; kh++) {
+                for (int kw = 0; kw <= 2*padding; kw++) {
+                    const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
+                    weight[weight_idx] = weightC[weight_idx] * wrv;
+                }
+            }
+        }
+    }
+
 
     for (int g = 0; g < groups; g++) {
         for (int oc = 0; oc < ocpg; oc++) {
             for (int oh = 0; oh < out_height; oh++) {
                 for (int ow = 0; ow < out_width; ow++) {
                     const int och = g * ocpg + oc;
-                    float sum = (apply_bias) ? bias[och] : 0.f;
-
-                    const float wrv = bn ? weightB[och] / sqrt(running_var[och] + 1e-5) : 1.0f;
-                    if (bn) {
-                        if (apply_bias) {
-                            sum *= wrv;
-                            sum += biasB[och];
-                            sum -= running_mean[och] * wrv;
-                        } else {
-                            sum += biasB[och];
-                            sum -= running_mean[och] * wrv;
-                        }
-                    }
+                    float sum = bias[och];
 
                     for (int ic = 0; ic < icpg; ic++) {
                         const int ich = g * icpg + ic;
@@ -67,7 +78,7 @@ void Conv2d(const float* input,
                                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
 
                                 sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0.f :
-                                        input[input_idx] * weight[weight_idx] * wrv;
+                                        input[input_idx] * weight[weight_idx];
                             }
                         }
                     }
@@ -78,4 +89,6 @@ void Conv2d(const float* input,
             }
         }
     }
+    delete[] weight;
+    delete[] bias;
 }
