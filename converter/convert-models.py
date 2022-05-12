@@ -11,7 +11,6 @@ def convert():
     checkpoints = sorted(Path(fusionnet_test_weights).files())
 
     base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("../params")
-
     fp = open(base_dir / "params", "wb")
     fn = open(base_dir / "n_params", "wb")
 
