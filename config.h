@@ -1,8 +1,6 @@
 #pragma once
 #include "settings.h"
 
-#include <unordered_map>
-
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
 // constexpr int test_image_width = 320;
