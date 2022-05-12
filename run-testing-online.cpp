@@ -11,7 +11,7 @@
 #include <Eigen/LU>
 using namespace Eigen;
 
-float* params = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
+float* params = new float[2672472 + 53024 + 8980768 + 18876416 + 4061765];
 int start_idx[n_files + 1];
 int param_cnt;
 
@@ -19,7 +19,7 @@ void read_params() {
     ifstream ifs;
 
     int n_params[n_files];
-    ifs.open("params/values");
+    ifs.open("params/n_params");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 

@@ -69,7 +69,7 @@ constexpr float height_normalizer = height_2 / 2.0;
 constexpr float width_normalizer = width_2 / 2.0;
 
 extern float* params;
-constexpr int n_files = 255 + 18 + 80 + 1 + 80;
+constexpr int n_files = 102 + 18 + 32 + 2 + 38;
 extern int start_idx[n_files + 1];
 extern int param_cnt;
 

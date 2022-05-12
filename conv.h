@@ -8,56 +8,62 @@ void Conv2d(const float* input,
             const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,
-            const int kernel_size, const int stride, const int padding, const int groups, const bool apply_bias) {
+            const int kernel_size, const int stride, const int padding, const int groups) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
-    const float* weightC = params + start_idx[param_cnt++];
-    const float* biasC = apply_bias ? params + start_idx[param_cnt++] : nullptr;
+    const float* weight = params + start_idx[param_cnt++];
+    const float* bias = params + start_idx[param_cnt++];
     // print1(param_path + ".weight");
     // if (apply_bias) print1(param_path + ".bias");
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;
 
-    float* running_mean;
-    float* running_var;
-    float* weightB;
-    float* biasB;
+    // float* running_mean;
+    // float* running_var;
+    // float* weightB;
+    // float* biasB;
 
-    bool bn = false;
-    for (int i = 0; i < 81; i++) {
-        if (param_cnt == check[i]) bn = true;
-    }
-    if (bn) {
-        running_mean = params + start_idx[param_cnt++];
-        running_var = params + start_idx[param_cnt++];
-        weightB = params + start_idx[param_cnt++];
-        biasB = params + start_idx[param_cnt++];
-    }
+    // bool bn = false;
+    // for (int i = 0; i < 81; i++) {
+    //     if (param_cnt == check[i]) bn = true;
+    // }
+    // if (bn) {
+    //     running_mean = params + start_idx[param_cnt++];
+    //     running_var = params + start_idx[param_cnt++];
+    //     weightB = params + start_idx[param_cnt++];
+    //     biasB = params + start_idx[param_cnt++];
+    // }
 
-    float* weight = new float[out_channels * icpg * kernel_size * kernel_size];
-    float* bias = new float[out_channels];
-    for (int och = 0; och < out_channels; och++) {
+    // float* weight = new float[out_channels * icpg * kernel_size * kernel_size];
+    // float* bias = new float[out_channels];
+    // for (int och = 0; och < out_channels; och++) {
 
-        float sum = (apply_bias) ? biasC[och] : 0.f;
-        const float wrv = bn ? weightB[och] / sqrt(running_var[och] + 1e-5) : 1.0f;
-        if (bn) {
-            sum *= wrv;
-            sum += biasB[och];
-            sum -= running_mean[och] * wrv;
-        }
-        bias[och] = sum;
+    //     float sum = (apply_bias) ? biasC[och] : 0.f;
+    //     const float wrv = bn ? weightB[och] / sqrt(running_var[och] + 1e-5) : 1.0f;
+    //     if (bn) {
+    //         sum *= wrv;
+    //         sum += biasB[och];
+    //         sum -= running_mean[och] * wrv;
+    //     }
+    //     bias[och] = sum;
 
-        for (int ic = 0; ic < icpg; ic++) {
-            for (int kh = 0; kh <= 2*padding; kh++) {
-                for (int kw = 0; kw <= 2*padding; kw++) {
-                    const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
-                    weight[weight_idx] = weightC[weight_idx] * wrv;
-                }
-            }
-        }
-    }
+    //     for (int ic = 0; ic < icpg; ic++) {
+    //         for (int kh = 0; kh <= 2*padding; kh++) {
+    //             for (int kw = 0; kw <= 2*padding; kw++) {
+    //                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
+    //                 weight[weight_idx] = weightC[weight_idx] * wrv;
+    //             }
+    //         }
+    //     }
+    // }
 
+    // if (bn) {
+        // printvi(weight, 27);
+        // delete[] weight;
+        // delete[] bias;
+        // exit(1);
+    // }
 
     for (int g = 0; g < groups; g++) {
         for (int oc = 0; oc < ocpg; oc++) {
@@ -89,6 +95,6 @@ void Conv2d(const float* input,
             }
         }
     }
-    delete[] weight;
-    delete[] bias;
+    // delete[] weight;
+    // delete[] bias;
 }
