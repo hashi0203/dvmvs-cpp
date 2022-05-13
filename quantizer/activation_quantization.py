@@ -24,7 +24,7 @@ INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -
 #     f.write(struct.pack('i', shift))
 #     return act[idx], scale, shift
 
-def quantize(act, params, scales, bit, alpha=0.99):
+def quantize(act, params, param_idx, scales, bit, alpha=0.99):
     data = act[1]
     if act[0] == "add":
         assert len(data) == 2
@@ -34,12 +34,24 @@ def quantize(act, params, scales, bit, alpha=0.99):
         pass
     elif act[0] == "conv":
         assert len(data) == 2
+        assert param_idx < len(params[0])
+        weight, bias = params[0][param_idx]
+        kernel_size, stride, padding, groups = params[1][param_idx]
+        param_idx += 1
+
+        x, y = data
+        conv = torch.nn.Conv2d(len(x), len(y), kernel_size, padding=padding, stride=stride, groups=groups)
+        # if param_idx == 1: print(conv.weight[0])
+        conv.weight = torch.nn.Parameter(torch.tensor(weight))
+        conv.bias = torch.nn.Parameter(torch.tensor(bias))
         pass
     elif act[0] == "sigmoid":
         assert len(data) == 0
         pass
     else:
         print(act[0])
+
+    return param_idx
 
 
 def predict():
@@ -246,19 +258,25 @@ def predict():
                     acts[idx] =(acts[idx][0], [np.append(acts[idx][1][j], act[1][j]) for j in range(len(acts[idx][1]))])
 
     npz = np.load(base_dir / "params" / "params.npz", allow_pickle=True)
-    params = npz["params"]
+    params = npz["params"].reshape(-1, 2)
     scales = npz["scales"]
-    print(len(params))
+
+    print(base_dir / "params" / "conv_params.txt")
+    with open(base_dir / "params" / "conv_params.txt", "r") as f:
+        params = (params, np.array(list(map(int, f.read().split()))).reshape(-1, 4))
     bit = 20
 
     f = open(base_dir / "params" / "actshifts_quantized", "wb")
+    param_idx = 0
     for act in acts:
-        quantize(act, params, scales, bit)
+    # for act in [("conv", [np.zeros(30000).reshape(3, -1), np.zeros(3200).reshape(32, -1)])]:
+        param_idx = quantize(act, params, param_idx, scales, bit)
         # scale, quantize(act)
         # print(act[0])
         # print(quantize(f, act, 16))
     f.close()
-    print(len(acts))
+    print(param_idx)
+    # print(len(acts))
 
 
 if __name__ == '__main__':
