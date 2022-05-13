@@ -15,14 +15,31 @@ from utils import cost_volume_fusion, get_non_differentiable_rectangle_depth_est
 INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767]
 INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096, -8192, -16384, -32768]
 
-def quantize(f, act, bit, alpha=0.99):
-    act = np.abs(act)
-    act = np.sort(act)
-    idx = int(round(len(act) * alpha))
-    scale = float(INTMAX[bit] / act[idx])
-    shift = int(np.floor(np.log2(scale)))
-    f.write(struct.pack('i', shift))
-    return act[idx], scale, shift
+# def quantize(f, act, bit, alpha=0.99):
+#     act = np.abs(act)
+#     act = np.sort(act)
+#     idx = int(round(len(act) * alpha))
+#     scale = float(INTMAX[bit] / act[idx])
+#     shift = int(np.floor(np.log2(scale)))
+#     f.write(struct.pack('i', shift))
+#     return act[idx], scale, shift
+
+def quantize(act, params, scales, bit, alpha=0.99):
+    data = act[1]
+    if act[0] == "add":
+        assert len(data) == 2
+        pass
+    elif act[0] == "cat":
+        assert len(data) == 2 or len(data) == 3
+        pass
+    elif act[0] == "conv":
+        assert len(data) == 2
+        pass
+    elif act[0] == "sigmoid":
+        assert len(data) == 0
+        pass
+    else:
+        print(act[0])
 
 
 def predict():
@@ -228,12 +245,17 @@ def predict():
                     assert act[0] == acts[idx][0]
                     acts[idx] =(acts[idx][0], [np.append(acts[idx][1][j], act[1][j]) for j in range(len(acts[idx][1]))])
 
-    scales = np.load(base_dir / "params" / "param_scales.npz")["scales"]
-    print(scales)
+    npz = np.load(base_dir / "params" / "params.npz", allow_pickle=True)
+    params = npz["params"]
+    scales = npz["scales"]
+    print(len(params))
+    bit = 20
 
     f = open(base_dir / "params" / "actshifts_quantized", "wb")
     for act in acts:
-        print(act[0])
+        quantize(act, params, scales, bit)
+        # scale, quantize(act)
+        # print(act[0])
         # print(quantize(f, act, 16))
     f.close()
     print(len(acts))

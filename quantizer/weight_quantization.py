@@ -32,30 +32,31 @@ def main():
     # fs = open(base_dir / "param_shifts", "wb")
 
     cnts = []
+    params = []
     scales = []
     for checkpoint in checkpoints:
         with open(base_dir / "files" / checkpoint.name, 'r') as f:
             files = f.read().split()
 
         weights = torch.load(checkpoint)
-        params = [weights[key].to('cpu').detach().numpy().copy() for key in files]
+        params_org = [weights[key].cpu().detach().numpy().copy() for key in files]
         params_out = []
         idx = 0
         while idx < len(files):
             if ".running_mean" in files[idx]:
                 assert ".weight" in files[idx-1]
 
-                running_mean = params[idx]
-                running_var = params[idx+1]
-                weight = params[idx+2]
-                bias = params[idx+3]
+                running_mean = params_org[idx]
+                running_var = params_org[idx+1]
+                weight = params_org[idx+2]
+                bias = params_org[idx+3]
 
                 wrv = weight / np.sqrt(running_var + 1e-5)
                 params_out[-1] *= wrv[:, None, None, None]
                 params_out.append(bias - running_mean * wrv)
                 idx += 4
             else:
-                params_out.append(params[idx])
+                params_out.append(params_org[idx])
                 idx += 1
 
         if checkpoint.name == "3_lstm_fusion":
@@ -63,6 +64,7 @@ def main():
 
         cnt = 0
         for param in params_out:
+            params.append(param)
             param = param.reshape(-1)
             bit = 10
             scale, scaled_param = quantize(param, bit)
@@ -81,7 +83,8 @@ def main():
         cnts.append(cnt)
 
     print(cnts)
-    np.savez_compressed(base_dir / "param_scales", scales=scales)
+    print(len(params))
+    np.savez_compressed(base_dir / "params", params=np.array(params, dtype=object), scales=scales)
 
     fp.close()
     fn.close()
