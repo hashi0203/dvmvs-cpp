@@ -14,14 +14,18 @@ fpn_output_channels = 32
 hyper_channels = 32
 
 def save_acts(seq, x, activations, flag=False):
+    tmp = x.cpu().detach().numpy().copy()
     for l in seq:
         if isinstance(l, _InvertedResidual):
             x, activations = l(x, activations)
         else:
-            inp = x.cpu().detach().numpy().copy()
+            input = tmp.copy()
+            tmp = x.cpu().detach().numpy().copy()
             x = l(x)
-            if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d) or (flag and isinstance(l, torch.nn.modules.conv.Conv2d)):
-                activations.append(("conv", [inp, x.cpu().detach().numpy().copy()]))
+            if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
+                activations.append(("conv", [input, x.cpu().detach().numpy().copy()]))
+            elif flag and isinstance(l, torch.nn.modules.conv.Conv2d):
+                activations.append(("conv", [tmp, x.cpu().detach().numpy().copy()]))
             elif isinstance(l, torch.nn.modules.activation.Sigmoid):
                 activations.append(("sigmoid", []))
     return x, activations
