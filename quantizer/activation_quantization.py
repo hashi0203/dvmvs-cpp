@@ -1,16 +1,8 @@
-import cv2
 import numpy as np
 import torch
 from path import Path
-from tqdm import tqdm
 import os
 import struct
-
-from config import Config
-from dataset_loader import PreprocessImage, load_image
-from model import FeatureExtractor, FeatureShrinker, CostVolumeEncoder, LSTMFusion, CostVolumeDecoder
-from keyframe_buffer2 import KeyframeBuffer
-from utils import cost_volume_fusion, get_non_differentiable_rectangle_depth_estimation, get_warp_grid_for_cost_volume_calculation
 
 INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767]
 INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096, -8192, -16384, -32768]
@@ -74,15 +66,10 @@ def predict():
 
     f = open(base_dir / "params" / "actshifts_quantized", "wb")
     param_idx = 0
-    # for i in range(n_acts):
     for act in acts:
-    # for act in [("conv", [np.zeros(30000).reshape(3, -1), np.zeros(3200).reshape(32, -1)])]:
         # act = npz_acts["acts"][i]
-        # print(len(act[1]), act[1][0].shape)
         param_idx = quantize(act, params, param_idx, scales, bit)
-        # break
         # scale, quantize(act)
-        # print(act[0])
         # print(quantize(f, act, 16))
     f.close()
     print(param_idx)
