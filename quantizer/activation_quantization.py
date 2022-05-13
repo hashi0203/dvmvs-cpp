@@ -141,7 +141,7 @@ def predict():
             lstm_K_bottom = full_K_torch.clone().cuda()
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
 
-            activations = [reference_image_torch.cpu().numpy().squeeze().reshape(-1)]
+            activations = []
             layer1, layer2, layer3, layer4, layer5, activations = feature_extractor(reference_image_torch, activations)
             if (i == 30): print(len(activations))
 
@@ -220,15 +220,16 @@ def predict():
 
 
             if acts is None:
-                acts = activations.copy()
+                acts = [(act[0], [a[np.newaxis] for a in act[1]]) for act in activations]
             else:
                 for idx, act in enumerate(activations):
                     # act = act.cpu().numpy().squeeze().reshape(-1)
-                    acts[idx] = np.concatenate([acts[idx], act])
+                    assert act[0] == acts[idx][0]
+                    acts[idx] =(acts[idx][0], [np.append(acts[idx][1][j], act[1][j]) for j in range(len(acts[idx][1]))])
 
     f = open(base_dir / "params" / "actshifts_quantized", "wb")
-    # for act in acts:
-    #     print(act[0])
+    for act in acts:
+        print(act[0])
         # print(quantize(f, act, 16))
     f.close()
     print(len(acts))

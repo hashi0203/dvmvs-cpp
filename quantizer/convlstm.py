@@ -40,10 +40,10 @@ class MVSLayernormConvLSTMCell(nn.Module):
             non_valid = torch.cat([non_valid] * c, dim=1)
             h_cur.data[non_valid] = 0.0
 
-        activations.append(["cat", [input_tensor.cpu().detach().numpy().copy(), h_cur.cpu().detach().numpy().copy()]])
+        activations.append(("cat", [input_tensor.cpu().detach().numpy().copy(), h_cur.cpu().detach().numpy().copy()]))
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
         combined_conv = self.conv(combined)
-        activations.append(["conv", combined_conv.cpu().detach().numpy().copy()])
+        activations.append(("conv", [combined.cpu().detach().numpy().copy(), combined_conv.cpu().detach().numpy().copy()]))
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
         b, c, h, w = h_cur.size()

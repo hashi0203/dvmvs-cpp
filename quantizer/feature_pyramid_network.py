@@ -114,19 +114,19 @@ class FeaturePyramidNetwork(nn.Module):
         x = list(x.values())
 
         last_inner = self.get_result_from_inner_blocks(x[-1], -1)
-        activations.append(["conv", last_inner.cpu().detach().numpy().copy()])
+        activations.append(("conv", [x[-1].cpu().detach().numpy().copy(), last_inner.cpu().detach().numpy().copy()]))
         results = []
         results.append(self.get_result_from_layer_blocks(last_inner, -1))
 
         for idx in range(len(x) - 2, -1, -1):
             inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)
-            activations.append(["conv", inner_lateral.cpu().detach().numpy().copy()])
+            activations.append(("conv", [x[idx].cpu().detach().numpy().copy(), inner_lateral.cpu().detach().numpy().copy()]))
             feat_shape = inner_lateral.shape[-2:]
             inner_top_down = F.interpolate(last_inner, size=feat_shape, mode="nearest")
-            activations.append(["add", [inner_lateral.cpu().detach().numpy().copy(), inner_top_down.cpu().detach().numpy().copy()]])
+            activations.append(("add", [inner_lateral.cpu().detach().numpy().copy(), inner_top_down.cpu().detach().numpy().copy()]))
             last_inner = inner_lateral + inner_top_down
             layer_lateral = self.get_result_from_layer_blocks(last_inner, idx)
-            activations.append(["conv", layer_lateral.cpu().detach().numpy().copy()])
+            activations.append(("conv", [last_inner.cpu().detach().numpy().copy(), layer_lateral.cpu().detach().numpy().copy()]))
             results.insert(0, layer_lateral)
 
         # if self.extra_blocks is not None:
