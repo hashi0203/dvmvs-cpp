@@ -32,6 +32,7 @@ def main():
     # fs = open(base_dir / "param_shifts", "wb")
 
     cnts = []
+    scales = []
     for checkpoint in checkpoints:
         with open(base_dir / "files" / checkpoint.name, 'r') as f:
             files = f.read().split()
@@ -75,19 +76,12 @@ def main():
             fs.write(struct.pack('f', scale))
             # fs.write(struct.pack('i', shift))
             cnt += len(scaled_param)
+            scales.append(scale)
             print("(%.3f, %5d, %5d)" % (scale, np.min(scaled_param), np.max(scaled_param)))
         cnts.append(cnt)
 
-        # savedir = 'npz'
-        # os.makedirs(savedir, exist_ok=True)
-        # for key in params:
-        #     params[key] = params[key].to('cpu').detach().numpy().copy()
-
-        # params["shifts"] = np.array(shifts)
-
-        # np.savez_compressed(os.path.join(savedir, "params_quantized"), **params)
-
     print(cnts)
+    np.savez_compressed(base_dir / "param_scales", scales=scales)
 
     fp.close()
     fn.close()

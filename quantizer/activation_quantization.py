@@ -13,8 +13,9 @@ from keyframe_buffer2 import KeyframeBuffer
 from utils import cost_volume_fusion, get_non_differentiable_rectangle_depth_estimation, get_warp_grid_for_cost_volume_calculation
 
 INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767]
+INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096, -8192, -16384, -32768]
 
-def quantize(f, act, bit, alpha=0.95):
+def quantize(f, act, bit, alpha=0.99):
     act = np.abs(act)
     act = np.sort(act)
     idx = int(round(len(act) * alpha))
@@ -103,7 +104,7 @@ def predict():
 
     with torch.no_grad():
         acts = None
-        for i in tqdm(range(20, len(poses) // 3)):
+        for i in tqdm(range(20, len(poses) // 5)):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -226,6 +227,9 @@ def predict():
                     # act = act.cpu().numpy().squeeze().reshape(-1)
                     assert act[0] == acts[idx][0]
                     acts[idx] =(acts[idx][0], [np.append(acts[idx][1][j], act[1][j]) for j in range(len(acts[idx][1]))])
+
+    scales = np.load(base_dir / "params" / "param_scales.npz")["scales"]
+    print(scales)
 
     f = open(base_dir / "params" / "actshifts_quantized", "wb")
     for act in acts:

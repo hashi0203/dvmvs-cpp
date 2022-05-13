@@ -23,7 +23,7 @@ def save_acts(seq, x, activations, flag=False):
             if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d) or (flag and isinstance(l, torch.nn.modules.conv.Conv2d)):
                 activations.append(("conv", [inp, x.cpu().detach().numpy().copy()]))
             elif isinstance(l, torch.nn.modules.activation.Sigmoid):
-                activations.append(("Sigmoid", []))
+                activations.append(("sigmoid", []))
     return x, activations
 
 
