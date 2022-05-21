@@ -207,13 +207,13 @@ def predict():
                     f.write(' '.join(map(str, p)) + '\n')
 
             if acts is None:
-                acts = [(act[0], [a[np.newaxis] for a in act[1]]) for act in activations]
-                print(acts[0][1][0].shape)
+                acts = [(act[0], act[1][np.newaxis]) for act in activations]
+                # print(acts[0][1][0].shape)
             else:
                 for idx, act in enumerate(activations):
                     # act = act.cpu().numpy().squeeze().reshape(-1)
                     assert act[0] == acts[idx][0]
-                    acts[idx] =(acts[idx][0], [np.vstack([acts[idx][1][j], act[1][j][np.newaxis]]) for j in range(len(acts[idx][1]))])
+                    acts[idx] = (acts[idx][0], np.vstack([acts[idx][1], act[1][np.newaxis]]))
 
     print("saving activation file...")
     np.savez_compressed(base_dir / "params" / "acts", acts=np.array(acts, dtype=object))

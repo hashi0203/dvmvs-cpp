@@ -6,13 +6,13 @@ from torchvision.models.mnasnet import _load_pretrained, _get_depths
 _BN_MOMENTUM = 1 - 0.9997
 
 def save_acts(seq, x, activations):
-    tmp = x.cpu().detach().numpy().copy()
+    # tmp = x.cpu().detach().numpy().copy()
     for l in seq:
-        input = tmp.copy()
-        tmp = x.cpu().detach().numpy().copy()
+        # input = tmp.copy()
+        # tmp = x.cpu().detach().numpy().copy()
         x = l(x)
         if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-            activations.append(("conv", [input, x.cpu().detach().numpy().copy()]))
+            activations.append(("conv", x.cpu().detach().numpy().copy()))
     return x, activations
 
 
@@ -42,7 +42,8 @@ class _InvertedResidual(nn.Module):
     def forward(self, input, activations):
         x, activations = save_acts(self.layers, input, activations)
         if self.apply_residual:
-            activations.append(("add", [x.cpu().detach().numpy().copy(), input.cpu().detach().numpy().copy()]))
+            # activations.append(("add", [x.cpu().detach().numpy().copy(), input.cpu().detach().numpy().copy()]))
+            activations.append(("add", (x + input).cpu().detach().numpy().copy()))
             return x + input, activations
             # return self.layers(input) + input
         else:
