@@ -15,8 +15,8 @@ def quantize(act, bit, alpha=0.95):
         scale = float(INTMAX[bit-1] / param[idx])
         shift = int(np.floor(np.log2(scale)))
         return shift
-    elif act[0] == "sigmoid":
-        print(np.max(param))
+    elif act[0] == "sigmoid" or act[0] == "celu":
+        print("%7s: %.5f" % (act[0], np.max(param)))
         return None
     else:
         print(act[0])

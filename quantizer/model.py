@@ -20,14 +20,14 @@ def save_acts(seq, x, activations, flag=False):
             x, activations = l(x, activations)
         else:
             # input = tmp.copy()
-            # tmp = x.cpu().detach().numpy().copy()
+            tmp = x.cpu().detach().numpy().copy()
             x = l(x)
             if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
                 activations.append(("conv", x.cpu().detach().numpy().copy()))
             elif flag and isinstance(l, torch.nn.modules.conv.Conv2d):
                 activations.append(("conv", x.cpu().detach().numpy().copy()))
             elif isinstance(l, torch.nn.modules.activation.Sigmoid):
-                activations.append(("sigmoid", x.cpu().detach().numpy().copy()))
+                activations.append(("sigmoid", tmp))
     return x, activations
 
 
