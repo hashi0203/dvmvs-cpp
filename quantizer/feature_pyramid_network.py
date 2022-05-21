@@ -58,9 +58,6 @@ class FeaturePyramidNetwork(nn.Module):
                 nn.init.kaiming_uniform_(m.weight, a=1)
                 nn.init.constant_(m.bias, 0)
 
-        # if extra_blocks is not None:
-        #     assert isinstance(extra_blocks, ExtraFPNBlock)
-        # self.extra_blocks = extra_blocks
 
     def get_result_from_inner_blocks(self, x, idx):
         """
@@ -114,22 +111,20 @@ class FeaturePyramidNetwork(nn.Module):
         x = list(x.values())
 
         last_inner = self.get_result_from_inner_blocks(x[-1], -1)
-        activations.append(last_inner.cpu().numpy().squeeze().reshape(-1))
+        activations.append(("conv", [x[-1].cpu().detach().numpy().copy(), last_inner.cpu().detach().numpy().copy()]))
         results = []
         results.append(self.get_result_from_layer_blocks(last_inner, -1))
 
         for idx in range(len(x) - 2, -1, -1):
             inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)
-            activations.append(inner_lateral.cpu().numpy().squeeze().reshape(-1))
+            activations.append(("conv", [x[idx].cpu().detach().numpy().copy(), inner_lateral.cpu().detach().numpy().copy()]))
             feat_shape = inner_lateral.shape[-2:]
             inner_top_down = F.interpolate(last_inner, size=feat_shape, mode="nearest")
+            activations.append(("add", [inner_lateral.cpu().detach().numpy().copy(), inner_top_down.cpu().detach().numpy().copy()]))
             last_inner = inner_lateral + inner_top_down
             layer_lateral = self.get_result_from_layer_blocks(last_inner, idx)
-            activations.append(layer_lateral.cpu().numpy().squeeze().reshape(-1))
+            activations.append(("conv", [last_inner.cpu().detach().numpy().copy(), layer_lateral.cpu().detach().numpy().copy()]))
             results.insert(0, layer_lateral)
-
-        # if self.extra_blocks is not None:
-        #     results, names = self.extra_blocks(results, x, names)
 
         # make it back an OrderedDict
         out = OrderedDict([(k, v) for k, v in zip(names, results)])

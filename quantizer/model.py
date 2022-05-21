@@ -13,14 +13,21 @@ from layers import conv_layer, depth_layer_3x3
 fpn_output_channels = 32
 hyper_channels = 32
 
-def save_acts(seq, x, activations):
+def save_acts(seq, x, activations, flag=False):
+    tmp = x.cpu().detach().numpy().copy()
     for l in seq:
         if isinstance(l, _InvertedResidual):
             x, activations = l(x, activations)
         else:
+            input = tmp.copy()
+            tmp = x.cpu().detach().numpy().copy()
             x = l(x)
-            if isinstance(l, torch.nn.modules.conv.Conv2d) or isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-                activations.append(x.cpu().numpy().squeeze().reshape(-1))
+            if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
+                activations.append(("conv", [input, x.cpu().detach().numpy().copy()]))
+            elif flag and isinstance(l, torch.nn.modules.conv.Conv2d):
+                activations.append(("conv", [tmp, x.cpu().detach().numpy().copy()]))
+            elif isinstance(l, torch.nn.modules.activation.Sigmoid):
+                activations.append(("sigmoid", []))
     return x, activations
 
 
@@ -39,8 +46,6 @@ class StandardLayer(torch.nn.Module):
                                 apply_bn_relu=apply_bn_relu)
 
     def forward(self, x, activations):
-        # x = self.conv1(x)
-        # x = self.conv2(x)
         x, activations = save_acts(self.conv1, x, activations)
         x, activations = save_acts(self.conv2, x, activations)
         return x, activations
@@ -56,7 +61,6 @@ class DownconvolutionLayer(torch.nn.Module):
                                     apply_bn_relu=True)
 
     def forward(self, x, activations):
-        # x = self.down_conv(x)
         x, activations = save_acts(self.down_conv, x, activations)
         return x, activations
 
@@ -72,7 +76,6 @@ class UpconvolutionLayer(torch.nn.Module):
 
     def forward(self, x, activations):
         x = torch.nn.functional.interpolate(input=x, scale_factor=2, mode='bilinear', align_corners=True)
-        # x = self.conv(x)
         x, activations = save_acts(self.conv, x, activations)
         return x, activations
 
@@ -125,15 +128,15 @@ class DecoderBlock(torch.nn.Module):
         x, activations = self.up_convolution(x, activations)
 
         if depth is None:
+            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip], dim=1)
         else:
             depth = torch.nn.functional.interpolate(depth, scale_factor=2, mode='bilinear', align_corners=True)
+            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip, depth], dim=1)
 
         x, activations = save_acts(self.convolution1, x, activations)
         x, activations = save_acts(self.convolution2, x, activations)
-        # x, activations = self.convolution1(x, activations)
-        # x, activations = self.convolution2(x, activations)
         return x, activations
 
 
@@ -149,11 +152,6 @@ class FeatureExtractor(torch.nn.Module):
         self.layer5 = torch.nn.Sequential(*backbone_mobile_layers[12:14])
 
     def forward(self, image, activations):
-        # layer1 = self.layer1(image)
-        # layer2 = self.layer2(layer1)
-        # layer3 = self.layer3(layer2)
-        # layer4 = self.layer4(layer3)
-        # layer5 = self.layer5(layer4)
         layer1, activations = save_acts(self.layer1, image, activations)
         layer2, activations = save_acts(self.layer2[0], layer1, activations)
         layer3, activations = save_acts(self.layer3[0], layer2, activations)
@@ -230,24 +228,24 @@ class CostVolumeEncoder(torch.nn.Module):
                                            kernel_size=3)
 
     def forward(self, features_half, features_quarter, features_one_eight, features_one_sixteen, cost_volume, activations):
+        activations.append(("cat", [features_half.cpu().detach().numpy().copy(), cost_volume.cpu().detach().numpy().copy()]))
         inp0 = torch.cat([features_half, cost_volume], dim=1)
         inp0, activations = save_acts(self.aggregator0, inp0, activations)
-        # inp0 = self.aggregator0(inp0)
         out0, activations = self.encoder_block0(inp0, activations)
 
+        activations.append(("cat", [features_quarter.cpu().detach().numpy().copy(), out0.cpu().detach().numpy().copy()]))
         inp1 = torch.cat([features_quarter, out0], dim=1)
         inp1, activations = save_acts(self.aggregator1, inp1, activations)
-        # inp1 = self.aggregator1(inp1)
         out1, activations = self.encoder_block1(inp1, activations)
 
+        activations.append(("cat", [features_one_eight.cpu().detach().numpy().copy(), out1.cpu().detach().numpy().copy()]))
         inp2 = torch.cat([features_one_eight, out1], dim=1)
         inp2, activations = save_acts(self.aggregator2, inp2, activations)
-        # inp2 = self.aggregator2(inp2)
         out2, activations = self.encoder_block2(inp2, activations)
 
+        activations.append(("cat", [features_one_sixteen.cpu().detach().numpy().copy(), out2.cpu().detach().numpy().copy()]))
         inp3 = torch.cat([features_one_sixteen, out2], dim=1)
         inp3, activations = save_acts(self.aggregator3, inp3, activations)
-        # inp3 = self.aggregator3(inp3)
         out3, activations = self.encoder_block3(inp3, activations)
 
         return inp0, inp1, inp2, inp3, out3, activations
@@ -304,32 +302,33 @@ class CostVolumeDecoder(torch.nn.Module):
     def forward(self, image, skip0, skip1, skip2, skip3, bottom, activations):
         # work on cost volume
         decoder_block1, activations = self.decoder_block1(bottom, skip3, None, activations)
-        sigmoid_depth_one_sixteen, activations = save_acts(self.depth_layer_one_sixteen, decoder_block1, activations)
+        sigmoid_depth_one_sixteen, activations = save_acts(self.depth_layer_one_sixteen, decoder_block1, activations, flag=True)
         # sigmoid_depth_one_sixteen = self.depth_layer_one_sixteen(decoder_block1)
         # inverse_depth_one_sixteen = self.inverse_depth_multiplier * sigmoid_depth_one_sixteen + self.inverse_depth_base
 
         decoder_block2, activations = self.decoder_block2(decoder_block1, skip2, sigmoid_depth_one_sixteen, activations)
-        sigmoid_depth_one_eight, activations = save_acts(self.depth_layer_one_eight, decoder_block2, activations)
+        sigmoid_depth_one_eight, activations = save_acts(self.depth_layer_one_eight, decoder_block2, activations, flag=True)
         # sigmoid_depth_one_eight = self.depth_layer_one_eight(decoder_block2)
         # inverse_depth_one_eight = self.inverse_depth_multiplier * sigmoid_depth_one_eight + self.inverse_depth_base
 
         decoder_block3, activations = self.decoder_block3(decoder_block2, skip1, sigmoid_depth_one_eight, activations)
-        sigmoid_depth_quarter, activations = save_acts(self.depth_layer_quarter, decoder_block3, activations)
+        sigmoid_depth_quarter, activations = save_acts(self.depth_layer_quarter, decoder_block3, activations, flag=True)
         # sigmoid_depth_quarter = self.depth_layer_quarter(decoder_block3)
         # inverse_depth_quarter = self.inverse_depth_multiplier * sigmoid_depth_quarter + self.inverse_depth_base
 
         decoder_block4, activations = self.decoder_block4(decoder_block3, skip0, sigmoid_depth_quarter, activations)
-        sigmoid_depth_half, activations = save_acts(self.depth_layer_half, decoder_block4, activations)
+        sigmoid_depth_half, activations = save_acts(self.depth_layer_half, decoder_block4, activations, flag=True)
         # sigmoid_depth_half = self.depth_layer_half(decoder_block4)
         # inverse_depth_half = self.inverse_depth_multiplier * sigmoid_depth_half + self.inverse_depth_base
 
         scaled_depth = torch.nn.functional.interpolate(sigmoid_depth_half, scale_factor=2, mode='bilinear', align_corners=True)
         scaled_decoder = torch.nn.functional.interpolate(decoder_block4, scale_factor=2, mode='bilinear', align_corners=True)
+        activations.append(("cat", [scaled_decoder.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
         scaled_combined = torch.cat([scaled_decoder, scaled_depth, image], dim=1)
         scaled_combined, activations = save_acts(self.refine[0], scaled_combined, activations)
         scaled_combined, activations = save_acts(self.refine[1], scaled_combined, activations)
         # scaled_combined = self.refine(scaled_combined)
-        sigmoid_depth_full, activations = save_acts(self.depth_layer_full, scaled_combined, activations)
+        sigmoid_depth_full, activations = save_acts(self.depth_layer_full, scaled_combined, activations, flag=True)
         inverse_depth_full = self.inverse_depth_multiplier * sigmoid_depth_full + self.inverse_depth_base
         # inverse_depth_full = self.inverse_depth_multiplier * self.depth_layer_full(scaled_combined) + self.inverse_depth_base
 
