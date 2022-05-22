@@ -24,8 +24,13 @@ void Conv2d(const qaint* input,
     const int yshift = a_shifts[++a_cnt];
     const int mshift = max(bshift, xshift + wshift);
 
-    if (wshift < 0) print2(param_path + ".weight", wshift);
-    if (bshift < 0) print2(param_path + ".bias", bshift);
+    print_neg_shift(param_path, "wshift", wshift);
+    print_neg_shift(param_path, "bshift", bshift);
+    print_neg_shift(param_path, "bshift + sshift - yshift", bshift + sshift - yshift);
+
+    // if (wshift < 0) print2(param_path + ".weight", wshift);
+    // if (bshift < 0) print2(param_path + ".bias", bshift);
+    // if (mshift + sshift - yshift < 0) print1("(bshift + sshift - yshift) is negative");
 
     // const int wshift = 0;
     // const float* weight = params_f + start_idx[param_cnt++];
@@ -33,7 +38,6 @@ void Conv2d(const qaint* input,
     // const float* bias = apply_bias ? params_f + start_idx[param_cnt++] : nullptr;
 
     // if (bshift - (xshift + wshift) < 0) print4("(bshift - (xshift + wshift)) is negative", bshift, xshift, wshift);
-    // if (bshift + sshift - yshift < 0) print1("(bshift + sshift - yshift) is negative");
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;

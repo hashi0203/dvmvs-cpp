@@ -147,7 +147,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l8_out_height = stack_out_size(l6_out_height, l8_kernel_size, l8_stride);
     constexpr int l8_out_width = stack_out_size(l6_out_width, l8_kernel_size, l8_stride);
     _stack(layer1, layer2, "layer2.0", l6_out_channels, l6_out_height, l6_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats);
-    print1(a_cnt);
+
     constexpr int l9_kernel_size = 5;
     constexpr int l9_stride = 2;
     constexpr int l9_expansion_factor = 3;

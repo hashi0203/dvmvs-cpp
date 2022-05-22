@@ -55,16 +55,10 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     if (in_channels == out_channels && stride == 1) {
         const int yshift = a_shifts[a_cnt];
         const int zshift = a_shifts[++a_cnt];
+        print_neg_shift(param_path, "zshift", zshift);
         const int mshift = max(max(xshift, yshift), zshift);
-        // const int lshift = (xshift > yshift) ? xshift - yshift : yshift - xshift;
-        // const int rshift = max(xshift, yshift) - a_shifts[++a_cnt];
-        // if (rshift < 0) print4("rshift is negative: (xshift, yshift, rshift):", xshift, yshift, rshift);
-        for (int idx = 0; idx < out_channels * out_height * out_width; idx++) {
+        for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
             y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
-            // y[idx] = rshift <= 0 ? ((qmint) y[idx] << (rshift - yshift)) + (qmint) x[idx] << (rshift - xshift) :
-            //          xshift > yshift ? (((qmint) y[idx] << lshift) + x[idx]) >> rshift :
-            //                            (((qmint) x[idx] << lshift) + y[idx]) >> rshift;
-        }
     }
 }
 
