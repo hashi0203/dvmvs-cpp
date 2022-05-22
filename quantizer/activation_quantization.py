@@ -9,7 +9,7 @@ INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -
 def quantize(act, bit, alpha=0.95):
     param = act[1].reshape(-1)
     param = np.abs(param)
-    if act[0] == "add" or act[0] == "conv":
+    if act[0] == "add" or act[0] == "conv" or act[0] == "input":
         param = np.sort(param)
         idx = int(round(len(param) * alpha))
         scale = float(INTMAX[bit-1] / param[idx])

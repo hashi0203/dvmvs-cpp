@@ -130,6 +130,7 @@ def predict():
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
 
             activations = []
+            activations.append(("input", reference_image_torch.cpu().detach().numpy().copy()))
             layer1, layer2, layer3, layer4, layer5, activations = feature_extractor(reference_image_torch, activations)
             if (i == 30): print(len(activations))
 
