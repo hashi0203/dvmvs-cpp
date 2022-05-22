@@ -1,18 +1,6 @@
 #pragma once
 #include "settings.h"
 
-#include <unordered_map>
-
-constexpr int qwbit = 8;
-typedef short qwint;
-constexpr int qabit = 16;
-typedef int qaint;
-// typedef short qaint;
-// constexpr qaint QA_MIN = -32768;
-
-// constexpr int bufbit = 8;
-typedef long long qmint;
-
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
 // constexpr int test_image_width = 320;
@@ -78,22 +66,61 @@ constexpr int width_32 = test_image_width / 32;
 constexpr float height_normalizer = height_2 / 2.0;
 constexpr float width_normalizer = width_2 / 2.0;
 
-extern qwint* params;
-constexpr int n_files = 255 + 18 + 80 + 1 + 80;
-extern int start_idx[n_files + 1];
-extern int param_cnt;
-extern int shifts[n_files];
-constexpr int offsets[81] = {20249, 20272, 25322, 27197, 26266, 28856, 20246, 20327, 45463, 25185, 20337, 29676, 28738, 18059, 35674, 32424, 20304, 28114, 20252, 20316, 36747, 23606, 34667, 32653, 20258, 20359, 35470, 20253, 20328, 44308, 20206, 20324, 32374, 20261, 20482, 40524, 20259, 20300, 32128, 20261, 20390, 38267, 20258, 20342, 43511, 20254, 20353, 35854, 20252, 20371, 49239, 28554, 21445, 27444, 27512, 32646, 39416, 20982, 24687, 30980, 24178, 28403, 28962, 35834, 22230, 33524, 39682, 32411, 20297, 29811, 23930, 25626, 27700, 20613, 19562, 34279, 26256, 19968, 35764, 23113, 24952};
+
+constexpr int qwbit = 10;
+typedef short qwint;
+constexpr int n_weights = 34619560;
+constexpr int w_files = 96;
+extern qwint* weights;
+extern int w_idx[w_files];
+extern int w_shifts[w_files];
+extern int w_cnt;
+
+constexpr int qbbit = 32;
+typedef int qbint;
+constexpr int b_files = 96;
+constexpr int n_biases = 24885;
+extern qbint* biases;
+extern int b_idx[b_files];
+extern int b_shifts[b_files];
+extern int b_cnt;
+
+constexpr int qsbit = 10;
+typedef short qsint;
+constexpr int s_files = 81;
+constexpr int n_scales = 22544;
+extern qsint* scales;
+extern int s_idx[s_files];
+extern int s_shifts[s_files];
+extern int s_cnt;
+
+constexpr int qabit = 32;
+typedef int qaint;
+// typedef short qaint;
+// constexpr qaint QA_MIN = -32768;
+constexpr int a_files = 111;
+constexpr int n_acts = a_files;
+extern int a_shifts[a_files];
+extern int a_cnt;
+
+// constexpr int bufbit = 8;
+typedef long long qmint;
+
+// constexpr int n_files = 255 + 18 + 80 + 1 + 80;
+// extern int start_idx[n_files + 1];
+// extern int param_cnt;
+// extern int shifts[n_files];
+// constexpr int offsets[81] = {20249, 20272, 25322, 27197, 26266, 28856, 20246, 20327, 45463, 25185, 20337, 29676, 28738, 18059, 35674, 32424, 20304, 28114, 20252, 20316, 36747, 23606, 34667, 32653, 20258, 20359, 35470, 20253, 20328, 44308, 20206, 20324, 32374, 20261, 20482, 40524, 20259, 20300, 32128, 20261, 20390, 38267, 20258, 20342, 43511, 20254, 20353, 35854, 20252, 20371, 49239, 28554, 21445, 27444, 27512, 32646, 39416, 20982, 24687, 30980, 24178, 28403, 28962, 35834, 22230, 33524, 39682, 32411, 20297, 29811, 23930, 25626, 27700, 20613, 19562, 34279, 26256, 19968, 35764, 23113, 24952};
 // constexpr int offsets[81] = {10125, 10137, 12661, 13599, 13133, 14428, 10123, 10164, 22731, 12593, 10169, 14838, 14369, 9029, 17837, 16212, 10152, 14057, 10126, 10158, 18373, 11803, 17334, 16327, 10129, 10180, 17735, 10127, 10164, 22154, 10103, 10162, 16187, 10130, 10242, 20262, 10130, 10151, 16064, 10130, 10196, 19134, 10129, 10171, 21756, 10127, 10177, 17927, 10126, 10186, 24620, 14277, 10723, 13722, 13756, 16323, 19708, 10492, 12344, 15490, 12089, 14202, 14481, 17917, 11115, 16763, 19841, 16206, 10149, 14905, 11965, 12813, 13850, 10307, 9781, 17140, 13128, 9984, 17882, 11557, 12477};
 // constexpr int offsets[81] = {5062, 5068, 6331, 6799, 6567, 7214, 5062, 5082, 11366, 6297, 5084, 7419, 7185, 4515, 8919, 8106, 5076, 7029, 5063, 5079, 9187, 5901, 8667, 8164, 5064, 5090, 8868, 5063, 5082, 11077, 5052, 5081, 8094, 5065, 5121, 10131, 5065, 5075, 8032, 5065, 5098, 9567, 5064, 5086, 10878, 5064, 5088, 8964, 5063, 5093, 12310, 7138, 5362, 6861, 6878, 8162, 9854, 5246, 6172, 7745, 6045, 7101, 7241, 8958, 5558, 8381, 9921, 8103, 5074, 7453, 5983, 6407, 6925, 5154, 4890, 8570, 6564, 4992, 8941, 5778, 6238};
 // constexpr int offsets[81] = {1266, 1267, 1583, 1700, 1642, 1804, 1266, 1271, 2842, 1574, 1271, 1855, 1797, 1129, 2230, 2027, 1269, 1757, 1266, 1270, 2297, 1475, 2167, 2041, 1266, 1273, 2217, 1266, 1271, 2770, 1263, 1271, 2024, 1267, 1280, 2533, 1267, 1269, 2008, 1267, 1275, 2392, 1266, 1272, 2720, 1266, 1272, 2241, 1266, 1274, 3078, 1785, 1341, 1716, 1720, 2041, 2464, 1312, 1543, 1937, 1512, 1776, 1810, 2240, 1390, 2096, 2480, 2026, 1269, 1863, 1496, 1602, 1731, 1289, 1223, 2143, 1641, 1248, 2236, 1445, 1560};
 // constexpr int offsets[81] = {2531, 2534, 3165, 3400, 3284, 3607, 2531, 2541, 5683, 3148, 2542, 3710, 3592, 2258, 4460, 4053, 2538, 3514, 2532, 2540, 4593, 2951, 4334, 4082, 2533, 2545, 4434, 2532, 2541, 5539, 2526, 2541, 4047, 2533, 2561, 5066, 2533, 2538, 4016, 2533, 2549, 4784, 2533, 2543, 5439, 2532, 2545, 4482, 2532, 2547, 6155, 3570, 2681, 3431, 3439, 4081, 4928, 2623, 3086, 3873, 3022, 3551, 3621, 4480, 2779, 4191, 4961, 4052, 2537, 3727, 2992, 3204, 3463, 2577, 2446, 4285, 3282, 2496, 4471, 2889, 3119};
 // constexpr int offsets[81] = {316, 317, 396, 425, 411, 451, 316, 318, 710, 394, 318, 464, 449, 283, 558, 507, 317, 440, 316, 317, 575, 369, 542, 511, 317, 318, 554, 316, 318, 692, 316, 318, 506, 317, 320, 633, 317, 317, 502, 317, 319, 598, 317, 318, 680, 316, 318, 561, 316, 318, 770, 446, 335, 429, 430, 510, 616, 328, 386, 484, 378, 444, 453, 560, 348, 524, 620, 507, 318, 466, 374, 401, 433, 322, 306, 536, 411, 312, 559, 362, 390};
-extern int offset_cnt;
-extern float* params_f;
-const int n_acts = 178;
-extern int actshifts[n_acts];
-extern int act_cnt;
+// extern int offset_cnt;
+// extern float* params_f;
+// const int n_acts = 178;
+// extern int actshifts[n_acts];
+// extern int act_cnt;
 
 
 #define conv_out_size(size, kernel_size, stride, padding) ((size) + 2 * (padding) - (kernel_size)) / (stride) + 1

@@ -5,7 +5,7 @@ void Conv2d(const qaint* input,
             const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,
-            const int kernel_size, const int stride, const int padding, const int groups, const bool apply_bias) {
+            const int kernel_size, const int stride, const int padding, const int groups, const bool apply_scale) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
 
@@ -13,13 +13,16 @@ void Conv2d(const qaint* input,
     // print1(param_path + ".weight");
     // if (apply_bias) print1(param_path + ".bias");
 
-    const int xshift = actshifts[act_cnt++];
-    const int yshift = actshifts[act_cnt];
+    const int wshift = w_shifts[w_cnt];
+    const qwint* weight = weights + w_idx[w_cnt++];
+    const int bshift = b_shifts[b_cnt];
+    const qbint* bias = biases + b_idx[b_cnt++];
+    const int sshift = apply_scale ? s_shifts[s_cnt] : 0;
+    const qsint* scale = apply_scale ? scales + s_idx[s_cnt++] : nullptr;
 
-    const int wshift = shifts[param_cnt];
-    const qwint* weight = params + start_idx[param_cnt++];
-    const int bshift = apply_bias ? shifts[param_cnt] : 0;
-    const qwint* bias = apply_bias ? params + start_idx[param_cnt++] : nullptr;
+    const int xshift = a_shifts[a_cnt];
+    const int yshift = a_shifts[++a_cnt];
+    const int mshift = max(bshift, xshift + wshift);
 
     if (wshift < 0) print2(param_path + ".weight", wshift);
     if (bshift < 0) print2(param_path + ".bias", bshift);
@@ -29,7 +32,8 @@ void Conv2d(const qaint* input,
     // const int bshift = 0;
     // const float* bias = apply_bias ? params_f + start_idx[param_cnt++] : nullptr;
 
-    if (xshift + wshift - bshift < 0) print1("(xshift + wshift - bshift) is negative");
+    // if (bshift - (xshift + wshift) < 0) print4("(bshift - (xshift + wshift)) is negative", bshift, xshift, wshift);
+    // if (bshift + sshift - yshift < 0) print1("(bshift + sshift - yshift) is negative");
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;
@@ -57,9 +61,11 @@ void Conv2d(const qaint* input,
                         }
                     }
 
-                    const qmint b = (apply_bias) ? ((qmint) bias[och]) << (xshift + wshift - bshift) : 0;
+                    sum <<= mshift - (xshift + wshift);
+                    sum += bias[och] << (mshift - bshift);
+                    sum = apply_scale ? sum * scale[och] : sum;
                     const int output_idx = (och * out_height + oh) * out_width + ow;
-                    output[output_idx] = (sum + b) >> (xshift + wshift - yshift);
+                    output[output_idx] = sum >> (mshift + sshift - yshift);
                 }
             }
         }

@@ -5,10 +5,9 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
                        const int out_channels, const int out_height, const int out_width,
                        const int kernel_size, const int stride, const int expansion_factor) {
 
-    constexpr bool apply_bias = false;
+    constexpr bool apply_scale = true;
     const int mid_channels = in_channels * expansion_factor;
-
-    const int xshift = actshifts[act_cnt];
+    const int xshift = a_shifts[a_cnt];
 
     // Pointwise
     constexpr int l0_kernel_size = 1;
@@ -19,16 +18,11 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
     const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
-    Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_bias);
-
-    const int l1_out_channels = mid_channels;
-    const int l1_out_height = l0_out_height;
-    const int l1_out_width = l0_out_width;
-    BatchNorm2d(y0, param_path + ".layers.1", l1_out_channels, l1_out_height, l1_out_width);
+    Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale);
 
     const int l2_out_channels = mid_channels;
-    const int l2_out_height = l1_out_height;
-    const int l2_out_width = l1_out_width;
+    const int l2_out_height = l0_out_height;
+    const int l2_out_width = l0_out_width;
     ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
 
     // Depthwise
@@ -40,16 +34,11 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     const int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
     const int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
-    Conv2d(y0, y3, param_path + ".layers.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_bias);
-
-    const int l4_out_channels = mid_channels;
-    const int l4_out_height = l3_out_height;
-    const int l4_out_width = l3_out_width;
-    BatchNorm2d(y3, param_path + ".layers.4", l4_out_channels, l4_out_height, l4_out_width);
+    Conv2d(y0, y3, param_path + ".layers.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale);
 
     const int l5_out_channels = mid_channels;
-    const int l5_out_height = l4_out_height;
-    const int l5_out_width = l4_out_width;
+    const int l5_out_height = l3_out_height;
+    const int l5_out_width = l3_out_width;
     ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     // Linear pointwise. Note that there's no activation.
@@ -60,21 +49,21 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     const int l6_out_channels = out_channels;
     const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
     const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
-    Conv2d(y3, y, param_path + ".layers.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_bias);
-
-    const int l7_out_channels = out_channels;
-    const int l7_out_height = l6_out_height;
-    const int l7_out_width = l6_out_width;
-    BatchNorm2d(y, param_path + ".layers.7", l7_out_channels, l7_out_height, l7_out_width);
+    Conv2d(y3, y, param_path + ".layers.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale);
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {
-        const int yshift = actshifts[act_cnt];
-        const int shift = (xshift > yshift) ? xshift - yshift : yshift - xshift;
+        const int yshift = a_shifts[a_cnt];
+        const int zshift = a_shifts[++a_cnt];
+        const int mshift = max(max(xshift, yshift), zshift);
+        // const int lshift = (xshift > yshift) ? xshift - yshift : yshift - xshift;
+        // const int rshift = max(xshift, yshift) - a_shifts[++a_cnt];
+        // if (rshift < 0) print4("rshift is negative: (xshift, yshift, rshift):", xshift, yshift, rshift);
         for (int idx = 0; idx < out_channels * out_height * out_width; idx++) {
-            y[idx] = (xshift > yshift) ? (((qmint) y[idx] << shift) + x[idx]) >> (shift + 1) :
-                                         (((qmint) x[idx] << shift) + y[idx]) >> (shift + 1);
-            actshifts[act_cnt] = (xshift > yshift) ? yshift - 1 : xshift - 1;
+            y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
+            // y[idx] = rshift <= 0 ? ((qmint) y[idx] << (rshift - yshift)) + (qmint) x[idx] << (rshift - xshift) :
+            //          xshift > yshift ? (((qmint) y[idx] << lshift) + x[idx]) >> rshift :
+            //                            (((qmint) x[idx] << lshift) + y[idx]) >> rshift;
         }
     }
 }

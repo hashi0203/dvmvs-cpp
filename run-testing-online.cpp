@@ -2,7 +2,6 @@
 #include "functional.h"
 #include "conv.h"
 #include "activation.h"
-#include "batchnorm.h"
 #include "layers.h"
 #include "mnasnet.h"
 #include "model.h"
@@ -12,48 +11,103 @@
 #include <Eigen/LU>
 using namespace Eigen;
 
-qwint* params = new qwint[2725512 + 62272 + 8990848 + 18874368 + 4066277];
-int start_idx[n_files + 1];
-int param_cnt;
-int shifts[n_files];
-int offset_cnt;
-int actshifts[n_acts];
-int act_cnt;
+// qwint* params = new qwint[2725512 + 62272 + 8990848 + 18874368 + 4066277];
+// int start_idx[n_files + 1];
+// int param_cnt;
+// int shifts[n_files];
+// int offset_cnt;
+// int actshifts[n_acts];
+// int act_cnt;
 
-float* params_f = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
+// float* params_f = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 
-const string save_dir = "./results-qt2/";
 
-void read_params() {
-    ifstream ifs;
+qwint* weights = new qwint[n_weights];
+int w_idx[w_files];
+int w_shifts[w_files];
+int w_cnt;
 
+qbint* biases = new qbint[n_biases];
+int b_idx[b_files];
+int b_shifts[b_files];
+int b_cnt;
+
+qsint* scales = new qsint[n_scales];
+int s_idx[s_files];
+int s_shifts[s_files];
+int s_cnt;
+
+int a_shifts[a_files];
+int a_cnt;
+
+
+const string save_dir = "./results-qt/";
+
+void set_idx(string filename, const int n_files, int* start_idx) {
     int n_params[n_files];
-    ifs.open("params/values_quantized");
+    ifstream ifs("params/" + filename);
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
     start_idx[0] = 0;
-    for (int i = 0; i < n_files; i++)
+    for (int i = 0; i < n_files - 1; i++)
         start_idx[i+1] = start_idx[i] + n_params[i];
+}
 
-    ifs.open("params/params_quantized");
-    ifs.read((char*) params, sizeof(qwint) * start_idx[n_files]);
+
+template<class T>
+void set_param(string filename, const int n_params, T* params) {
+    ifstream ifs("params/" + filename);
+    ifs.read((char*) params, sizeof(T) * n_params);
     ifs.close();
+}
 
-    ifs.open("params/params");
-    ifs.read((char*) params_f, sizeof(float) * start_idx[n_files]);
-    ifs.close();
 
-    ifs.open("params/shifts_quantized");
-    ifs.read((char*) shifts, sizeof(int) * n_files);
-    ifs.close();
+void read_params() {
+    ifstream ifs;
 
-    ifs.open("params/actshifts_quantized");
-    ifs.read((char*) actshifts, sizeof(int) * n_acts);
-    ifs.close();
+    set_idx("n_weights", w_files, w_idx);
+    set_param<qwint>("weights_quantized", n_weights, weights);
+    set_param<int>("weight_shifts", n_weights, w_shifts);
 
-    for (int idx = 0; idx < n_acts; idx++)
-        actshifts[idx] += 4;
+    set_idx("n_biases", b_files, b_idx);
+    set_param<qbint>("biases_quantized", n_biases, biases);
+    set_param<int>("bias_shifts", n_biases, b_shifts);
+
+    set_idx("n_scales", s_files, s_idx);
+    set_param<qsint>("scales_quantized", n_scales, scales);
+    set_param<int>("scale_shifts", n_scales, s_shifts);
+
+    set_param<int>("act_shifts", n_acts, a_shifts);
+
+
+    // int n_params[n_files];
+    // ifs.open("params/values_quantized");
+    // ifs.read((char*) n_params, sizeof(int) * n_files);
+    // ifs.close();
+
+    // start_idx[0] = 0;
+    // for (int i = 0; i < n_files; i++)
+    //     start_idx[i+1] = start_idx[i] + n_params[i];
+
+    // ifs.open("params/params_quantized");
+    // ifs.read((char*) params, sizeof(qwint) * start_idx[n_files]);
+    // ifs.close();
+
+    // ifs.open("params/params");
+    // ifs.read((char*) params_f, sizeof(float) * start_idx[n_files]);
+    // ifs.close();
+
+    // ifs.open("params/shifts_quantized");
+    // ifs.read((char*) shifts, sizeof(int) * n_files);
+    // ifs.close();
+
+    // ifs.open("params/actshifts_quantized");
+    // ifs.read((char*) actshifts, sizeof(int) * n_acts);
+    // ifs.close();
+
+    // for (int idx = 0; idx < n_acts; idx++)
+    //     actshifts[idx] += 4;
 }
 
 
@@ -67,9 +121,14 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
              float prediction[test_image_height * test_image_width],
              const string filename) {
 
-    param_cnt = 0;
-    offset_cnt = 0;
-    act_cnt = 0;
+    // param_cnt = 0;
+    // offset_cnt = 0;
+    // act_cnt = 0;
+
+    w_cnt = 0;
+    b_cnt = 0;
+    s_cnt = 0;
+    a_cnt = 0;
 
     // int ashift;
     // float reference_image_float[3 * test_image_height * test_image_width];
@@ -83,12 +142,17 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     qaint layer4[channels_4 * height_16 * width_16];
     qaint layer5[channels_5 * height_32 * width_32];
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
+    ofstream ofs2(save_dir + "layer2-" + filename + ".txt");
+    for (int idx = 0; idx < channels_2 * height_4 * width_4; idx++)
+        ofs2 << layer2[idx] / (float) (1 << a_shifts[14]) << "\n";
+    ofs2.close();
+
     ofstream ofs5(save_dir + "layer5-" + filename + ".txt");
     // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
     // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
     // for (int idx = 0; idx < channels_2 * height_4 * width_4; idx++)
     for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-        ofs5 << layer5[idx] / (float) (1 << actshifts[act_cnt]) << "\n";
+        ofs5 << layer5[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
         // ofs5 << layer2[idx] / (float) (1 << actshifts[24]) << "\n";
         // ofs5 << layer1[idx] / (float) (1 << actshifts[6]) << "\n";
         // ofs5.write((char*) &layer5[idx], sizeof(float));
@@ -258,7 +322,7 @@ int main() {
         float reference_image_float[3 * test_image_height * test_image_width];
         load_image(image_filenames[f], reference_image_float);
         qaint reference_image[3 * test_image_height * test_image_width];
-        const int ashift = actshifts[0];
+        const int ashift = a_shifts[0];
         for (int idx = 0; idx < 3 * test_image_height * test_image_width; idx++)
             reference_image[idx] = reference_image_float[idx] * (1 << ashift);
 
@@ -385,8 +449,11 @@ int main() {
 
     keyframe_buffer.close();
 
-    delete[] params;
-    delete[] params_f;
+    delete[] weights;
+    delete[] biases;
+    delete[] scales;
+    // delete[] params;
+    // delete[] params_f;
 
     return 0;
 }
