@@ -1,4 +1,22 @@
 #include "config.h"
+
+template<class T>
+void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
+    if (mode == "txt") {
+        ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
+        for (int idx = 0; idx < layer_size; idx++)
+            ofs << layer[idx] / (float) (1 << shift) << "\n";
+        ofs.close();
+    } else if (mode == "bin") {
+        ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
+        for (int idx = 0; idx < layer_size; idx++)
+            ofs.write((char*) &layer[idx], sizeof(T));
+        ofs.close();
+    } else {
+        print2("unexpected mode:", mode);
+    }
+}
+
 #include "functional.h"
 #include "conv.h"
 #include "activation.h"
@@ -69,24 +87,6 @@ void read_params() {
 }
 
 
-template<class T>
-void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
-    if (mode == "txt") {
-        ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
-        for (int idx = 0; idx < layer_size; idx++)
-            ofs << layer[idx] / (float) (1 << shift) << "\n";
-        ofs.close();
-    } else if (mode == "bin") {
-        ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
-        for (int idx = 0; idx < layer_size; idx++)
-            ofs.write((char*) &layer[idx], sizeof(T));
-        ofs.close();
-    } else {
-        print2("unexpected mode:", mode);
-    }
-}
-
-
 void predict(const qaint reference_image[3 * test_image_height * test_image_width],
              const int n_measurement_frames,
              const qaint measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
@@ -121,9 +121,9 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
 
     // float reference_feature_half_float[fpn_output_channels * height_2 * width_2];
 
-    float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
     // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
@@ -131,6 +131,8 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
     //     reference_feature_half[idx] = reference_feature_half_float[idx] * (1 << ashift);
 
+    save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, a_shifts[65]);
+    save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, a_shifts[68]);
     save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
     // ofstream ofsf("feature_half.txt");
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
