@@ -13,8 +13,6 @@ void Conv2d(const qaint* input,
     // print1(param_path + ".weight");
     // if (apply_bias) print1(param_path + ".bias");
 
-    print1(conv_cnt);
-
     const int wshift = w_shifts[conv_cnt];
     const qwint* weight = weights + w_idx[conv_cnt];
     const int bshift = b_shifts[conv_cnt];
@@ -26,7 +24,6 @@ void Conv2d(const qaint* input,
 
     const int sshift = apply_scale ? s_shifts[bn_cnt] : 0;
     const qsint* scale = apply_scale ? scales + s_idx[bn_cnt++] : nullptr;
-    print3(xshift, yshift, sshift);
 
     const int mshift = max(bshift, xshift + wshift);
 
@@ -37,11 +34,6 @@ void Conv2d(const qaint* input,
     if (apply_scale) print_neg_shift(param_path, "sshift", sshift);
     print_neg_shift(param_path, "mshift + sshift - yshift", mshift + sshift - yshift);
 
-
-    // const int wshift = 0;
-    // const float* weight = params_f + start_idx[param_cnt++];
-    // const int bshift = 0;
-    // const float* bias = apply_bias ? params_f + start_idx[param_cnt++] : nullptr;
 
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;

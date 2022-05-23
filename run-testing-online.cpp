@@ -90,8 +90,6 @@ void read_params() {
     set_param<qsint>("scales_quantized", n_scales, scales);
     set_param<int>("scale_shifts", n_bns, s_shifts);
 
-    // set_param<int>("act_shifts", n_acts, a_shifts);
-
     set_param<int>("cin_shifts", n_convs, cin_shifts);
     set_param<int>("cout_shifts", n_convs, cout_shifts);
     set_param<int>("ain1_shifts", n_adds, ain1_shifts);
@@ -112,10 +110,6 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
              float prediction[test_image_height * test_image_width],
              const string filename) {
 
-    // w_cnt = 0;
-    // b_cnt = 0;
-    // s_cnt = 0;
-    // a_cnt = 0;
     conv_cnt = 0;
     bn_cnt = 0;
     add_cnt = 0;
@@ -132,14 +126,14 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
     save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
-    // qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    // qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    // qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
-    // save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, a_shifts[65]);
-    // save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, a_shifts[68]);
-    // save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
+    save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
+    save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
+    save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
 
     // if (n_measurement_frames == 0) return;
 

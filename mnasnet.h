@@ -7,7 +7,6 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
 
     constexpr bool apply_scale = true;
     const int mid_channels = in_channels * expansion_factor;
-    // const int xshift = a_shifts[a_cnt];
 
     // Pointwise
     constexpr int l0_kernel_size = 1;
@@ -53,10 +52,7 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {
-        // const int yshift = a_shifts[a_cnt];
-        // const int zshift = a_shifts[++a_cnt];
         const int layer_size = out_channels * out_height * out_width;
-        // print_neg_shift(param_path, "zshift", zshift);
         add_layer(x, y, layer_size, param_path);
     }
 }
