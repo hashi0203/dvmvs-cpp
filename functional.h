@@ -73,7 +73,7 @@ void interpolate(const float input[channels][in_height][in_width], float output[
     }
 }
 
-void interpolate(const float* input, float* output, const string mode,
+void interpolate(const qaint* input, qaint* output, const string mode,
                  const int channels, const int in_height, const int in_width,
                  const int out_height, const int out_width);
 

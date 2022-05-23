@@ -27,9 +27,33 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const int xshift,
 }
 
 
-void interpolate(const float* input, float* output, const string mode,
+void interpolate(const qaint* input, qaint* output, const string mode,
                 const int channels, const int in_height, const int in_width,
                 const int out_height, const int out_width) {
+
+    // mode    fy  fx
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 0.5 0.5
+    // nearest 16 16
+    // bilinear 0.33333 0.4
+    // bilinear 0.42857 0.45455
+    // bilinear 0.42857 0.45455
+    // bilinear 0.46667 0.47826
+    // bilinear 0.46667 0.47826
+    // bilinear 0.48387 0.48936
+    // bilinear 0.48387 0.48936
+    // bilinear 0.49206 0.49474
+    // bilinear 0.49206 0.49474
 
     if (mode == "nearest") {
         const float fy = (float) in_height / out_height;
