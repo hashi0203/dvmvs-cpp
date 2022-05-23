@@ -120,6 +120,7 @@ class FeaturePyramidNetwork(nn.Module):
             activations.append(("conv", [x[idx].cpu().detach().numpy().copy(), inner_lateral.cpu().detach().numpy().copy()]))
             feat_shape = inner_lateral.shape[-2:]
             inner_top_down = F.interpolate(last_inner, size=feat_shape, mode="nearest")
+            activations.append(("interpolate", [last_inner.cpu().detach().numpy().copy(), inner_top_down.cpu().detach().numpy().copy()]))
             activations.append(("add", [inner_lateral.cpu().detach().numpy().copy(), inner_top_down.cpu().detach().numpy().copy()]))
             last_inner = inner_lateral + inner_top_down
             layer_lateral = self.get_result_from_layer_blocks(last_inner, idx)

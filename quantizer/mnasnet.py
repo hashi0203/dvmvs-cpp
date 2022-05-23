@@ -15,10 +15,12 @@ def save_acts(seq, x, activations):
         in2 = x.cpu().detach().numpy().copy()
         x = l(x)
         if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-            if in0 is None:
-                activations.append(("conv", [in1, x.cpu().detach().numpy().copy()]))
-            else:
-                activations.append(("conv", [in0, x.cpu().detach().numpy().copy()]))
+            # if in0 is None:
+            activations.append(("conv", [in1, x.cpu().detach().numpy().copy()]))
+            # else:
+            #     activations.append(("conv", [in0, x.cpu().detach().numpy().copy()]))
+        elif isinstance(l, torch.nn.modules.activation.ReLU):
+            activations.append(("relu", [in2, x.cpu().detach().numpy().copy()]))
     return x, activations
 
 

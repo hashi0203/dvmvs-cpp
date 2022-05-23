@@ -13,7 +13,7 @@ from layers import conv_layer, depth_layer_3x3
 fpn_output_channels = 32
 hyper_channels = 32
 
-def save_acts(seq, x, activations, flag=False): # sigmoid の出力を読むときに変になるかも
+def save_acts(seq, x, activations, flag=False): # sigmoid の出力を読むときと decoder block の interpolate で scale が変わる時に変になるかも
     in0 = None
     in1 = None
     in2 = None
@@ -26,12 +26,14 @@ def save_acts(seq, x, activations, flag=False): # sigmoid の出力を読むと�
             in2 = x.cpu().detach().numpy().copy()
             x = l(x)
             if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-                if in0 is None:
-                    activations.append(("conv", [in1, x.cpu().detach().numpy().copy()]))
-                else:
-                    activations.append(("conv", [in0, x.cpu().detach().numpy().copy()]))
+                # if in0 is None:
+                activations.append(("conv", [in1, x.cpu().detach().numpy().copy()]))
+                # else:
+                #     activations.append(("conv", [in0, x.cpu().detach().numpy().copy()]))
             elif flag and isinstance(l, torch.nn.modules.conv.Conv2d):
                 activations.append(("conv", [in2, x.cpu().detach().numpy().copy()]))
+            elif isinstance(l, torch.nn.modules.activation.ReLU):
+                activations.append(("relu", [in2, x.cpu().detach().numpy().copy()]))
             elif isinstance(l, torch.nn.modules.activation.Sigmoid):
                 activations.append(("sigmoid", [in2, x.cpu().detach().numpy().copy()]))
     return x, activations
@@ -81,7 +83,9 @@ class UpconvolutionLayer(torch.nn.Module):
                                apply_bn_relu=True)
 
     def forward(self, x, activations):
+        in0 = x.cpu().detach().numpy().copy()
         x = torch.nn.functional.interpolate(input=x, scale_factor=2, mode='bilinear', align_corners=True)
+        activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
         x, activations = save_acts(self.conv, x, activations)
         return x, activations
 
@@ -137,7 +141,9 @@ class DecoderBlock(torch.nn.Module):
             # activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip], dim=1)
         else:
+            in0 = depth.cpu().detach().numpy().copy()
             depth = torch.nn.functional.interpolate(depth, scale_factor=2, mode='bilinear', align_corners=True)
+            activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
             # activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip, depth], dim=1)
 
@@ -328,7 +334,9 @@ class CostVolumeDecoder(torch.nn.Module):
         # inverse_depth_half = self.inverse_depth_multiplier * sigmoid_depth_half + self.inverse_depth_base
 
         scaled_depth = torch.nn.functional.interpolate(sigmoid_depth_half, scale_factor=2, mode='bilinear', align_corners=True)
+        activations.append(("interpolate", [sigmoid_depth_half.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy()]))
         scaled_decoder = torch.nn.functional.interpolate(decoder_block4, scale_factor=2, mode='bilinear', align_corners=True)
+        activations.append(("interpolate", [decoder_block4.cpu().detach().numpy().copy(), scaled_decoder.cpu().detach().numpy().copy()]))
         # activations.append(("cat", [scaled_decoder.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
         scaled_combined = torch.cat([scaled_decoder, scaled_depth, image], dim=1)
         scaled_combined, activations = save_acts(self.refine[0], scaled_combined, activations)

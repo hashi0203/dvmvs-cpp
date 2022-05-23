@@ -13,7 +13,7 @@ def quantize(act, bit, alpha=0.95):
 
     param = [np.abs(p.reshape(-1)) for p in param]
 
-    if act[0] == "add" or act[0] == "conv":
+    if act[0] in ["add", "conv", "interpolate", "relu"]:
         param = [np.sort(p) for p in param]
         idx = [int(round(len(p) * alpha)) for p in param]
         scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
@@ -38,15 +38,17 @@ if __name__ == '__main__':
 
     print("quantizing...")
     fs = [[open(base_dir / "params" / "cin_shifts", "wb"), open(base_dir / "params" / "cout_shifts", "wb")],
-          [open(base_dir / "params" / "ain1_shifts", "wb"), open(base_dir / "params" / "ain2_shifts", "wb"), open(base_dir / "params" / "aout_shifts", "wb")]]
-    cnt = [0, 0]
+          [open(base_dir / "params" / "ain1_shifts", "wb"), open(base_dir / "params" / "ain2_shifts", "wb"), open(base_dir / "params" / "aout_shifts", "wb")],
+          [open(base_dir / "params" / "oin_shifts", "wb"), open(base_dir / "params" / "oout_shifts", "wb")]]
+    cnt = [0, 0, 0]
     for act in acts:
         shift = quantize(act, bit)
         if shift is not None:
             assert len(shift) == 2 or len(shift) == 3
-            for s, f in zip(shift, fs[len(shift)-2]):
+            idx = 0 if act[0] == "conv" else 1 if act[0] == "add" else 2
+            for s, f in zip(shift, fs[idx]):
                 f.write(struct.pack('i', s))
-            cnt[len(shift) - 2] += 1
+            cnt[idx] += 1
 
     for i in range(len(fs)):
         for j in range(len(fs[i])):
