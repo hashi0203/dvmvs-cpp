@@ -20,10 +20,17 @@ void layer_norm(float* x, const int channels, const int height, const int width)
 }
 
 
-void add_layer(const qaint* x, qaint* y, const int layer_size, const int xshift, const int yshift, const int zshift) {
-    const int mshift = max(max(xshift, yshift), zshift);
+void add_layer(const qaint* x, qaint* y, const int layer_size, const string param_path) {
+    const int xshift = ain1_shifts[add_cnt];
+    const int yshift = ain2_shifts[add_cnt];
+    const int outshift = aout_shifts[add_cnt];
+    print_neg_shift(param_path, "xshift", xshift);
+    print_neg_shift(param_path, "yshift", yshift);
+    print_neg_shift(param_path, "outshift", outshift);
+    add_cnt++;
+    const int mshift = max(max(xshift, yshift), outshift);
     for (int idx = 0; idx < layer_size; idx++)
-        y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
+        y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - outshift);
 }
 
 
@@ -97,6 +104,14 @@ void interpolate(const qaint* input, qaint* output, const string mode,
         cout << "The 'mode' option in interpolation should be 'nearest' or 'bilinear,' but it is " << mode << "\n";
         exit(1);
     }
+
+    const int xshift = oin_shifts[other_cnt];
+    const int yshift = oout_shifts[other_cnt];
+    other_cnt++;
+    if (yshift != xshift) print3("xshift and yshift differ in interpolation:", xshift, yshift);
+    // print_neg_shift(param_path, "xshift", xshift);
+    // print_neg_shift(param_path, "yshift", yshift);
+    // print_neg_shift(param_path, "yshift - xshift", yshift - xshift);
 }
 
 

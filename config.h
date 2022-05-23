@@ -66,42 +66,58 @@ constexpr int width_32 = test_image_width / 32;
 constexpr float height_normalizer = height_2 / 2.0;
 constexpr float width_normalizer = width_2 / 2.0;
 
+constexpr int n_convs = 96;
+constexpr int n_bns = 81;
+constexpr int n_adds = 14;
+constexpr int n_others = 77;
+
+extern int conv_cnt;
+extern int bn_cnt;
+extern int add_cnt;
+extern int other_cnt;
 
 constexpr int qwbit = 10;
 typedef short qwint;
 constexpr int n_weights = 34619560;
-constexpr int w_files = 96;
+// constexpr int w_files = 96;
 extern qwint* weights;
-extern int w_idx[w_files];
-extern int w_shifts[w_files];
-extern int w_cnt;
+extern int w_idx[n_convs];
+extern int w_shifts[n_convs];
+// extern int w_cnt;
 
 constexpr int qbbit = 32;
 typedef int qbint;
-constexpr int b_files = 96;
+// constexpr int b_files = 96;
 constexpr int n_biases = 24885;
 extern qbint* biases;
-extern int b_idx[b_files];
-extern int b_shifts[b_files];
-extern int b_cnt;
+extern int b_idx[n_convs];
+extern int b_shifts[n_convs];
+// extern int b_cnt;
 
 constexpr int qsbit = 10;
 typedef short qsint;
-constexpr int s_files = 81;
+// constexpr int s_files = 81;
 constexpr int n_scales = 22544;
 extern qsint* scales;
-extern int s_idx[s_files];
-extern int s_shifts[s_files];
-extern int s_cnt;
+extern int s_idx[n_bns];
+extern int s_shifts[n_bns];
+// extern int s_cnt;
 
 constexpr int qabit = 32;
 typedef int qaint;
 // typedef short qaint;
 // constexpr qaint QA_MIN = -32768;
-constexpr int a_files = 111;
-constexpr int n_acts = a_files;
-extern int a_shifts[a_files];
-extern int a_cnt;
+// constexpr int a_files = 111;
+// constexpr int n_acts = a_files;
+// extern int a_shifts[a_files];
+// extern int a_cnt;
+extern int cin_shifts[n_convs];
+extern int cout_shifts[n_convs];
+extern int ain1_shifts[n_adds];
+extern int ain2_shifts[n_adds];
+extern int aout_shifts[n_adds];
+extern int oin_shifts[n_others];
+extern int oout_shifts[n_others];
 
 // constexpr int bufbit = 8;
 typedef long long qmint;

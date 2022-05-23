@@ -29,23 +29,30 @@ void save_layer(string save_dir, string layer_name, string filename, const T* la
 #include <Eigen/LU>
 using namespace Eigen;
 
+int conv_cnt;
+int bn_cnt;
+int add_cnt;
+int other_cnt;
+
 qwint* weights = new qwint[n_weights];
-int w_idx[w_files];
-int w_shifts[w_files];
-int w_cnt;
+int w_idx[n_convs];
+int w_shifts[n_convs];
 
 qbint* biases = new qbint[n_biases];
-int b_idx[b_files];
-int b_shifts[b_files];
-int b_cnt;
+int b_idx[n_convs];
+int b_shifts[n_convs];
 
 qsint* scales = new qsint[n_scales];
-int s_idx[s_files];
-int s_shifts[s_files];
-int s_cnt;
+int s_idx[n_bns];
+int s_shifts[n_bns];
 
-int a_shifts[a_files];
-int a_cnt;
+int cin_shifts[n_convs];
+int cout_shifts[n_convs];
+int ain1_shifts[n_adds];
+int ain2_shifts[n_adds];
+int aout_shifts[n_adds];
+int oin_shifts[n_others];
+int oout_shifts[n_others];
 
 
 const string save_dir = "./results-qt/";
@@ -71,19 +78,27 @@ void set_param(string filename, const int n_params, T* params) {
 
 
 void read_params() {
-    set_idx("n_weights", w_files, w_idx);
+    set_idx("n_weights", n_convs, w_idx);
     set_param<qwint>("weights_quantized", n_weights, weights);
-    set_param<int>("weight_shifts", n_weights, w_shifts);
+    set_param<int>("weight_shifts", n_convs, w_shifts);
 
-    set_idx("n_biases", b_files, b_idx);
+    set_idx("n_biases", n_convs, b_idx);
     set_param<qbint>("biases_quantized", n_biases, biases);
-    set_param<int>("bias_shifts", n_biases, b_shifts);
+    set_param<int>("bias_shifts", n_convs, b_shifts);
 
-    set_idx("n_scales", s_files, s_idx);
+    set_idx("n_scales", n_bns, s_idx);
     set_param<qsint>("scales_quantized", n_scales, scales);
-    set_param<int>("scale_shifts", n_scales, s_shifts);
+    set_param<int>("scale_shifts", n_bns, s_shifts);
 
-    set_param<int>("act_shifts", n_acts, a_shifts);
+    // set_param<int>("act_shifts", n_acts, a_shifts);
+
+    set_param<int>("cin_shifts", n_convs, cin_shifts);
+    set_param<int>("cout_shifts", n_convs, cout_shifts);
+    set_param<int>("ain1_shifts", n_adds, ain1_shifts);
+    set_param<int>("ain2_shifts", n_adds, ain2_shifts);
+    set_param<int>("aout_shifts", n_adds, aout_shifts);
+    set_param<int>("oin_shifts", n_others, oin_shifts);
+    set_param<int>("oout_shifts", n_others, oout_shifts);
 }
 
 
@@ -97,10 +112,14 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
              float prediction[test_image_height * test_image_width],
              const string filename) {
 
-    w_cnt = 0;
-    b_cnt = 0;
-    s_cnt = 0;
-    a_cnt = 0;
+    // w_cnt = 0;
+    // b_cnt = 0;
+    // s_cnt = 0;
+    // a_cnt = 0;
+    conv_cnt = 0;
+    bn_cnt = 0;
+    add_cnt = 0;
+    other_cnt = 0;
 
     qaint layer1[channels_1 * height_2 * width_2];
     qaint layer2[channels_2 * height_4 * width_4];
@@ -109,19 +128,20 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     qaint layer5[channels_5 * height_32 * width_32];
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
 
-    save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, a_shifts[14]);
-    save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, a_shifts[a_cnt]);
+    save_layer<qaint>(save_dir, "layer1", filename, layer1, channels_1 * height_2 * width_2, cout_shifts[3-1]);
+    save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
+    save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
-    qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    // qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    // qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    // qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
-    save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, a_shifts[65]);
-    save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, a_shifts[68]);
-    save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
+    // save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, a_shifts[65]);
+    // save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, a_shifts[68]);
+    // save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
 
-    if (n_measurement_frames == 0) return;
+    // if (n_measurement_frames == 0) return;
 
     // float cost_volume[n_depth_levels * height_2 * width_2];
     // cost_volume_fusion(reference_feature_half_float, n_measurement_frames, measurement_feature_halfs_float, warpings, cost_volume);
@@ -245,7 +265,7 @@ int main() {
     float hidden_state[hid_channels * height_32 * width_32];
     float cell_state[hid_channels * height_32 * width_32];
 
-    for (int f = 0; f < n_test_frames; f++) {
+    for (int f = 6; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -263,7 +283,7 @@ int main() {
         float reference_image_float[3 * test_image_height * test_image_width];
         load_image(image_filenames[f], reference_image_float);
         qaint reference_image[3 * test_image_height * test_image_width];
-        const int ashift = a_shifts[0];
+        const int ashift = cin_shifts[0];
         for (int idx = 0; idx < 3 * test_image_height * test_image_width; idx++)
             reference_image[idx] = reference_image_float[idx] * (1 << ashift);
 
@@ -365,11 +385,11 @@ int main() {
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
                 warpings, reference_feature_half, hidden_state, cell_state, prediction, image_filenames[f].substr(len_image_filedir, 5));
         delete[] warpings;
+        break;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
 
-        break;
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i * test_image_width + j];
         for (int i = 0 ; i < 4; i++) for (int j = 0; j < 4; j++)
