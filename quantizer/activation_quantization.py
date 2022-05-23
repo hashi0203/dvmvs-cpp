@@ -7,16 +7,21 @@ INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 1
 INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096, -8192, -16384, -32768, -65536, -131072, -262144, -524288, -1048576, -2097152, -4194304, -8388608, -16777216, -33554432, -67108864, -134217728, -268435456, -536870912, -1073741824, -2147483648]
 
 def quantize(act, bit, alpha=0.95):
-    param = act[1].reshape(-1)
-    param = np.abs(param)
-    if act[0] == "add" or act[0] == "conv" or act[0] == "input":
-        param = np.sort(param)
-        idx = int(round(len(param) * alpha))
-        scale = float(INTMAX[bit-1] / param[idx])
-        shift = int(np.floor(np.log2(scale)))
+    param = act[1].copy()
+    if act[0] == "add":
+        param.append(param[0] + param[1])
+
+    param = [np.abs(p.reshape(-1)) for p in param]
+
+    if act[0] == "add" or act[0] == "conv":
+        param = [np.sort(p) for p in param]
+        idx = [int(round(len(p) * alpha)) for p in param]
+        scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
+        shift = [int(np.floor(np.log2(s))) for s in scale]
+        print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         return shift
     elif act[0] == "sigmoid" or act[0] == "celu":
-        print("%7s: %.5f" % (act[0], np.max(param)))
+        print("%7s: %.5f" % (act[0], np.max(param[0])))
         return None
     else:
         print(act[0])
@@ -32,13 +37,18 @@ if __name__ == '__main__':
     bit = 20
 
     print("quantizing...")
-    f = open(base_dir / "params" / "act_shifts", "wb")
-    cnt = 0
+    fs = [[open(base_dir / "params" / "cin_shifts", "wb"), open(base_dir / "params" / "cout_shifts", "wb")],
+          [open(base_dir / "params" / "ain1_shifts", "wb"), open(base_dir / "params" / "ain2_shifts", "wb"), open(base_dir / "params" / "aout_shifts", "wb")]]
+    cnt = [0, 0]
     for act in acts:
         shift = quantize(act, bit)
         if shift is not None:
-            f.write(struct.pack('i', shift))
-            cnt += 1
+            assert len(shift) == 2 or len(shift) == 3
+            for s, f in zip(shift, fs[len(shift)-2]):
+                f.write(struct.pack('i', s))
+            cnt[len(shift) - 2] += 1
 
-    f.close()
+    for i in range(len(fs)):
+        for j in range(len(fs[i])):
+            fs[i][j].close()
     print(cnt)

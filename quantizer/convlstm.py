@@ -43,26 +43,25 @@ class MVSLayernormConvLSTMCell(nn.Module):
         # activations.append(("cat", [input_tensor.cpu().detach().numpy().copy(), h_cur.cpu().detach().numpy().copy()]))
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
         combined_conv = self.conv(combined)
-        # activations.append(("conv", [combined.cpu().detach().numpy().copy(), combined_conv.cpu().detach().numpy().copy()]))
-        activations.append(("conv", combined_conv.cpu().detach().numpy().copy()))
+        activations.append(("conv", [combined.cpu().detach().numpy().copy(), combined_conv.cpu().detach().numpy().copy()]))
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
         b, c, h, w = h_cur.size()
-        activations.append(("sigmoid", cc_i.cpu().detach().numpy().copy()))
         i = torch.sigmoid(cc_i)
-        activations.append(("sigmoid", cc_f.cpu().detach().numpy().copy()))
+        activations.append(("sigmoid", [cc_i.cpu().detach().numpy().copy(), i.cpu().detach().numpy().copy()]))
         f = torch.sigmoid(cc_f)
-        activations.append(("sigmoid", cc_o.cpu().detach().numpy().copy()))
+        activations.append(("sigmoid", [cc_f.cpu().detach().numpy().copy(), f.cpu().detach().numpy().copy()]))
         o = torch.sigmoid(cc_o)
+        activations.append(("sigmoid", [cc_o.cpu().detach().numpy().copy(), o.cpu().detach().numpy().copy()]))
 
         cc_g = torch.layer_norm(cc_g, [h, w])
-        activations.append(("celu", cc_g.cpu().detach().numpy().copy()))
         g = self.activation_function(cc_g)
+        activations.append(("celu", [cc_g.cpu().detach().numpy().copy(), g.cpu().detach().numpy().copy()]))
 
         c_next = f * c_cur + i * g
         c_next = torch.layer_norm(c_next, [h, w])
-        activations.append(("celu", c_next.cpu().detach().numpy().copy()))
         h_next = o * self.activation_function(c_next)
+        activations.append(("celu", [c_next.cpu().detach().numpy().copy(), h_next.cpu().detach().numpy().copy()]))
 
         return h_next, c_next, activations
 

@@ -13,21 +13,27 @@ from layers import conv_layer, depth_layer_3x3
 fpn_output_channels = 32
 hyper_channels = 32
 
-def save_acts(seq, x, activations, flag=False):
-    # tmp = x.cpu().detach().numpy().copy()
+def save_acts(seq, x, activations, flag=False): # sigmoid の出力を読むときに変になるかも
+    in0 = None
+    in1 = None
+    in2 = None
     for l in seq:
         if isinstance(l, _InvertedResidual):
             x, activations = l(x, activations)
         else:
-            # input = tmp.copy()
-            tmp = x.cpu().detach().numpy().copy()
+            in0 = in1.copy() if in1 is not None else None
+            in1 = in2.copy() if in2 is not None else None
+            in2 = x.cpu().detach().numpy().copy()
             x = l(x)
             if isinstance(l, torch.nn.modules.batchnorm.BatchNorm2d):
-                activations.append(("conv", x.cpu().detach().numpy().copy()))
+                if in0 is None:
+                    activations.append(("conv", [in1, x.cpu().detach().numpy().copy()]))
+                else:
+                    activations.append(("conv", [in0, x.cpu().detach().numpy().copy()]))
             elif flag and isinstance(l, torch.nn.modules.conv.Conv2d):
-                activations.append(("conv", x.cpu().detach().numpy().copy()))
+                activations.append(("conv", [in2, x.cpu().detach().numpy().copy()]))
             elif isinstance(l, torch.nn.modules.activation.Sigmoid):
-                activations.append(("sigmoid", tmp))
+                activations.append(("sigmoid", [in2, x.cpu().detach().numpy().copy()]))
     return x, activations
 
 

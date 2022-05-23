@@ -130,7 +130,6 @@ def predict():
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
 
             activations = []
-            activations.append(("input", reference_image_torch.cpu().detach().numpy().copy()))
             layer1, layer2, layer3, layer4, layer5, activations = feature_extractor(reference_image_torch, activations)
             if (i == 30): print(len(activations))
 
@@ -208,13 +207,13 @@ def predict():
                     f.write(' '.join(map(str, p)) + '\n')
 
             if acts is None:
-                acts = [(act[0], act[1][np.newaxis]) for act in activations]
-                # print(acts[0][1][0].shape)
+                acts = [(act[0], [a[np.newaxis] for a in act[1]]) for act in activations]
+                print(acts[0][1][0].shape)
             else:
                 for idx, act in enumerate(activations):
                     # act = act.cpu().numpy().squeeze().reshape(-1)
                     assert act[0] == acts[idx][0]
-                    acts[idx] = (acts[idx][0], np.vstack([acts[idx][1], act[1][np.newaxis]]))
+                    acts[idx] =(acts[idx][0], [np.vstack([acts[idx][1][j], act[1][j][np.newaxis]]) for j in range(len(acts[idx][1]))])
 
     print("saving activation file...")
     np.savez_compressed(base_dir / "params" / "acts", acts=np.array(acts, dtype=object))
