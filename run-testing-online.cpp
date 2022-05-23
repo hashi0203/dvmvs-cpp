@@ -135,7 +135,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
     save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
 
-    // if (n_measurement_frames == 0) return;
+    if (n_measurement_frames == 0) return;
 
     // float cost_volume[n_depth_levels * height_2 * width_2];
     // cost_volume_fusion(reference_feature_half_float, n_measurement_frames, measurement_feature_halfs_float, warpings, cost_volume);
@@ -259,7 +259,7 @@ int main() {
     float hidden_state[hid_channels * height_32 * width_32];
     float cell_state[hid_channels * height_32 * width_32];
 
-    for (int f = 6; f < n_test_frames; f++) {
+    for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -379,10 +379,10 @@ int main() {
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
                 warpings, reference_feature_half, hidden_state, cell_state, prediction, image_filenames[f].substr(len_image_filedir, 5));
         delete[] warpings;
-        break;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
+        break;
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i * test_image_width + j];

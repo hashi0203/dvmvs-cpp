@@ -243,32 +243,27 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
 
     const int layer_size4 = fpn_output_channels * height_16 * width_16;
     add_layer(top_down4, inner4, layer_size4, "top_inner4");
-
     Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale);
 
     // layer3
     qaint top_down3[fpn_output_channels * height_8 * width_8];
     interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
-
     qaint inner3[fpn_output_channels * height_8 * width_8];
     Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_scale);
 
     const int layer_size3 = fpn_output_channels * height_8 * width_8;
     add_layer(top_down3, inner3, layer_size3, "top_inner3");
-
     Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale);
 
 
     // layer2
     qaint top_down2[fpn_output_channels * height_4 * width_4];
     interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
-
     qaint inner2[fpn_output_channels * height_4 * width_4];
     Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_scale);
 
     const int layer_size2 = fpn_output_channels * height_4 * width_4;
     add_layer(top_down2, inner2, layer_size2, "top_inner2");
-
     Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale);
 
 
@@ -281,7 +276,6 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
 
     const int layer_size1 = fpn_output_channels * height_2 * width_2;
     add_layer(top_down1, inner1, layer_size1, "top_inner1");
-
     Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale);
 }
 
