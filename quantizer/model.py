@@ -138,13 +138,13 @@ class DecoderBlock(torch.nn.Module):
         x, activations = self.up_convolution(x, activations)
 
         if depth is None:
-            # activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy()]))
+            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip], dim=1)
         else:
             in0 = depth.cpu().detach().numpy().copy()
             depth = torch.nn.functional.interpolate(depth, scale_factor=2, mode='bilinear', align_corners=True)
             activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
-            # activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
+            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip, depth], dim=1)
 
         x, activations = save_acts(self.convolution1, x, activations)
@@ -240,22 +240,22 @@ class CostVolumeEncoder(torch.nn.Module):
                                            kernel_size=3)
 
     def forward(self, features_half, features_quarter, features_one_eight, features_one_sixteen, cost_volume, activations):
-        # activations.append(("cat", [features_half.cpu().detach().numpy().copy(), cost_volume.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [features_half.cpu().detach().numpy().copy(), cost_volume.cpu().detach().numpy().copy()]))
         inp0 = torch.cat([features_half, cost_volume], dim=1)
         inp0, activations = save_acts(self.aggregator0, inp0, activations)
         out0, activations = self.encoder_block0(inp0, activations)
 
-        # activations.append(("cat", [features_quarter.cpu().detach().numpy().copy(), out0.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [features_quarter.cpu().detach().numpy().copy(), out0.cpu().detach().numpy().copy()]))
         inp1 = torch.cat([features_quarter, out0], dim=1)
         inp1, activations = save_acts(self.aggregator1, inp1, activations)
         out1, activations = self.encoder_block1(inp1, activations)
 
-        # activations.append(("cat", [features_one_eight.cpu().detach().numpy().copy(), out1.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [features_one_eight.cpu().detach().numpy().copy(), out1.cpu().detach().numpy().copy()]))
         inp2 = torch.cat([features_one_eight, out1], dim=1)
         inp2, activations = save_acts(self.aggregator2, inp2, activations)
         out2, activations = self.encoder_block2(inp2, activations)
 
-        # activations.append(("cat", [features_one_sixteen.cpu().detach().numpy().copy(), out2.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [features_one_sixteen.cpu().detach().numpy().copy(), out2.cpu().detach().numpy().copy()]))
         inp3 = torch.cat([features_one_sixteen, out2], dim=1)
         inp3, activations = save_acts(self.aggregator3, inp3, activations)
         out3, activations = self.encoder_block3(inp3, activations)
@@ -337,7 +337,7 @@ class CostVolumeDecoder(torch.nn.Module):
         activations.append(("interpolate", [sigmoid_depth_half.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy()]))
         scaled_decoder = torch.nn.functional.interpolate(decoder_block4, scale_factor=2, mode='bilinear', align_corners=True)
         activations.append(("interpolate", [decoder_block4.cpu().detach().numpy().copy(), scaled_decoder.cpu().detach().numpy().copy()]))
-        # activations.append(("cat", [scaled_decoder.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [scaled_decoder.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
         scaled_combined = torch.cat([scaled_decoder, scaled_depth, image], dim=1)
         scaled_combined, activations = save_acts(self.refine[0], scaled_combined, activations)
         scaled_combined, activations = save_acts(self.refine[1], scaled_combined, activations)

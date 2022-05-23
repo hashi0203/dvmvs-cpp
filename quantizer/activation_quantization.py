@@ -20,7 +20,14 @@ def quantize(act, bit, alpha=0.95):
         shift = [int(np.floor(np.log2(s))) for s in scale]
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         return shift
-    elif act[0] == "sigmoid" or act[0] == "celu":
+    elif act[0] in ["cost_volume", "cat"]:
+        param = [np.sort(p) for p in param]
+        idx = [int(round(len(p) * alpha)) for p in param]
+        scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
+        shift = [int(np.floor(np.log2(s))) for s in scale]
+        print(act[0], [p[i] for p, i in zip(param, idx)], shift)
+        return shift
+    elif act[0] in ["sigmoid", "celu"]:
         print("%7s: %.5f" % (act[0], np.max(param[0])))
         return None
     else:
@@ -41,9 +48,12 @@ if __name__ == '__main__':
           [open(base_dir / "params" / "ain1_shifts", "wb"), open(base_dir / "params" / "ain2_shifts", "wb"), open(base_dir / "params" / "aout_shifts", "wb")],
           [open(base_dir / "params" / "oin_shifts", "wb"), open(base_dir / "params" / "oout_shifts", "wb")]]
     cnt = [0, 0, 0]
+    shifts = []
     for act in acts:
         shift = quantize(act, bit)
-        if shift is not None:
+        if act[0] in ["cost_volume", "cat"]:
+            shifts.append(shift)
+        elif shift is not None:
             assert len(shift) == 2 or len(shift) == 3
             idx = 0 if act[0] == "conv" else 1 if act[0] == "add" else 2
             for s, f in zip(shift, fs[idx]):
@@ -54,3 +64,4 @@ if __name__ == '__main__':
         for j in range(len(fs[i])):
             fs[i][j].close()
     print(cnt)
+    print(shifts)

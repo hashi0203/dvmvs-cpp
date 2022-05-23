@@ -160,6 +160,7 @@ def predict():
                                              n_depth_levels=n_depth_levels,
                                              device=device,
                                              dot_product=True)
+            activations.append(("cost_volume", [reference_feature_half.cpu().detach().numpy().copy(), cost_volume.cpu().detach().numpy().copy()]))
 
             skip0, skip1, skip2, skip3, bottom, activations = cost_volume_encoder(features_half=reference_feature_half,
                                                                      features_quarter=reference_feature_quarter,
