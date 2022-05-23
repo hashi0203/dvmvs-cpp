@@ -20,6 +20,13 @@ void layer_norm(float* x, const int channels, const int height, const int width)
 }
 
 
+void add_layer(const qaint* x, qaint* y, const int layer_size, const int xshift, const int yshift, const int zshift) {
+    const int mshift = max(max(xshift, yshift), zshift);
+    for (int idx = 0; idx < layer_size; idx++)
+        y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
+}
+
+
 void interpolate(const float* input, float* output, const string mode,
                 const int channels, const int in_height, const int in_width,
                 const int out_height, const int out_width) {

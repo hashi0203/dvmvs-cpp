@@ -55,10 +55,13 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     if (in_channels == out_channels && stride == 1) {
         const int yshift = a_shifts[a_cnt];
         const int zshift = a_shifts[++a_cnt];
+        const int layer_size = out_channels * out_height * out_width;
         print_neg_shift(param_path, "zshift", zshift);
-        const int mshift = max(max(xshift, yshift), zshift);
-        for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
-            y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
+    //     print_neg_shift(param_path, "zshift", zshift);
+    //     const int mshift = max(max(xshift, yshift), zshift);
+    //     for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+    //         y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - zshift);
+        add_layer(x, y, layer_size, xshift, yshift, zshift);
     }
 }
 
