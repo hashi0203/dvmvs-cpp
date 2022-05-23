@@ -280,16 +280,16 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
 }
 
 
-// void CostVolumeEncoder(const float features_half[fpn_output_channels * height_2 * width_2],
-//                        const float features_quarter[fpn_output_channels * height_4 * width_4],
-//                        const float features_one_eight[fpn_output_channels * height_8 * width_8],
-//                        const float features_one_sixteen[fpn_output_channels * height_16 * width_16],
-//                        const float cost_volume[n_depth_levels * height_2 * width_2],
-//                        float skip0[hyper_channels * height_2 * width_2],
-//                        float skip1[(hyper_channels * 2) * height_4 * width_4],
-//                        float skip2[(hyper_channels * 4) * height_8 * width_8],
-//                        float skip3[(hyper_channels * 8) * height_16 * width_16],
-//                        float bottom[(hyper_channels * 16) * height_32 * width_32]) {
+// void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 * width_2],
+//                        const qaint features_quarter[fpn_output_channels * height_4 * width_4],
+//                        const qaint features_one_eight[fpn_output_channels * height_8 * width_8],
+//                        const qaint features_one_sixteen[fpn_output_channels * height_16 * width_16],
+//                        const qaint cost_volume[n_depth_levels * height_2 * width_2],
+//                        qaint skip0[hyper_channels * height_2 * width_2],
+//                        qaint skip1[(hyper_channels * 2) * height_4 * width_4],
+//                        qaint skip2[(hyper_channels * 4) * height_8 * width_8],
+//                        qaint skip3[(hyper_channels * 8) * height_16 * width_16],
+//                        qaint bottom[(hyper_channels * 16) * height_32 * width_32]) {
 
 //     constexpr int stride = 1;
 
