@@ -102,12 +102,6 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     s_cnt = 0;
     a_cnt = 0;
 
-    // int ashift;
-    // float reference_image_float[3 * test_image_height * test_image_width];
-    // ashift = actshifts[0];
-    // for (int idx = 0; idx < 3 * test_image_height * test_image_width; idx++)
-    //     reference_image_float[idx] = reference_image[idx] / (float) (1 << ashift);
-
     qaint layer1[channels_1 * height_2 * width_2];
     qaint layer2[channels_2 * height_4 * width_4];
     qaint layer3[channels_3 * height_8 * width_8];
@@ -118,27 +112,14 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, a_shifts[14]);
     save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, a_shifts[a_cnt]);
 
-
-    // float reference_feature_half_float[fpn_output_channels * height_2 * width_2];
-
     qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
     qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
     FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
-    // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
-
-    // ashift = actshifts[6];
-    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-    //     reference_feature_half[idx] = reference_feature_half_float[idx] * (1 << ashift);
 
     save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, a_shifts[65]);
     save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, a_shifts[68]);
     save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
-    // ofstream ofsf("feature_half.txt");
-    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-    //     ofsf << reference_feature_half[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
-    //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
-    // ofsf.close();
 
     // if (n_measurement_frames == 0) return;
 

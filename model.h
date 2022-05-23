@@ -112,10 +112,6 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
     Conv2d(x, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, a_cnt);
     save_layer<qaint>("./results-qt/", "layer-y0", "00009", y0, l0_out_channels * l0_out_height * l0_out_width, a_shifts[a_cnt]);
-    // ofstream ofs0("./results-qt/layer-y0-00009.txt");
-    // for (int idx = 0; idx < l0_out_channels * l0_out_height * l0_out_width; idx++)
-    //     ofs0 << y0[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
-    // ofs0.close();
 
     constexpr int l2_out_channels = depths[0];
     constexpr int l2_out_height = l0_out_height;
@@ -133,10 +129,6 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, "layer1.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, a_cnt);
     save_layer<qaint>("./results-qt/", "layer-y3", "00009", y3, l3_out_channels * l3_out_height * l3_out_width, a_shifts[a_cnt]);
-    // ofstream ofs3("./results-qt/layer-y3-00009.txt");
-    // for (int idx = 0; idx < l3_out_channels * l3_out_height * l3_out_width; idx++)
-    //     ofs3 << y3[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
-    // ofs3.close();
 
     constexpr int l5_out_channels = depths[0];
     constexpr int l5_out_height = l3_out_height;
@@ -249,9 +241,6 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     // layer4 (order of interpolation and first conv is reversed from original)
     qaint top_down4[fpn_output_channels * height_16 * width_16];
     interpolate(inner5, top_down4, "nearest", fpn_output_channels, height_32, width_32, height_16, width_16);
-    // a_cnt++;
-    // for (int idx = 0; idx < fpn_output_channels * height_16 * width_16; idx++)
-    //     inner4[idx] += top_down4[idx];
     const int xshift4 = a_shifts[a_cnt];
     save_layer<qaint>("./results-qt/", "top_down4", "00009", top_down4, fpn_output_channels * height_16 * width_16, a_shifts[a_cnt]);
 
@@ -271,9 +260,6 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     // layer3
     qaint top_down3[fpn_output_channels * height_8 * width_8];
     interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
-    // a_cnt++;
-    // for (int idx = 0; idx < fpn_output_channels * height_8 * width_8; idx++)
-    //     inner3[idx] += top_down3[idx];
     const int xshift3 = zshift4;
 
     qaint inner3[fpn_output_channels * height_8 * width_8];
@@ -292,9 +278,6 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     // layer2
     qaint top_down2[fpn_output_channels * height_4 * width_4];
     interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
-    // a_cnt++;
-    // for (int idx = 0; idx < fpn_output_channels * height_4 * width_4; idx++)
-    //     inner2[idx] += top_down2[idx];
     const int xshift2 = zshift3;
 
     qaint inner2[fpn_output_channels * height_4 * width_4];
@@ -313,9 +296,6 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     // layer1
     qaint top_down1[fpn_output_channels * height_2 * width_2];
     interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2);
-    // a_cnt++;
-    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-    //     inner1[idx] += top_down1[idx];
     const int xshift1 = zshift2;
 
     qaint inner1[fpn_output_channels * height_2 * width_2];
