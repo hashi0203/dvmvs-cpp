@@ -69,6 +69,24 @@ void read_params() {
 }
 
 
+template<class T>
+void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
+    if (mode == "txt") {
+        ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
+        for (int idx = 0; idx < layer_size; idx++)
+            ofs << layer[idx] / (float) (1 << shift) << "\n";
+        ofs.close();
+    } else if (mode == "bin") {
+        ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
+        for (int idx = 0; idx < layer_size; idx++)
+            ofs.write((char*) &layer[idx], sizeof(T));
+        ofs.close();
+    } else {
+        print2("unexpected mode:", mode);
+    }
+}
+
+
 void predict(const qaint reference_image[3 * test_image_height * test_image_width],
              const int n_measurement_frames,
              const qaint measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
@@ -96,36 +114,29 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     qaint layer4[channels_4 * height_16 * width_16];
     qaint layer5[channels_5 * height_32 * width_32];
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5);
-    ofstream ofs2(save_dir + "layer2-" + filename + ".txt");
-    for (int idx = 0; idx < channels_2 * height_4 * width_4; idx++)
-        ofs2 << layer2[idx] / (float) (1 << a_shifts[14]) << "\n";
-    ofs2.close();
 
-    ofstream ofs5(save_dir + "layer5-" + filename + ".txt");
-    // ofstream ofs5("layer5.txt", ios::out|ios::binary|ios::trunc);
-    // for (int idx = 0; idx < channels_1 * height_2 * width_2; idx++)
-    for (int idx = 0; idx < channels_5 * height_32 * width_32; idx++)
-        ofs5 << layer5[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
-        // ofs5 << layer1[idx] / (float) (1 << actshifts[6]) << "\n";
-        // ofs5.write((char*) &layer5[idx], sizeof(float));
-    ofs5.close();
+    save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, a_shifts[14]);
+    save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, a_shifts[a_cnt]);
+
 
     // float reference_feature_half_float[fpn_output_channels * height_2 * width_2];
 
-    // float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    // float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    // float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    float reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    float reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    float reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
     // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
 
     // ashift = actshifts[6];
     // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
     //     reference_feature_half[idx] = reference_feature_half_float[idx] * (1 << ashift);
 
-    // // ofstream ofsf("feature_half.txt", ios::out|ios::binary|ios::trunc);
-    // // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
-    // //     // ofsf << reference_feature_half[idx] << "\n";
-    // //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
-    // // ofsf.close();
+    save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, a_shifts[a_cnt]);
+    // ofstream ofsf("feature_half.txt");
+    // for (int idx = 0; idx < fpn_output_channels * height_2 * width_2; idx++)
+    //     ofsf << reference_feature_half[idx] / (float) (1 << a_shifts[a_cnt]) << "\n";
+    //     ofsf.write((char*) &reference_feature_half[idx], sizeof(float));
+    // ofsf.close();
 
     // if (n_measurement_frames == 0) return;
 
