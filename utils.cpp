@@ -36,8 +36,8 @@ void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * heig
 }
 
 
-void calculate_cost_volume_by_warping(const float image1[fpn_output_channels * height_2 * width_2],
-                                      const float* image2,
+void calculate_cost_volume_by_warping(const qaint image1[fpn_output_channels * height_2 * width_2],
+                                      const qaint* image2,
                                       const float* warping,
                                       float cost_volume[n_depth_levels * height_2 * width_2]) {
 
@@ -55,26 +55,32 @@ void calculate_cost_volume_by_warping(const float image1[fpn_output_channels * h
 }
 
 
-void cost_volume_fusion(const float image1[fpn_output_channels * height_2 * width_2],
+void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * width_2],
                         const int n_measurement_frames,
-                        const float image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
+                        const qaint image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
                         const float* warpings,
-                        float fused_cost_volume[n_depth_levels * height_2 * width_2]) {
+                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2]) {
+
+    float fused_cost_volume_float[n_depth_levels * height_2 * width_2];
 
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-        fused_cost_volume[idx] = 0;
+        fused_cost_volume_float[idx] = 0;
 
     for (int m = 0; m < n_measurement_frames; m++) {
         float cost_volume[n_depth_levels * height_2 * width_2];
-        const float* image2 = image2s + m * (fpn_output_channels * height_2 * width_2);
+        const qaint* image2 = image2s + m * (fpn_output_channels * height_2 * width_2);
         const float* warping = warpings + m * (n_depth_levels * height_2 * width_2 * 2);
         calculate_cost_volume_by_warping(image1, image2, warping, cost_volume);
         for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-            fused_cost_volume[idx] += cost_volume[idx];
+            fused_cost_volume_float[idx] += cost_volume[idx];
     }
 
+    const int xshift = cout_shifts[conv_cnt-1] * 2;
+    const int yshift = cin_shifts[conv_cnt];
+    print_neg_shift("cost_volume_fusion", "yshift", yshift);
+    print_neg_shift("cost_volume_fusion", "xshift - yshift", xshift - yshift);
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-        fused_cost_volume[idx] /= n_measurement_frames;
+        fused_cost_volume[idx] = (fused_cost_volume_float[idx] / n_measurement_frames) / (1 << (xshift - yshift));
 
 }
 

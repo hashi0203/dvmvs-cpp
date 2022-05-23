@@ -137,8 +137,9 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
 
     if (n_measurement_frames == 0) return;
 
-    // float cost_volume[n_depth_levels * height_2 * width_2];
-    // cost_volume_fusion(reference_feature_half_float, n_measurement_frames, measurement_feature_halfs_float, warpings, cost_volume);
+    qaint cost_volume[n_depth_levels * height_2 * width_2];
+    cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
+    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
 
     // // // ofstream ofsc("cost_volume.txt");
     // // ofstream ofsc("cost_volume.txt", ios::out|ios::binary|ios::trunc);

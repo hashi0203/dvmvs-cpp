@@ -77,7 +77,7 @@ void interpolate(const qaint* input, qaint* output, const string mode,
                  const int channels, const int in_height, const int in_width,
                  const int out_height, const int out_width);
 
-void grid_sample(const float* image, const float* warping, float* warped_image,
+void grid_sample(const qaint* image, const float* warping, float* warped_image,
                  const int channels, const int height, const int width);
 
 template <int channels, int height, int width>

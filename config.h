@@ -144,11 +144,11 @@ typedef long long qmint;
 // utils
 void pose_distance(const float reference_pose[4 * 4], const float measurement_pose[4 * 4], float &combined_measure, float &R_measure, float &t_measure);
 void get_warp_grid_for_cost_volume_calculation(float warp_grid[3][width_2 * height_2]);
-void cost_volume_fusion(const float image1[fpn_output_channels * height_2 * width_2],
+void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * width_2],
                         const int n_measurement_frames,
-                        const float image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
+                        const qaint image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
                         const float* warpings,
-                        float fused_cost_volume[n_depth_levels * height_2 * width_2]);
+                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2]);
 void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4 * 4],
                                                        const float measurement_pose[4 * 4],
                                                        const float previous_depth[test_image_height][test_image_width],

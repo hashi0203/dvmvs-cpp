@@ -115,7 +115,7 @@ void interpolate(const qaint* input, qaint* output, const string mode,
 }
 
 
-void grid_sample(const float* image, const float* warping, float* warped_image,
+void grid_sample(const qaint* image, const float* warping, float* warped_image,
                  const int channels, const int height, const int width) {
 
     for (int idx = 0; idx < height * width; idx++) {
