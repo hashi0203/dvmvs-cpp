@@ -20,7 +20,7 @@ def quantize(act, bit, alpha=0.95):
         shift = [int(np.floor(np.log2(s))) for s in scale]
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         return shift
-    elif act[0] in ["cost_volume", "cat"]:
+    elif act[0] in ["cost_volume", "cat", "layer_norm", "mul"]:
         param = [np.sort(p) for p in param]
         idx = [int(round(len(p) * alpha)) for p in param]
         scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
@@ -51,8 +51,8 @@ if __name__ == '__main__':
     shifts = []
     for act in acts:
         shift = quantize(act, bit)
-        if act[0] in ["cost_volume", "cat"]:
-            shifts.append(shift)
+        if act[0] in ["cost_volume", "cat", "layer_norm", "mul"]:
+            shifts.append((act[0], shift))
         elif shift is not None:
             assert len(shift) == 2 or len(shift) == 3
             idx = 0 if act[0] == "conv" else 1 if act[0] == "add" else 2

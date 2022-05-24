@@ -54,14 +54,20 @@ class MVSLayernormConvLSTMCell(nn.Module):
         o = torch.sigmoid(cc_o)
         activations.append(("sigmoid", [cc_o.cpu().detach().numpy().copy(), o.cpu().detach().numpy().copy()]))
 
+        tmp = cc_g.cpu().detach().numpy().copy()
         cc_g = torch.layer_norm(cc_g, [h, w])
+        activations.append(("layer_norm", [tmp, cc_g.cpu().detach().numpy().copy()]))
         g = self.activation_function(cc_g)
         activations.append(("celu", [cc_g.cpu().detach().numpy().copy(), g.cpu().detach().numpy().copy()]))
 
         c_next = f * c_cur + i * g
+        tmp = c_next.cpu().detach().numpy().copy()
         c_next = torch.layer_norm(c_next, [h, w])
-        h_next = o * self.activation_function(c_next)
+        activations.append(("layer_norm", [c_cur.cpu().detach().numpy().copy(), tmp, c_next.cpu().detach().numpy().copy()]))
+        h_next = self.activation_function(c_next)
         activations.append(("celu", [c_next.cpu().detach().numpy().copy(), h_next.cpu().detach().numpy().copy()]))
+        h_next = o * h_next
+        activations.append(("mul", [h_next.cpu().detach().numpy().copy()]))
 
         return h_next, c_next, activations
 
