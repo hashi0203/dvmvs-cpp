@@ -8,22 +8,23 @@ def Sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def quantize(x, bit):
-    return np.round(x * (1 << (bit-1))).astype('int')
+def quantize(x, shift):
+    return np.round(x * (1 << shift)).astype('int')
 
 
 if __name__ == '__main__':
-    scale = 6.0
+    scale = 3
     xbit = 10 # 8 でもまあいい
-    ybit = 20
+    yshift = 20
 
-    x = np.arange(1 << xbit) / (1 << xbit) * 6.0
+    x = np.arange(1 << xbit) / (1 << xbit) * (1 << scale)
     print(x)
     print("constexpr int tbbit = %d;" % xbit)
-    print("constexpr int actbit = %d;" % ybit)
+    print("constexpr int tbshift = %d;" % (xbit - scale))
+    print("constexpr int sigshift = %d;" % yshift)
 
-    c = quantize(celu(-x), ybit)
+    c = quantize(celu(-x), yshift)
     print("constexpr qaint celu_table[%d] = {%s};" % (1 << xbit, ", ".join(map(str, c))))
 
-    s = quantize(Sigmoid(x), ybit)
+    s = quantize(Sigmoid(x), yshift)
     print("constexpr qaint Sigmoid_table[%d] = {%s};" % (1 << xbit, ", ".join(map(str, s))))

@@ -2,11 +2,17 @@ import numpy as np
 from path import Path
 import os
 import struct
+import matplotlib.pyplot as plt
 
 INTMAX = [None, 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151, 4194303, 8388607, 16777215, 33554431, 67108863, 134217727, 268435455, 536870911, 1073741823, 2147483647]
 INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096, -8192, -16384, -32768, -65536, -131072, -262144, -524288, -1048576, -2097152, -4194304, -8388608, -16777216, -33554432, -67108864, -134217728, -268435456, -536870912, -1073741824, -2147483648]
 
+act_cnt = 0
+base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("..")
+
 def quantize(act, bit, alpha=0.95):
+    global act_cnt, base_dir
+
     param = act[1].copy()
     if act[0] == "add":
         param.append(param[0] + param[1])
@@ -28,6 +34,10 @@ def quantize(act, bit, alpha=0.95):
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         return shift
     elif act[0] in ["sigmoid", "celu"]:
+        plt.figure()
+        plt.hist(act[1][0].reshape(-1), bins=np.arange(-32, 35, 4))
+        plt.savefig("%s/quantizer/%s_%d.png" % (base_dir, act[0], act_cnt))
+        act_cnt += 1
         print("%7s: %.5f" % (act[0], np.max(param[0])))
         return None
     else:
@@ -36,8 +46,6 @@ def quantize(act, bit, alpha=0.95):
 
 
 if __name__ == '__main__':
-    base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("..")
-
     print("reading activation file...")
     npz_acts = np.load(base_dir / "params" / "acts.npz", allow_pickle=True)
     acts = npz_acts["acts"]
