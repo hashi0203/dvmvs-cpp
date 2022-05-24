@@ -17,6 +17,8 @@ void Conv2d(const qaint* input,
     const qwint* weight = weights + w_idx[conv_cnt];
     const int bshift = b_shifts[conv_cnt];
     const qbint* bias = biases + b_idx[conv_cnt];
+    // save_layer<qwint>("./results-qt/", "weight", "00009", weight, out_channels * in_channels / groups * kernel_size * kernel_size, wshift);
+    // save_layer<qbint>("./results-qt/", "bias", "00009", bias, out_channels, bshift);
 
     const int xshift = cin_shifts[conv_cnt];
     const int yshift = cout_shifts[conv_cnt];
@@ -24,7 +26,10 @@ void Conv2d(const qaint* input,
 
     const int sshift = apply_scale ? s_shifts[bn_cnt] : 0;
     const qsint* scale = apply_scale ? scales + s_idx[bn_cnt++] : nullptr;
+    // if (apply_scale) save_layer<qsint>("./results-qt/", "scale", "00009", scale, out_channels, sshift);
 
+    // print1(kernel_size);
+    // print5(wshift, bshift, xshift, yshift, sshift);
     const int mshift = max(bshift, xshift + wshift);
 
     print_neg_shift(param_path, "wshift", wshift);
@@ -35,6 +40,7 @@ void Conv2d(const qaint* input,
     print_neg_shift(param_path, "mshift + sshift - yshift", mshift + sshift - yshift);
 
 
+    // qmint out[out_channels * out_height * out_width];
     const int ocpg = out_channels / groups;
     const int icpg = in_channels / groups;
     for (int g = 0; g < groups; g++) {
@@ -61,6 +67,7 @@ void Conv2d(const qaint* input,
                         }
                     }
 
+                    // out[output_idx] = sum;
                     sum <<= mshift - (xshift + wshift);
                     sum += bias[och] << (mshift - bshift);
                     sum = apply_scale ? sum * scale[och] : sum;
@@ -70,4 +77,5 @@ void Conv2d(const qaint* input,
             }
         }
     }
+    // save_layer<qmint>("./results-qt/", "conv_out", "00009", out, out_channels * out_height * out_width, xshift + wshift);
 }

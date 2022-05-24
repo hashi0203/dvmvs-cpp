@@ -139,15 +139,20 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
 
     qaint cost_volume[n_depth_levels * height_2 * width_2];
     cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
-    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
+    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, 11);
 
-    // qaint skip0[hyper_channels * height_2 * width_2];
-    // qaint skip1[(hyper_channels * 2) * height_4 * width_4];
-    // qaint skip2[(hyper_channels * 4) * height_8 * width_8];
-    // qaint skip3[(hyper_channels * 8) * height_16 * width_16];
-    // qaint bottom[(hyper_channels * 16) * height_32 * width_32];
-    // CostVolumeEncoder(reference_feature_half_float, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
-    //                   skip0, skip1, skip2, skip3, bottom);
+    qaint skip0[hyper_channels * height_2 * width_2];
+    qaint skip1[(hyper_channels * 2) * height_4 * width_4];
+    qaint skip2[(hyper_channels * 4) * height_8 * width_8];
+    qaint skip3[(hyper_channels * 8) * height_16 * width_16];
+    qaint bottom[(hyper_channels * 16) * height_32 * width_32];
+    CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
+                      skip0, skip1, skip2, skip3, bottom);
+    save_layer<qaint>(save_dir, "skip0", filename, skip0, hyper_channels * height_2 * width_2, oout_shifts[39-1]);
+    save_layer<qaint>(save_dir, "skip1", filename, skip1, (hyper_channels * 2) * height_4 * width_4, oout_shifts[43-1]);
+    save_layer<qaint>(save_dir, "skip2", filename, skip2, (hyper_channels * 4) * height_8 * width_8, oout_shifts[47-1]);
+    save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
+    save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
     // // // ofstream ofsb("bottom.txt");
     // // ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
