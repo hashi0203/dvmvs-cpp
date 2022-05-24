@@ -154,13 +154,6 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
     save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
-    // // // ofstream ofsb("bottom.txt");
-    // // ofstream ofsb("bottom.txt", ios::out|ios::binary|ios::trunc);
-    // // for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-    // //     // ofsb << bottom[idx] << "\n";
-    // //     ofsb.write((char*) &bottom[idx], sizeof(float));
-    // // ofsb.close();
-
     // LSTMFusion(bottom, hidden_state, cell_state);
 
     // // // ofstream ofsh("hidden_state.txt");

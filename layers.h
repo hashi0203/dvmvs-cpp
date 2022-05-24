@@ -8,11 +8,7 @@ void conv_layer(const qaint* x, qaint* y, const string param_path,
     const int padding = (kernel_size - 1) / 2;
     constexpr int groups = 1;
     constexpr bool apply_scale = true;
-    // save_layer<qaint>("./results-qt/", "conv_x", "00009", x, in_channels * in_height * in_width, cin_shifts[conv_cnt]);
     Conv2d(x, y, param_path + ".0", in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, padding, groups, apply_scale);
-    // print1(conv_cnt);
-    // print1(bn_cnt);
-    // save_layer<qaint>("./results-qt/", "conv_y", "00009", y, out_channels * out_height * out_width, cout_shifts[conv_cnt-1]);
     ReLU(y, out_channels, out_height, out_width);
 }
 

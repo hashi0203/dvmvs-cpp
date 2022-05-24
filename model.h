@@ -303,6 +303,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     EncoderBlock(skip0, l0_out, "encoder_block0", l0_mid_channels, l0_in_height, l0_in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size);
     save_layer<qaint>("./results-qt/", "l0_out", "00009", l0_out, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
 
+
     // 2nd set
     constexpr int l1_in_channels = fpn_output_channels + l0_out_channels;
     constexpr int l1_in_height = height_4;
