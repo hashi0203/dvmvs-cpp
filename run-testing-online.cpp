@@ -160,13 +160,6 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, 16);
     save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, 18);
 
-    // // // ofstream ofsh("hidden_state.txt");
-    // // ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
-    // // for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-    // //     // ofsh << hidden_state[idx] << "\n";
-    // //     ofsh.write((char*) &hidden_state[idx], sizeof(float));
-    // // ofsh.close();
-
     // CostVolumeDecoder(reference_image_float, skip0, skip1, skip2, skip3, hidden_state, prediction);
 }
 

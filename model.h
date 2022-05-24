@@ -508,11 +508,11 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     Sigmoid(ii, hid_channels, height_32, width_32);
     Sigmoid(ff, hid_channels, height_32, width_32);
     Sigmoid(oo, hid_channels, height_32, width_32);
-    save_layer<qaint>("./results-qt/", "ii", "00009", ii, hid_channels * height_32 * width_32, actbit);
+    save_layer<qaint>("./results-qt/", "ii", "00009", ii, hid_channels * height_32 * width_32, sigshift);
 
     layer_norm(gg, hid_channels, height_32, width_32);
     celu(gg, hid_channels, height_32, width_32);
-    save_layer<qaint>("./results-qt/", "gg", "00009", gg, hid_channels * height_32 * width_32, actbit);
+    save_layer<qaint>("./results-qt/", "gg", "00009", gg, hid_channels * height_32 * width_32, sigshift);
 
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
         cell_state[idx] = ((((qmint) ff[idx] >> 4) * cell_state[idx]) + ((qmint) ii[idx] >> 4) * (gg[idx] >> 4)) >> 16;
@@ -523,6 +523,6 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
     celu(hidden_state, hid_channels, height_32, width_32);
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        hidden_state[idx] = (((qmint) hidden_state[idx]) * oo[idx]) >> (actbit);
+        hidden_state[idx] = (((qmint) hidden_state[idx]) * oo[idx]) >> (sigshift);
 
 }
