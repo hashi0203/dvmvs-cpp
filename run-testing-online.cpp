@@ -105,8 +105,8 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
              const qaint measurement_feature_halfs[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
              const float* warpings,
              qaint reference_feature_half[fpn_output_channels * height_2 * width_2],
-             float hidden_state[hid_channels * height_32 * width_32],
-             float cell_state[hid_channels * height_32 * width_32],
+             qaint hidden_state[hid_channels * height_32 * width_32],
+             qaint cell_state[hid_channels * height_32 * width_32],
              float prediction[test_image_height * test_image_width],
              const string filename) {
 
@@ -154,7 +154,11 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
     save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
-    // LSTMFusion(bottom, hidden_state, cell_state);
+    save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, 16);
+    save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, 18);
+    LSTMFusion(bottom, hidden_state, cell_state);
+    save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, 16);
+    save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, 18);
 
     // // // ofstream ofsh("hidden_state.txt");
     // // ofstream ofsh("hidden_state.txt", ios::out|ios::binary|ios::trunc);
@@ -248,8 +252,8 @@ int main() {
     float previous_pose[4 * 4];
 
     bool state_exists = false;
-    float hidden_state[hid_channels * height_32 * width_32];
-    float cell_state[hid_channels * height_32 * width_32];
+    qaint hidden_state[hid_channels * height_32 * width_32];
+    qaint cell_state[hid_channels * height_32 * width_32];
 
     for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
@@ -363,7 +367,7 @@ int main() {
             warp_from_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
 
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k];
+                hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k] * (1 << 18);
         }
 
         qaint reference_feature_half[fpn_output_channels * height_2 * width_2];

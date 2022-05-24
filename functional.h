@@ -1,6 +1,6 @@
 #pragma once
 
-void layer_norm(float* x, const int channels, const int height, const int width);
+void layer_norm(qaint* x, const int channels, const int height, const int width);
 
 void add_layer(const qaint* x, qaint* y, const int layer_size, const string param_path);
 

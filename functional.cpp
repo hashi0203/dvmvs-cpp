@@ -1,22 +1,26 @@
 #include "config.h"
 
-void layer_norm(float* x, const int channels, const int height, const int width) {
+constexpr int lnshifts[2] = {17, 16};
+int ln_cnt = 0;
+
+void layer_norm(qaint* x, const int channels, const int height, const int width) {
 
     constexpr float eps = 1e-5;
     const int n1 = height * width;
     for (int i = 0; i < channels; i++) {
-        float e = 0.f;
-        float v = 0.f;
+        float e = 0;
+        float v = 0;
         for (int idx = 0; idx < height * width; idx++) {
             e += x[i * (height * width) + idx];
-            v += x[i * (height * width) + idx] * x[i * (height * width) + idx];
+            v += ((qmint) x[i * (height * width) + idx]) * x[i * (height * width) + idx];
         }
         e /= n1;
         v /= n1;
         v -= e * e;
         for (int idx = 0; idx < height * width; idx++)
-            x[i * (height * width) + idx] = (x[i * (height * width) + idx] - e) / sqrt(v + eps);
+            x[i * (height * width) + idx] = (x[i * (height * width) + idx] - e) / sqrt(v + eps) * (1 << lnshifts[ln_cnt]);
     }
+    ln_cnt = 1 - ln_cnt;
 }
 
 

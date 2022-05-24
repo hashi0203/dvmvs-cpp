@@ -17,19 +17,25 @@ void ReLU(qaint* x, const int channels, const int height, const int width) {
 }
 
 
-// void celu(qaint* x, const int channels, const int height, const int width) {
-//     const int xshift = actshifts[act_cnt];
-//     for (int idx = 0; idx < channels * height * width; idx++) {
-//         const float xx = x[idx] / (float) (1 << xshift);
-//         x[idx] = max(0, x[idx]) + min(0, (int) ((exp(xx) - 1) * (1 << xshift)));
-//     }
-// }
+constexpr int celushifts[2] = {17, 17};
+int celu_cnt = 0;
+
+void celu(qaint* x, const int channels, const int height, const int width) {
+    const int xshift = celushifts[celu_cnt];
+    celu_cnt = 1 - celu_cnt;
+    for (int idx = 0; idx < channels * height * width; idx++) {
+        const float xx = x[idx] / (float) (1 << xshift);
+        x[idx] = max(0, x[idx] << (actbit - xshift)) + min(0, (int) ((exp(xx) - 1) * (1 << actbit)));
+    }
+}
 
 
-// void Sigmoid(qaint* x, const int channels, const int height, const int width) {
-//     const int xshift = actshifts[act_cnt];
-//     for (int idx = 0; idx < channels * height * width; idx++) {
-//         const float xx = x[idx] / (float) (1 << xshift);
-//         x[idx] = 1.0 / (1.0 + exp(-xx)) * (1 << xshift);
-//     }
-// }
+void Sigmoid(qaint* x, const int channels, const int height, const int width) {
+    const int xshift = cout_shifts[conv_cnt-1];
+    // if (xshift < tbbit) print2("xshift < tbbit:", xshift);
+
+    for (int idx = 0; idx < channels * height * width; idx++) {
+        const float xx = x[idx] / (float) (1 << xshift);
+        x[idx] = 1.0 / (1.0 + exp(-xx)) * (1 << actbit);
+    }
+}
