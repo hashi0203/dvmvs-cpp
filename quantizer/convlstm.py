@@ -56,7 +56,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
 
         tmp = cc_g.cpu().detach().numpy().copy()
         cc_g = torch.layer_norm(cc_g, [h, w])
-        activations.append(("layer_norm", [tmp, cc_g.cpu().detach().numpy().copy()]))
+        activations.append(("layer_norm", [combined_conv.cpu().detach().numpy().copy(), combined_conv.cpu().detach().numpy().copy(), tmp, cc_g.cpu().detach().numpy().copy()]))
         g = self.activation_function(cc_g)
         activations.append(("celu", [cc_g.cpu().detach().numpy().copy(), g.cpu().detach().numpy().copy()]))
 
