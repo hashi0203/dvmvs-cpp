@@ -23,13 +23,13 @@ void layer_norm(qaint* x, const int channels, const int height, const int width)
         e /= n1;
         v /= n1;
         v -= e * e;
-        if (i == 0) {
-            print2(ln_ave[i], e);
-            print2(((qmint) ln_inv_std[i]) / (float) (1 << lnin_shifts[ln_cnt]), 1.0 / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]));
-        }
+        // if (i == 0) {
+        //     print2(ln_ave[i], e);
+        //     print2(((qmint) ln_inv_std[i]) / (float) (1 << lnin_shifts[ln_cnt]), 1.0 / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]));
+        // }
         for (int idx = 0; idx < height * width; idx++)
-            // x[i * (height * width) + idx] = (x[i * (height * width) + idx] - ln_ave[i]) * ((qmint) ln_inv_std[i]) / (float) (1 << lnin_shifts[ln_cnt]);
             x[i * (height * width) + idx] = (x[i * (height * width) + idx] - e) / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]);
+            // x[i * (height * width) + idx] = ((x[i * (height * width) + idx] - ln_ave[i]) * ((qmint) ln_inv_std[i])) >> lnin_shifts[ln_cnt];
     }
     ln_cnt = 1 - ln_cnt;
 }
