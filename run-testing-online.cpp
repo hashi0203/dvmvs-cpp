@@ -158,9 +158,13 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, 18);
     LSTMFusion(bottom, hidden_state, cell_state);
     save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, 16);
-    save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, 18);
+    save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
-    // CostVolumeDecoder(reference_image_float, skip0, skip1, skip2, skip3, hidden_state, prediction);
+    // qaint depth_full[test_image_height * test_image_width];
+    // CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, depth_full);
+
+    // for (int idx = 0; idx < test_image_height * test_image_width; idx++)
+    //     prediction[idx] = 1.0 / (inverse_depth_multiplier * (depth_full[idx] / (float) (1 >> sigshift)) + inverse_depth_base);
 }
 
 

@@ -143,9 +143,9 @@ class DecoderBlock(torch.nn.Module):
         else:
             in0 = depth.cpu().detach().numpy().copy()
             depth = torch.nn.functional.interpolate(depth, scale_factor=2, mode='bilinear', align_corners=True)
-            activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
             activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
             x = torch.cat([x, skip, depth], dim=1)
+            activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
 
         x, activations = save_acts(self.convolution1, x, activations)
         x, activations = save_acts(self.convolution2, x, activations)
@@ -384,4 +384,5 @@ class LSTMFusion(torch.nn.Module):
                                                             estimated_current_depth=estimated_current_depth,
                                                             camera_matrix=camera_matrix, activations=activations)
 
+        activations.append(("cell_hidden", [next_hidden_state.cpu().detach().numpy().copy(), next_cell_state.cpu().detach().numpy().copy()]))
         return next_hidden_state, next_cell_state, activations

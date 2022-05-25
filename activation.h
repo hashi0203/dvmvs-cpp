@@ -21,7 +21,7 @@ void ReLU(qaint* x, const int channels, const int height, const int width) {
 }
 
 
-constexpr int celushifts[2] = {17, 17};
+constexpr int celushifts[2] = {17, 16};
 int celu_cnt = 0;
 
 void celu(qaint* x, const int channels, const int height, const int width) {
