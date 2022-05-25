@@ -77,6 +77,11 @@ void interpolate(const qaint* input, qaint* output, const string mode,
     // bilinear 0.49206 0.49474
     // bilinear 0.49206 0.49474
 
+    const int xshift = oin_shifts[other_cnt];
+    const int yshift = oout_shifts[other_cnt];
+    other_cnt++;
+    if (yshift != xshift) print4("xshift and yshift differ in interpolation:", mode, xshift, yshift);
+
     if (mode == "nearest") {
         const float fy = (float) in_height / out_height;
         const float fx = (float) in_width / out_width;
@@ -104,11 +109,12 @@ void interpolate(const qaint* input, qaint* output, const string mode,
                 const float dxs[2] = {x - xs[0], xs[1] - x};
                 for (int i = 0; i < channels; i++) {
                     const int output_idx = (i * out_height + j) * out_width + k;
-                    output[output_idx] = 0;
+                    float sum = 0;
                     for (int yi = 0; yi < 2; yi++) for (int xi = 0; xi < 2; xi++) {
                         const int input_idx = (i * in_height + ys[yi]) * in_width + xs[xi];
-                        output[output_idx] += dys[1-yi] * dxs[1-xi] * input[input_idx];
+                        sum += dys[1-yi] * dxs[1-xi] * input[input_idx];
                     }
+                    output[output_idx] = ((qaint) round(sum)) >> (xshift - yshift);
                 }
             }
         } else {
@@ -120,10 +126,6 @@ void interpolate(const qaint* input, qaint* output, const string mode,
         exit(1);
     }
 
-    const int xshift = oin_shifts[other_cnt];
-    const int yshift = oout_shifts[other_cnt];
-    other_cnt++;
-    if (yshift != xshift) print3("xshift and yshift differ in interpolation:", xshift, yshift);
     // print_neg_shift(param_path, "xshift", xshift);
     // print_neg_shift(param_path, "yshift", yshift);
     // print_neg_shift(param_path, "yshift - xshift", yshift - xshift);
