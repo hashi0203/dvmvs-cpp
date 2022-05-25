@@ -35,17 +35,14 @@ def quantize(act, bit, alpha=0.95):
         shift = [int(np.floor(np.log2(s))) for s in scale]
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         if act[0] == "layer_norm":
-            print(shift)
             ln = act[1][-2].copy().transpose(2, 0, 1, 3, 4)
             ln = ln.reshape(ln.shape[0], ln.shape[1], -1)
             ln_ave = np.mean(ln, axis=2)
             ln_var = np.var(ln, axis=2)
-            print(ln_ave[0])
             ln_aves.append(np.round(np.mean(ln_ave, axis=1) * (1 << shift[1])).astype('int32'))
             ln_inv_stds.append(np.round(1 / np.mean(np.sqrt(ln_var), axis=1) * (1 << shift[-1])).astype('int32'))
-            print(np.std(ln_ave[:10], axis=1))
-            print(np.std(ln_var[:10], axis=1))
-            # print(ln_aves)
+            # print(np.std(ln_ave[:10], axis=1))
+            # print(np.std(ln_var[:10], axis=1))
         return shift
     elif act[0] in ["sigmoid", "celu"]:
         plt.figure()
