@@ -9,6 +9,8 @@ INTMIN = [None, -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -
 
 act_cnt = 0
 base_dir = os.path.dirname(os.path.abspath(__file__)) / Path("..")
+ln_aves = []
+ln_stds = []
 
 def quantize(act, bit, alpha=0.95):
     global act_cnt, base_dir
@@ -32,6 +34,13 @@ def quantize(act, bit, alpha=0.95):
         scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
         shift = [int(np.floor(np.log2(s))) for s in scale]
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
+        if act[0] == "layer_norm":
+            ln = act[1][-2].copy().transpose(2, 0, 1, 3, 4)
+            ln = ln.reshape(ln.shape[0], ln.shape[1], -1)
+            ln_ave = np.mean(ln, axis=2)
+            ln_std = np.std(ln, axis=2)
+            ln_aves.append(np.round(np.mean(ln_ave, axis=1) * (1 << shift[-2])).astype('int32'))
+            ln_stds.append(np.round(1 / np.sqrt(np.mean(ln_std, axis=1)) * (1 << shift[-2])).astype('int32'))
         return shift
     elif act[0] in ["sigmoid", "celu"]:
         plt.figure()
@@ -73,3 +82,7 @@ if __name__ == '__main__':
             fs[i][j].close()
     print(cnt)
     print(shifts)
+
+    print("constexpr int ln_idx[2] = {0, %d};" % (len(ln_aves[1])))
+    print("constexpr qaint ln_aves[%d + %d] = {%s, %s};" % (len(ln_aves[0]), len(ln_aves[1]), ", ".join(map(str, ln_aves[0])), ", ".join(map(str, ln_aves[1]))))
+    print("constexpr qaint ln_stds[%d + %d] = {%s, %s};" % (len(ln_stds[0]), len(ln_stds[1]), ", ".join(map(str, ln_stds[0])), ", ".join(map(str, ln_stds[1]))))
