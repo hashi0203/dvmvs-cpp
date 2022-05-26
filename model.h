@@ -108,11 +108,6 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     Conv2d(x, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, l0_activation);
     save_layer<qaint>("./results-qt/", "layer-y0", "00009", y0, l0_out_channels * l0_out_height * l0_out_width, cout_shifts[conv_cnt-1]);
 
-    // constexpr int l2_out_channels = depths[0];
-    // constexpr int l2_out_height = l0_out_height;
-    // constexpr int l2_out_width = l0_out_width;
-    // ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
-
     // Depthwise separable, no skip.
     constexpr int l3_kernel_size = 3;
     constexpr int l3_stride = 1;
@@ -125,11 +120,6 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, "layer1.3", l0_out_channels, l0_out_height, l0_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, l3_activation);
     save_layer<qaint>("./results-qt/", "layer-y3", "00009", y3, l3_out_channels * l3_out_height * l3_out_width, cout_shifts[conv_cnt-1]);
-
-    // constexpr int l5_out_channels = depths[0];
-    // constexpr int l5_out_height = l3_out_height;
-    // constexpr int l5_out_width = l3_out_width;
-    // ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     constexpr int l6_kernel_size = 1;
     constexpr int l6_stride = 1;
@@ -486,10 +476,6 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
     conv_layer(refined0, refined1, "refine.1", l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride);
 
     depth_layer_3x3(refined1, depth_full, "depth_layer_full", l4_out_channels, l4_out_height, l4_out_width);
-
-    // for (int idx = 0; idx < l4_out_height * l4_out_width; idx++)
-    //     depth_full[idx] = 1.0 / (inverse_depth_multiplier * depth_full[idx] + inverse_depth_base);
-
 }
 
 

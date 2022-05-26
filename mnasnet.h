@@ -20,11 +20,6 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
     Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, l0_activation);
 
-    // const int l2_out_channels = mid_channels;
-    // const int l2_out_height = l0_out_height;
-    // const int l2_out_width = l0_out_width;
-    // ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
-
     // Depthwise
     const int l3_kernel_size = kernel_size;
     const int l3_stride = stride;
@@ -36,11 +31,6 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     const int l3_out_width = conv_out_size(l0_out_width, l3_kernel_size, l3_stride, l3_padding);
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, param_path + ".layers.3", l0_out_channels, l0_out_height, l0_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, l3_activation);
-
-    // const int l5_out_channels = mid_channels;
-    // const int l5_out_height = l3_out_height;
-    // const int l5_out_width = l3_out_width;
-    // ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     // Linear pointwise. Note that there's no activation.
     constexpr int l6_kernel_size = 1;

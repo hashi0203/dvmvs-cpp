@@ -26,8 +26,6 @@ void Conv2d(const qaint* input,
     const int sshift = apply_scale ? s_shifts[bn_cnt] : 0;
     const qsint* scale = apply_scale ? scales + s_idx[bn_cnt++] : nullptr;
 
-    // print1(kernel_size);
-    // print5(wshift, bshift, xshift, yshift, sshift);
     const int mshift = max(bshift, xshift + wshift);
 
     print_neg_shift(param_path, "wshift", wshift);
