@@ -76,8 +76,8 @@ extern int bn_cnt;
 extern int add_cnt;
 extern int other_cnt;
 
-constexpr int qwbit = 10;
-typedef short qwint;
+constexpr int qwbit = 8;
+typedef char qwint;
 constexpr int n_weights = 34619560;
 // constexpr int w_files = 96;
 extern qwint* weights;
@@ -94,8 +94,8 @@ extern int b_idx[n_convs];
 extern int b_shifts[n_convs];
 // extern int b_cnt;
 
-constexpr int qsbit = 10;
-typedef short qsint;
+constexpr int qsbit = 8;
+typedef char qsint;
 // constexpr int s_files = 81;
 constexpr int n_scales = 22544;
 extern qsint* scales;

@@ -26,7 +26,7 @@ def quantize_save(params_out, bit, fps):
 
         d = bytearray()
         fps[0].write(struct.pack('i', len(scaled_param)))
-        fmt = [None, 'c', 'h', None, 'i']
+        fmt = [None, 'b', 'h', None, 'i']
         for p in scaled_param:
             d += struct.pack(fmt[byte], p)
         fps[1].write(d)
@@ -43,7 +43,7 @@ def main():
     fw = [open(base_dir / "n_weights", "wb"),
           open(base_dir / "weights_quantized", "wb"),
           open(base_dir / "weight_shifts", "wb")]
-    wbit = 10
+    wbit = 8
 
     fb = [open(base_dir / "n_biases", "wb"),
           open(base_dir / "biases_quantized", "wb"),
@@ -53,7 +53,7 @@ def main():
     fs = [open(base_dir / "n_scales", "wb"),
           open(base_dir / "scales_quantized", "wb"),
           open(base_dir / "scale_shifts", "wb")]
-    sbit = 10
+    sbit = 8
 
     weights_out = []
     biases_out = []
