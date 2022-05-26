@@ -40,6 +40,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
             non_valid = torch.cat([non_valid] * c, dim=1)
             h_cur.data[non_valid] = 0.0
 
+        activations.append(("cell_hidden", [c_cur.cpu().detach().numpy().copy(), h_cur.cpu().detach().numpy().copy()]))
         activations.append(("cat", [input_tensor.cpu().detach().numpy().copy(), h_cur.cpu().detach().numpy().copy()]))
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
         combined_conv = self.conv(combined)
@@ -56,14 +57,14 @@ class MVSLayernormConvLSTMCell(nn.Module):
 
         tmp = cc_g.cpu().detach().numpy().copy()
         cc_g = torch.layer_norm(cc_g, [h, w])
-        activations.append(("layer_norm", [combined_conv.cpu().detach().numpy().copy(), combined_conv.cpu().detach().numpy().copy(), tmp, cc_g.cpu().detach().numpy().copy()]))
+        activations.append(("layer_norm", [combined_conv.cpu().detach().numpy().copy(), tmp, cc_g.cpu().detach().numpy().copy()]))
         g = self.activation_function(cc_g)
         activations.append(("celu", [cc_g.cpu().detach().numpy().copy(), g.cpu().detach().numpy().copy()]))
 
         c_next = f * c_cur + i * g
         tmp = c_next.cpu().detach().numpy().copy()
         c_next = torch.layer_norm(c_next, [h, w])
-        activations.append(("layer_norm", [c_cur.cpu().detach().numpy().copy(), tmp, c_next.cpu().detach().numpy().copy()]))
+        activations.append(("layer_norm", [tmp, c_next.cpu().detach().numpy().copy()]))
         h_next = self.activation_function(c_next)
         activations.append(("celu", [c_next.cpu().detach().numpy().copy(), h_next.cpu().detach().numpy().copy()]))
         h_next = o * h_next

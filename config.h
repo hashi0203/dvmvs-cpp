@@ -125,7 +125,15 @@ typedef int qmint;
 // [('cost_volume', [13, 11]), ('cat', [13, 11]), ('cat', [14, 17]), ('cat', [15, 16]), ('cat', [15, 16]), ('cat', [17, 18]), ('layer_norm', [13, 13, 14, 17]), ('layer_norm', [16, 16, 16]), ('cell_hidden', [16, 18]), ('cat', [17, 16]), ('cat', [17, 17, 20]), ('cat', [17, 17, 20]), ('cat', [17, 17, 20]), ('cat', [18, 20, 16])]
 
 //  16 bit
-// [('cost_volume', [9, 7]), ('cat', [9, 7]), ('cat', [10, 13]), ('cat', [11, 12]), ('cat', [11, 12]), ('cat', [13, 14]), ('layer_norm', [9, 9, 10, 13]), ('layer_norm', [12, 12, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 12]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [14, 16, 12])]
+// [('cost_volume', [9, 7]), ('cat', [9, 7]), ('cat', [10, 13]), ('cat', [11, 12]), ('cat', [11, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 14]), ('layer_norm', [9, 10, 13]), ('layer_norm', [12, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 12]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [14, 16, 12])]
+
+// 20 bit
+// constexpr int cvinshift = 13;
+// constexpr int cvoutshift = 9;
+
+// 16 bit
+// constexpr int cvinshift = 9;
+// constexpr int cvoutshift = 7;
 
 // constexpr int cellshift = 16;
 // constexpr int hiddenshift = 18;

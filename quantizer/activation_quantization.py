@@ -39,7 +39,7 @@ def quantize(act, bit, alpha=0.95):
             ln = ln.reshape(ln.shape[0], ln.shape[1], -1)
             ln_ave = np.mean(ln, axis=2)
             ln_var = np.var(ln, axis=2)
-            ln_aves.append(np.round(np.mean(ln_ave, axis=1) * (1 << shift[1])).astype('int32'))
+            ln_aves.append(np.round(np.mean(ln_ave, axis=1) * (1 << shift[0])).astype('int32'))
             ln_inv_stds.append(np.round(1 / np.mean(np.sqrt(ln_var), axis=1) * (1 << shift[-1])).astype('int32'))
             # print(np.std(ln_ave[:10], axis=1))
             # print(np.std(ln_var[:10], axis=1))

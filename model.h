@@ -72,7 +72,7 @@ void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* 
         for (int idx = 0; idx < out_height * out_width; idx++)
             x1[idx + ((out_channels * 2) * out_height * out_width)] >>= 3;
     }
-    if (!plus_one) cin_shifts[conv_cnt]--; // 応急処置
+    // if (!plus_one) cin_shifts[conv_cnt]--; // 応急処置
     // save_layer<qaint>("./results-qt/", "db_x1", "00009", x1, l1_in_channels * out_height * out_width, cin_shifts[conv_cnt]);
 
     constexpr int stride = 1;
@@ -283,7 +283,8 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
                        qaint skip1[(hyper_channels * 2) * height_4 * width_4],
                        qaint skip2[(hyper_channels * 4) * height_8 * width_8],
                        qaint skip3[(hyper_channels * 8) * height_16 * width_16],
-                       qaint bottom[(hyper_channels * 16) * height_32 * width_32]) {
+                       qaint bottom[(hyper_channels * 16) * height_32 * width_32],
+                       const string filename) {
 
     constexpr int stride = 1;
 
@@ -300,6 +301,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
         l0_in[idx] = features_half[idx] >> 2;
     for (int idx = 0; idx < n_depth_levels * l0_in_height * l0_in_width; idx++)
         l0_in[idx + (fpn_output_channels * l0_in_height * l0_in_width)] = cost_volume[idx];
+    save_layer<qaint>("./results-qt/", "l0_in", filename, l0_in, l0_in_channels * l0_in_height * l0_in_width, cin_shifts[conv_cnt]);
     conv_layer(l0_in, skip0, "aggregator0", l0_in_channels, l0_in_height, l0_in_width, l0_mid_channels, l0_in_height, l0_in_width, l0_kernel_size, stride);
 
     constexpr int l0_out_channels = hyper_channels * 2;
@@ -307,7 +309,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     constexpr int l0_out_width = width_4;
     qaint l0_out[l0_out_channels * l0_out_height * l0_out_width];
     EncoderBlock(skip0, l0_out, "encoder_block0", l0_mid_channels, l0_in_height, l0_in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size);
-    save_layer<qaint>("./results-qt/", "l0_out", "00009", l0_out, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
+    save_layer<qaint>("./results-qt/", "l0_out", filename, l0_out, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
 
 
     // 2nd set
@@ -323,8 +325,8 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
         l1_in[idx] = features_quarter[idx];
     for (int idx = 0; idx < l0_out_channels * l1_in_height * l1_in_width; idx++)
         l1_in[idx + (fpn_output_channels * l1_in_height * l1_in_width)] = l0_out[idx] >> 3;
-    cin_shifts[conv_cnt]--; // 応急処置
-    save_layer<qaint>("./results-qt/", "l1_in", "00009", l1_in, l1_in_channels * l1_in_height * l1_in_width, cin_shifts[conv_cnt]);
+    // cin_shifts[conv_cnt]--; // 応急処置
+    save_layer<qaint>("./results-qt/", "l1_in", filename, l1_in, l1_in_channels * l1_in_height * l1_in_width, cin_shifts[conv_cnt]);
     conv_layer(l1_in, skip1, "aggregator1", l1_in_channels, l1_in_height, l1_in_width, l1_mid_channels, l1_in_height, l1_in_width, l1_kernel_size, stride);
 
     constexpr int l1_out_channels = hyper_channels * 4;
@@ -369,7 +371,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
         l3_in[idx] = features_one_sixteen[idx];
     for (int idx = 0; idx < l2_out_channels * l3_in_height * l3_in_width; idx++)
         l3_in[idx + (fpn_output_channels * l3_in_height * l3_in_width)] = l2_out[idx] >> 1;
-    cin_shifts[conv_cnt]--; // 応急処置
+    // cin_shifts[conv_cnt]--; // 応急処置
     conv_layer(l3_in, skip3, "aggregator3", l3_in_channels, l3_in_height, l3_in_width, l3_mid_channels, l3_in_height, l3_in_width, l3_kernel_size, stride);
 
     constexpr int l3_out_channels = hyper_channels * 16;
@@ -465,7 +467,7 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
         scaled_combined[idx + (l3_out_channels * l4_in_height * l4_in_width)] = scaled_depth[idx] >> 4;
     for (int idx = 0; idx < 3 * l4_in_height * l4_in_width; idx++)
         scaled_combined[idx + ((l3_out_channels+1) * l4_in_height * l4_in_width)] = image[idx];
-    cin_shifts[conv_cnt]--; // 応急処置
+    // cin_shifts[conv_cnt]--; // 応急処置
     save_layer<qaint>("./results-qt/", "scaled_combined", "00009", scaled_combined, l4_in_channels * l4_in_height * l4_in_width, cin_shifts[conv_cnt]);
 
     constexpr int l4_kernel_size = 5;
@@ -489,7 +491,8 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
 
 void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 * width_32],
                 qaint hidden_state[hid_channels * height_32 * width_32],
-                qaint cell_state[hid_channels * height_32 * width_32]) {
+                qaint cell_state[hid_channels * height_32 * width_32],
+                const string filename) {
 
     constexpr int in_channels = hyper_channels * 16;
     constexpr int l0_in_channels = in_channels + hid_channels;
@@ -508,7 +511,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     constexpr bool apply_scale = false;
     qaint combined_conv[l0_out_channels * height_32 * width_32];
     Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_scale);
-    save_layer<qaint>("./results-qt/", "combined_conv", "00009", combined_conv, l0_out_channels * height_32 * width_32, cout_shifts[conv_cnt-1]);
+    save_layer<qaint>("./results-qt/", "combined_conv", filename, combined_conv, l0_out_channels * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
     qaint* ii = combined_conv;
     qaint* ff = combined_conv + 1 * (hid_channels * height_32 * width_32);
@@ -518,10 +521,10 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     Sigmoid(ii, hid_channels, height_32, width_32);
     Sigmoid(ff, hid_channels, height_32, width_32);
     Sigmoid(oo, hid_channels, height_32, width_32);
-    save_layer<qaint>("./results-qt/", "ii", "00009", ii, hid_channels * height_32 * width_32, sigshift);
+    save_layer<qaint>("./results-qt/", "ii", filename, ii, hid_channels * height_32 * width_32, sigshift);
 
     layer_norm(gg, hid_channels, height_32, width_32);
-    save_layer<qaint>("./results-qt/", "gg", "00009", gg, hid_channels * height_32 * width_32, celushift);
+    save_layer<qaint>("./results-qt/", "gg", filename, gg, hid_channels * height_32 * width_32, celushift);
     celu(gg, hid_channels, height_32, width_32);
 
     // 要注意

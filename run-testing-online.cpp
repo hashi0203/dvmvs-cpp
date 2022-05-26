@@ -99,6 +99,9 @@ void read_params() {
     set_param<int>("aout_shifts", n_adds, aout_shifts);
     set_param<int>("oin_shifts", n_others, oin_shifts);
     set_param<int>("oout_shifts", n_others, oout_shifts);
+
+    constexpr int irregulars[4] = {64, 72, 78, 93}; // 応急処置
+    for (int idx : irregulars) cin_shifts[idx]--;
 }
 
 
@@ -142,7 +145,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
 
     qaint cost_volume[n_depth_levels * height_2 * width_2];
     cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
-    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, 11);
+    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
 
     qaint skip0[hyper_channels * height_2 * width_2];
     qaint skip1[(hyper_channels * 2) * height_4 * width_4];
@@ -150,7 +153,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     qaint skip3[(hyper_channels * 8) * height_16 * width_16];
     qaint bottom[(hyper_channels * 16) * height_32 * width_32];
     CostVolumeEncoder(reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen, cost_volume,
-                      skip0, skip1, skip2, skip3, bottom);
+                      skip0, skip1, skip2, skip3, bottom, filename);
     save_layer<qaint>(save_dir, "skip0", filename, skip0, hyper_channels * height_2 * width_2, oout_shifts[39-1]);
     save_layer<qaint>(save_dir, "skip1", filename, skip1, (hyper_channels * 2) * height_4 * width_4, oout_shifts[43-1]);
     save_layer<qaint>(save_dir, "skip2", filename, skip2, (hyper_channels * 4) * height_8 * width_8, oout_shifts[47-1]);
@@ -159,7 +162,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
 
     save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
     save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
-    LSTMFusion(bottom, hidden_state, cell_state);
+    LSTMFusion(bottom, hidden_state, cell_state, filename);
     save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
     save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
@@ -251,6 +254,8 @@ int main() {
     bool state_exists = false;
     qaint hidden_state[hid_channels * height_32 * width_32];
     qaint cell_state[hid_channels * height_32 * width_32];
+
+    ofstream ofs;
 
     for (int f = 0; f < n_test_frames; f++) {
         float reference_pose[4 * 4];
@@ -390,7 +395,7 @@ int main() {
 
         save_image(save_dir + image_filenames[f].substr(len_image_filedir), previous_depth);
 
-        ofstream ofs(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << previous_depth[i][j] << " ";
