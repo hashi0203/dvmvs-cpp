@@ -13,7 +13,7 @@ def fileopen(filepath):
 def compare_results(base_dir, i):
     filename = "%05d.txt" % i
     try:
-        data1 = fileopen(base_dir / "results-py" / filename)
+        data1 = fileopen(base_dir / "results-qt" / filename)
         data2 = fileopen(base_dir / "../dvmvs-cpp2/results" / filename)
         print(filename + ":", np.corrcoef(data1, data2)[0, 1])
     except:

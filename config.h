@@ -128,7 +128,9 @@ typedef int qmint;
 // [('cost_volume', [9, 7]), ('cat', [9, 7]), ('cat', [10, 13]), ('cat', [11, 12]), ('cat', [11, 12]), ('cat', [13, 14]), ('layer_norm', [9, 9, 10, 13]), ('layer_norm', [12, 12, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 12]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [14, 16, 12])]
 
 // constexpr int cellshift = 16;
+// constexpr int hiddenshift = 18;
 constexpr int cellshift = 12;
+constexpr int hiddenshift = 14;
 
 // layer_norm
 extern int ln_cnt;

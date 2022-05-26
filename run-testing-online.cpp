@@ -109,7 +109,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
              qaint reference_feature_half[fpn_output_channels * height_2 * width_2],
              qaint hidden_state[hid_channels * height_32 * width_32],
              qaint cell_state[hid_channels * height_32 * width_32],
-             float prediction[test_image_height * test_image_width],
+             qaint depth_full[test_image_height * test_image_width],
              const string filename) {
 
     conv_cnt = 0;
@@ -163,12 +163,8 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
     save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
-    qaint depth_full[test_image_height * test_image_width];
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, depth_full);
     save_layer<qaint>(save_dir, "depth_full", filename, depth_full, test_image_height * test_image_width, sigshift);
-
-    for (int idx = 0; idx < test_image_height * test_image_width; idx++)
-        prediction[idx] = 1.0 / (inverse_depth_multiplier * (depth_full[idx] / (float) (1 >> sigshift)) + inverse_depth_base);
 }
 
 
@@ -363,23 +359,26 @@ int main() {
 
             float in_hidden_state[hid_channels][height_32][width_32];
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                in_hidden_state[i][j][k] = hidden_state[(i * height_32 + j) * width_32 + k];
+                in_hidden_state[i][j][k] = hidden_state[(i * height_32 + j) * width_32 + k] / (float) (1 << hiddenshift);
             float out_hidden_state[hid_channels][height_32][width_32];
             warp_from_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
 
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
-                hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k] * (1 << 18);
+                hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k] * (1 << hiddenshift);
         }
 
         qaint reference_feature_half[fpn_output_channels * height_2 * width_2];
-        float prediction[test_image_height * test_image_width];
+        qaint depth_full[test_image_height * test_image_width];
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
-                warpings, reference_feature_half, hidden_state, cell_state, prediction, image_filenames[f].substr(len_image_filedir, 5));
+                warpings, reference_feature_half, hidden_state, cell_state, depth_full, image_filenames[f].substr(len_image_filedir, 5));
         delete[] warpings;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
-        break;
+
+        float prediction[test_image_height * test_image_width];
+        for (int idx = 0; idx < test_image_height * test_image_width; idx++)
+            prediction[idx] = 1.0 / (inverse_depth_multiplier * (depth_full[idx] / (float) (1 << sigshift)) + inverse_depth_base);
 
         for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
             previous_depth[i][j] = prediction[i * test_image_width + j];
