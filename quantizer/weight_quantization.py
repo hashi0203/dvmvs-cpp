@@ -20,8 +20,7 @@ def quantize(param, bit):
 def quantize_save(params_out, bit, fps):
     cnt = 0
     for param in params_out:
-        byte = (bit - 1) // 8 + 1
-        byte = 4 if byte == 3 else byte
+        byte = 1 if bit <= 8 else 2 if bit <= 16 else 4
         _, shift, scaled_param = quantize(param, bit)
         scaled_param = scaled_param.astype('int%d' % (byte * 8))
 
@@ -59,6 +58,7 @@ def main():
     weights_out = []
     biases_out = []
     scales_out = []
+    params_out = {}
     for checkpoint in checkpoints:
         with open(base_dir / "files" / checkpoint.name, 'r') as f:
             files = f.read().split()
@@ -77,13 +77,17 @@ def main():
 
                 wrv = weight / np.sqrt(running_var + 1e-5)
                 scales_out.append(wrv)
+                params_out[files[idx-1][:-7] + ".scale"] = wrv
                 biases_out.append(bias - running_mean * wrv)
+                params_out[files[idx-1][:-7] + ".bias"] = bias - running_mean * wrv
                 idx += 4
             elif ".weight" in files[idx]:
                 weights_out.append(params[idx])
+                params_out[files[idx]] = params[idx]
                 idx += 1
             elif ".bias" in files[idx]:
                 biases_out.append(params[idx])
+                params_out[files[idx]] = params[idx]
                 idx += 1
 
         if checkpoint.name == "3_lstm_fusion":
@@ -96,6 +100,16 @@ def main():
     print(len(weights_out), wcnt)
     print(len(biases_out), bcnt)
     print(len(scales_out), scnt)
+
+    for key in params_out.keys():
+        bit = wbit if ".weight" in key else bbit if ".bias" in key else sbit
+        byte = 1 if bit <= 8 else 2 if bit <= 16 else 4
+        shape = params_out[key].shape
+        params_out[key] = quantize(params_out[key], bit)[-1].astype('int%d' % (byte * 8)).reshape(shape)
+        if ".weight" in key:
+            params_out[key] = params_out[key].transpose(0, 2, 3, 1)
+
+    np.savez_compressed(base_dir / "params", **params_out)
 
 
 if __name__ == '__main__':
