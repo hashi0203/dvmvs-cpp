@@ -85,7 +85,7 @@ extern int w_idx[n_convs];
 extern int w_shifts[n_convs];
 // extern int w_cnt;
 
-constexpr int qbbit = 24;
+constexpr int qbbit = 22;
 typedef int qbint;
 // constexpr int b_files = 96;
 constexpr int n_biases = 24885;

@@ -49,7 +49,7 @@ def main():
     fb = [open(base_dir / "n_biases", "wb"),
           open(base_dir / "biases_quantized", "wb"),
           open(base_dir / "bias_shifts", "wb")]
-    bbit = 24
+    bbit = 22
 
     fs = [open(base_dir / "n_scales", "wb"),
           open(base_dir / "scales_quantized", "wb"),
@@ -77,7 +77,7 @@ def main():
 
                 wrv = weight / np.sqrt(running_var + 1e-5)
                 scales_out.append(wrv)
-                biases_out.append(bias / wrv - running_mean)
+                biases_out.append(bias - running_mean * wrv)
                 idx += 4
             elif ".weight" in files[idx]:
                 weights_out.append(params[idx])

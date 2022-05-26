@@ -26,14 +26,14 @@ void Conv2d(const qaint* input,
     const int sshift = apply_scale ? s_shifts[bn_cnt] : 0;
     const qsint* scale = apply_scale ? scales + s_idx[bn_cnt++] : nullptr;
 
-    const int mshift = max(bshift, xshift + wshift);
+    const int mshift = max(bshift, xshift + wshift + sshift);
 
     print_neg_shift(param_path, "wshift", wshift);
     print_neg_shift(param_path, "bshift", bshift);
     print_neg_shift(param_path, "xshift", xshift);
     print_neg_shift(param_path, "yshift", yshift);
     if (apply_scale) print_neg_shift(param_path, "sshift", sshift);
-    print_neg_shift(param_path, "mshift + sshift - yshift", mshift + sshift - yshift);
+    print_neg_shift(param_path, "mshift - yshift", mshift - yshift);
 
 
     const int ocpg = out_channels / groups;
@@ -62,11 +62,11 @@ void Conv2d(const qaint* input,
                         }
                     }
 
-                    sum <<= mshift - (xshift + wshift);
-                    sum += bias[och] << (mshift - bshift);
                     sum = apply_scale ? sum * scale[och] : sum;
+                    sum <<= mshift - (xshift + wshift + sshift);
+                    sum += bias[och] << (mshift - bshift);
                     const int output_idx = (och * out_height + oh) * out_width + ow;
-                    output[output_idx] = sum >> (mshift + sshift - yshift);
+                    output[output_idx] = sum >> (mshift - yshift);
                 }
             }
         }
