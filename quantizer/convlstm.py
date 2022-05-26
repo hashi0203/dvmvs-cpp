@@ -67,7 +67,7 @@ class MVSLayernormConvLSTMCell(nn.Module):
         h_next = self.activation_function(c_next)
         activations.append(("celu", [c_next.cpu().detach().numpy().copy(), h_next.cpu().detach().numpy().copy()]))
         h_next = o * h_next
-        activations.append(("mul", [h_next.cpu().detach().numpy().copy()]))
+        # activations.append(("mul", [h_next.cpu().detach().numpy().copy()]))
 
         return h_next, c_next, activations
 

@@ -384,5 +384,5 @@ class LSTMFusion(torch.nn.Module):
                                                             estimated_current_depth=estimated_current_depth,
                                                             camera_matrix=camera_matrix, activations=activations)
 
-        activations.append(("cell_hidden", [next_hidden_state.cpu().detach().numpy().copy(), next_cell_state.cpu().detach().numpy().copy()]))
+        activations.append(("cell_hidden", [next_cell_state.cpu().detach().numpy().copy(), next_hidden_state.cpu().detach().numpy().copy()]))
         return next_hidden_state, next_cell_state, activations
