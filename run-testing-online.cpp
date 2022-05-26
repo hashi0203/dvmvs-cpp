@@ -18,8 +18,8 @@ void save_layer(string save_dir, string layer_name, string filename, const T* la
 }
 
 #include "functional.h"
-#include "conv.h"
 #include "activation.h"
+#include "conv.h"
 #include "layers.h"
 #include "mnasnet.h"
 #include "model.h"

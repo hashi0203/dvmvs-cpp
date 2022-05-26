@@ -8,8 +8,9 @@ void conv_layer(const qaint* x, qaint* y, const string param_path,
     const int padding = (kernel_size - 1) / 2;
     constexpr int groups = 1;
     constexpr bool apply_scale = true;
-    Conv2d(x, y, param_path + ".0", in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, padding, groups, apply_scale);
-    ReLU(y, out_channels, out_height, out_width);
+    const string activation = "relu";
+    Conv2d(x, y, param_path + ".0", in_channels, in_height, in_width, out_channels, out_height, out_width, kernel_size, stride, padding, groups, apply_scale, activation);
+    // ReLU(y, out_channels, out_height, out_width);
 }
 
 
@@ -22,6 +23,7 @@ void depth_layer_3x3(const qaint* x, qaint* y, const string param_path,
     constexpr int padding = (kernel_size - 1) / 2;
     constexpr int groups = 1;
     constexpr bool apply_scale = false;
-    Conv2d(x, y, param_path + ".0", in_channels, height, width, out_channels, height, width, kernel_size, stride, padding, groups, apply_scale);
-    Sigmoid(y, out_channels, height, width);
+    const string activation = "sigmoid";
+    Conv2d(x, y, param_path + ".0", in_channels, height, width, out_channels, height, width, kernel_size, stride, padding, groups, apply_scale, activation);
+    // Sigmoid(y, out_channels, height, width);
 }

@@ -13,42 +13,45 @@ void _InvertedResidual(const qaint* x, qaint* y, const string param_path,
     constexpr int l0_stride = 1;
     constexpr int l0_padding = 0;
     constexpr int l0_groups = 1;
+    const string l0_activation = "relu";
     const int l0_out_channels = mid_channels;
     const int l0_out_height = conv_out_size(in_height, l0_kernel_size, l0_stride, l0_padding);
     const int l0_out_width = conv_out_size(in_width, l0_kernel_size, l0_stride, l0_padding);
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
-    Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale);
+    Conv2d(x, y0, param_path + ".layers.0", in_channels, in_height, in_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, l0_activation);
 
-    const int l2_out_channels = mid_channels;
-    const int l2_out_height = l0_out_height;
-    const int l2_out_width = l0_out_width;
-    ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
+    // const int l2_out_channels = mid_channels;
+    // const int l2_out_height = l0_out_height;
+    // const int l2_out_width = l0_out_width;
+    // ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
 
     // Depthwise
     const int l3_kernel_size = kernel_size;
     const int l3_stride = stride;
     const int l3_padding = kernel_size / 2;
     const int l3_groups = mid_channels;
+    const string l3_activation = "relu";
     const int l3_out_channels = mid_channels;
-    const int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
-    const int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
+    const int l3_out_height = conv_out_size(l0_out_height, l3_kernel_size, l3_stride, l3_padding);
+    const int l3_out_width = conv_out_size(l0_out_width, l3_kernel_size, l3_stride, l3_padding);
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
-    Conv2d(y0, y3, param_path + ".layers.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale);
+    Conv2d(y0, y3, param_path + ".layers.3", l0_out_channels, l0_out_height, l0_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, l3_activation);
 
-    const int l5_out_channels = mid_channels;
-    const int l5_out_height = l3_out_height;
-    const int l5_out_width = l3_out_width;
-    ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
+    // const int l5_out_channels = mid_channels;
+    // const int l5_out_height = l3_out_height;
+    // const int l5_out_width = l3_out_width;
+    // ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     // Linear pointwise. Note that there's no activation.
     constexpr int l6_kernel_size = 1;
     constexpr int l6_stride = 1;
     constexpr int l6_padding = 0;
     constexpr int l6_groups = 1;
+    const string l6_activation = "none";
     const int l6_out_channels = out_channels;
-    const int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
-    const int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
-    Conv2d(y3, y, param_path + ".layers.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale);
+    const int l6_out_height = conv_out_size(l3_out_height, l6_kernel_size, l6_stride, l6_padding);
+    const int l6_out_width = conv_out_size(l3_out_width, l6_kernel_size, l6_stride, l6_padding);
+    Conv2d(y3, y, param_path + ".layers.6", l3_out_channels, l3_out_height, l3_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale, l6_activation);
 
     // if x.shape == y.shape
     if (in_channels == out_channels && stride == 1) {

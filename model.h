@@ -100,43 +100,46 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l0_stride = 2;
     constexpr int l0_padding = 1;
     constexpr int l0_groups = 1;
+    const string l0_activation = "relu";
     constexpr int l0_out_channels = depths[0];
     constexpr int l0_out_height = conv_out_size(test_image_height, l0_kernel_size, l0_stride, l0_padding);
     constexpr int l0_out_width = conv_out_size(test_image_width, l0_kernel_size, l0_stride, l0_padding);
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
-    Conv2d(x, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale);
+    Conv2d(x, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, l0_activation);
     save_layer<qaint>("./results-qt/", "layer-y0", "00009", y0, l0_out_channels * l0_out_height * l0_out_width, cout_shifts[conv_cnt-1]);
 
-    constexpr int l2_out_channels = depths[0];
-    constexpr int l2_out_height = l0_out_height;
-    constexpr int l2_out_width = l0_out_width;
-    ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
+    // constexpr int l2_out_channels = depths[0];
+    // constexpr int l2_out_height = l0_out_height;
+    // constexpr int l2_out_width = l0_out_width;
+    // ReLU(y0, l2_out_channels, l2_out_height, l2_out_width);
 
     // Depthwise separable, no skip.
     constexpr int l3_kernel_size = 3;
     constexpr int l3_stride = 1;
     constexpr int l3_padding = 1;
     constexpr int l3_groups = depths[0];
+    const string l3_activation = "relu";
     constexpr int l3_out_channels = depths[0];
-    constexpr int l3_out_height = conv_out_size(l2_out_height, l3_kernel_size, l3_stride, l3_padding);
-    constexpr int l3_out_width = conv_out_size(l2_out_width, l3_kernel_size, l3_stride, l3_padding);
+    constexpr int l3_out_height = conv_out_size(l0_out_height, l3_kernel_size, l3_stride, l3_padding);
+    constexpr int l3_out_width = conv_out_size(l0_out_width, l3_kernel_size, l3_stride, l3_padding);
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
-    Conv2d(y0, y3, "layer1.3", l2_out_channels, l2_out_height, l2_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale);
+    Conv2d(y0, y3, "layer1.3", l0_out_channels, l0_out_height, l0_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, l3_activation);
     save_layer<qaint>("./results-qt/", "layer-y3", "00009", y3, l3_out_channels * l3_out_height * l3_out_width, cout_shifts[conv_cnt-1]);
 
-    constexpr int l5_out_channels = depths[0];
-    constexpr int l5_out_height = l3_out_height;
-    constexpr int l5_out_width = l3_out_width;
-    ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
+    // constexpr int l5_out_channels = depths[0];
+    // constexpr int l5_out_height = l3_out_height;
+    // constexpr int l5_out_width = l3_out_width;
+    // ReLU(y3, l5_out_channels, l5_out_height, l5_out_width);
 
     constexpr int l6_kernel_size = 1;
     constexpr int l6_stride = 1;
     constexpr int l6_padding = 0;
     constexpr int l6_groups = 1;
+    const string l6_activation = "none";
     constexpr int l6_out_channels = depths[1];
-    constexpr int l6_out_height = conv_out_size(l5_out_height, l6_kernel_size, l6_stride, l6_padding);
-    constexpr int l6_out_width = conv_out_size(l5_out_width, l6_kernel_size, l6_stride, l6_padding);
-    Conv2d(y3, layer1, "layer1.6", l5_out_channels, l5_out_height, l5_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale);
+    constexpr int l6_out_height = conv_out_size(l3_out_height, l6_kernel_size, l6_stride, l6_padding);
+    constexpr int l6_out_width = conv_out_size(l3_out_width, l6_kernel_size, l6_stride, l6_padding);
+    Conv2d(y3, layer1, "layer1.6", l3_out_channels, l3_out_height, l3_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale, l6_activation);
 
     // MNASNet blocks: stacks of inverted residuals.
     constexpr int l8_kernel_size = 3;
@@ -216,6 +219,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     constexpr int stride = 1;
     constexpr int groups = 1;
     constexpr bool apply_scale = false;
+    const string activation = "none";
 
     constexpr int inner_kernel_size = 1;
     constexpr int inner_padding = 0;
@@ -224,7 +228,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
 
     // layer5
     qaint inner5[fpn_output_channels * height_32 * width_32];
-    Conv2d(layer5, inner5, "fpn.inner_blocks.4", channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_scale);
+    Conv2d(layer5, inner5, "fpn.inner_blocks.4", channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
 
     // layer4 (order of interpolation and first conv is reversed from original)
     qaint top_down4[fpn_output_channels * height_16 * width_16];
@@ -232,33 +236,33 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     save_layer<qaint>("./results-qt/", "top_down4", "00009", top_down4, fpn_output_channels * height_16 * width_16, oout_shifts[other_cnt-1]);
 
     qaint inner4[fpn_output_channels * height_16 * width_16];
-    Conv2d(layer4, inner4, "fpn.inner_blocks.3", channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_scale);
+    Conv2d(layer4, inner4, "fpn.inner_blocks.3", channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
     save_layer<qaint>("./results-qt/", "inner4", "00009", inner4, fpn_output_channels * height_16 * width_16, cout_shifts[conv_cnt-1]);
 
     const int layer_size4 = fpn_output_channels * height_16 * width_16;
     add_layer(top_down4, inner4, layer_size4, "top_inner4");
-    Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale);
+    Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
 
     // layer3
     qaint top_down3[fpn_output_channels * height_8 * width_8];
     interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
     qaint inner3[fpn_output_channels * height_8 * width_8];
-    Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_scale);
+    Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
 
     const int layer_size3 = fpn_output_channels * height_8 * width_8;
     add_layer(top_down3, inner3, layer_size3, "top_inner3");
-    Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale);
+    Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
 
 
     // layer2
     qaint top_down2[fpn_output_channels * height_4 * width_4];
     interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
     qaint inner2[fpn_output_channels * height_4 * width_4];
-    Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_scale);
+    Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
 
     const int layer_size2 = fpn_output_channels * height_4 * width_4;
     add_layer(top_down2, inner2, layer_size2, "top_inner2");
-    Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale);
+    Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
 
 
     // layer1
@@ -266,11 +270,11 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2);
 
     qaint inner1[fpn_output_channels * height_2 * width_2];
-    Conv2d(layer1, inner1, "fpn.inner_blocks.0", channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_scale);
+    Conv2d(layer1, inner1, "fpn.inner_blocks.0", channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
 
     const int layer_size1 = fpn_output_channels * height_2 * width_2;
     add_layer(top_down1, inner1, layer_size1, "top_inner1");
-    Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale);
+    Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
 }
 
 
@@ -509,8 +513,9 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     constexpr int padding = (kernel_size - 1) / 2;
     constexpr int groups = 1;
     constexpr bool apply_scale = false;
+    const string activation = "none";
     qaint combined_conv[l0_out_channels * height_32 * width_32];
-    Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_scale);
+    Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_scale, activation);
     save_layer<qaint>("./results-qt/", "combined_conv", filename, combined_conv, l0_out_channels * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
     qaint* ii = combined_conv;

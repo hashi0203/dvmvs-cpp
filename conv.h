@@ -5,7 +5,8 @@ void Conv2d(const qaint* input,
             const string param_path,
             const int in_channels, const int in_height, const int in_width,
             const int out_channels, const int out_height, const int out_width,
-            const int kernel_size, const int stride, const int padding, const int groups, const bool apply_scale) {
+            const int kernel_size, const int stride, const int padding, const int groups,
+            const bool apply_scale, const string activation) {
 
     // https://ichi.pro/conv-2-d-saigo-ni-fuxowa-do-pasu-de-nani-ga-okoru-ka-o-rikaisuru-30488625459528
 
@@ -71,5 +72,13 @@ void Conv2d(const qaint* input,
                 }
             }
         }
+    }
+
+    if (activation == "relu") {
+        ReLU(output, out_channels, out_height, out_width);
+    } else if (activation == "sigmoid") {
+        Sigmoid(output, out_channels, out_height, out_width);
+    } else if (activation != "none") {
+        print1(activation);
     }
 }
