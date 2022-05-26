@@ -524,8 +524,11 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     save_layer<qaint>("./results-qt/", "gg", "00009", gg, hid_channels * height_32 * width_32, celushift);
     celu(gg, hid_channels, height_32, width_32);
 
+    // 要注意
+    constexpr int mulshift = 4;
+    constexpr int sumshift = (sigshift - mulshift) + (celushift - mulshift) - cellshift;
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        cell_state[idx] = ((((qmint) ff[idx] >> 4) * cell_state[idx]) + ((qmint) ii[idx] >> 4) * (gg[idx] >> 4)) >> 16;
+        cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * (gg[idx] >> mulshift)) >> sumshift;
 
     layer_norm(cell_state, hid_channels, height_32, width_32);
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)

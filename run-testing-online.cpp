@@ -54,6 +54,8 @@ int aout_shifts[n_adds];
 int oin_shifts[n_others];
 int oout_shifts[n_others];
 
+int ln_cnt;
+
 
 const string save_dir = "./results-qt/";
 
@@ -114,6 +116,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     bn_cnt = 0;
     add_cnt = 0;
     other_cnt = 0;
+    ln_cnt = 0;
 
     qaint layer1[channels_1 * height_2 * width_2];
     qaint layer2[channels_2 * height_4 * width_4];
@@ -154,10 +157,10 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
     save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
-    save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, 16);
-    save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, 18);
+    save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
+    save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
     LSTMFusion(bottom, hidden_state, cell_state);
-    save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, 16);
+    save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
     save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
     qaint depth_full[test_image_height * test_image_width];
