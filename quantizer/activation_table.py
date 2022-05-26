@@ -14,7 +14,7 @@ def quantize(x, shift):
 
 if __name__ == '__main__':
     scale = 3
-    xbit = 10 # 8 でもまあいい
+    xbit = 8 # 8 でもまあいい
     yshift = 16
 
     x = np.arange(1 << xbit) / (1 << xbit) * (1 << scale)
