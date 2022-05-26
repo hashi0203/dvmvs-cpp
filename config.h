@@ -75,6 +75,7 @@ extern int conv_cnt;
 extern int bn_cnt;
 extern int add_cnt;
 extern int other_cnt;
+extern int act_cnt;
 
 constexpr int qwbit = 8;
 typedef char qwint;
