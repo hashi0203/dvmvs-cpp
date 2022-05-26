@@ -401,6 +401,7 @@ int main() {
                 ofs << previous_depth[i][j] << " ";
             ofs << previous_depth[i][test_image_width-1] << "\n";
         }
+        ofs.close();
     }
 
     keyframe_buffer.close();
