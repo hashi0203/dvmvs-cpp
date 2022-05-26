@@ -21,6 +21,7 @@ def quantize_save(params_out, bit, fps):
     cnt = 0
     for param in params_out:
         byte = (bit - 1) // 8 + 1
+        byte = 4 if byte == 3 else byte
         _, shift, scaled_param = quantize(param, bit)
         scaled_param = scaled_param.astype('int%d' % (byte * 8))
 
@@ -48,7 +49,7 @@ def main():
     fb = [open(base_dir / "n_biases", "wb"),
           open(base_dir / "biases_quantized", "wb"),
           open(base_dir / "bias_shifts", "wb")]
-    bbit = 32
+    bbit = 24
 
     fs = [open(base_dir / "n_scales", "wb"),
           open(base_dir / "scales_quantized", "wb"),

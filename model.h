@@ -535,7 +535,8 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         hidden_state[idx] = cell_state[idx];
 
     celu(hidden_state, hid_channels, height_32, width_32);
+    // 要注意
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        hidden_state[idx] = (((qmint) hidden_state[idx]) * oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
+        hidden_state[idx] = (((long long) hidden_state[idx]) * oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
 
 }

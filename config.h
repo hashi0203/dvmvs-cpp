@@ -85,7 +85,7 @@ extern int w_idx[n_convs];
 extern int w_shifts[n_convs];
 // extern int w_cnt;
 
-constexpr int qbbit = 32;
+constexpr int qbbit = 24;
 typedef int qbint;
 // constexpr int b_files = 96;
 constexpr int n_biases = 24885;
@@ -103,7 +103,7 @@ extern int s_idx[n_bns];
 extern int s_shifts[n_bns];
 // extern int s_cnt;
 
-constexpr int qabit = 20;
+constexpr int qabit = 16;
 typedef int qaint;
 // typedef short qaint;
 // constexpr qaint QA_MIN = -32768;
@@ -119,7 +119,7 @@ extern int aout_shifts[n_adds];
 extern int oin_shifts[n_others];
 extern int oout_shifts[n_others];
 
-typedef long long qmint;
+typedef int qmint;
 
 // 20 bit
 // [('cost_volume', [13, 11]), ('cat', [13, 11]), ('cat', [14, 17]), ('cat', [15, 16]), ('cat', [15, 16]), ('cat', [17, 18]), ('layer_norm', [13, 13, 14, 17]), ('layer_norm', [16, 16, 16]), ('cell_hidden', [16, 18]), ('cat', [17, 16]), ('cat', [17, 17, 20]), ('cat', [17, 17, 20]), ('cat', [17, 17, 20]), ('cat', [18, 20, 16])]
