@@ -49,7 +49,7 @@ def quantize(act, bit, alpha=0.95):
         plt.hist(act[1][0].reshape(-1), bins=np.arange(-32, 35, 4))
         plt.savefig("%s/quantizer/%s_%d.png" % (base_dir, act[0], act_cnt))
         act_cnt += 1
-        print("%7s: %.5f" % (act[0], np.max(param[0])))
+        print("%7s: %.5f, %.5f" % (act[0], np.max(param[0]), np.max(param[1])))
         return None
     else:
         print(act[0])

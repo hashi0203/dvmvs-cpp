@@ -15,17 +15,18 @@ def quantize(x, shift):
 if __name__ == '__main__':
     scale = 3
     xbit = 8 # 8 でもまあいい
-    yshift = 16
+    sigshift = 16
+    celushift = 16
 
     x = np.arange(1 << xbit) / (1 << xbit) * (1 << scale)
     print(x)
     print("constexpr int tbbit = %d;" % xbit)
     print("constexpr int tbshift = %d;" % (xbit - scale))
-    print("constexpr int sigshift = %d;" % yshift)
-    print("constexpr int celushift = %d;" % yshift)
+    print("constexpr int celushift = %d;" % celushift)
+    print("constexpr int sigshift = %d;" % sigshift)
 
-    c = quantize(celu(-x), yshift)
+    c = quantize(celu(-x), celushift)
     print("constexpr qaint celu_table[%d] = {%s};" % (1 << xbit, ", ".join(map(str, c))))
 
-    s = quantize(Sigmoid(x), yshift)
+    s = quantize(Sigmoid(x), sigshift)
     print("constexpr qaint Sigmoid_table[%d] = {%s};" % (1 << xbit, ", ".join(map(str, s))))
