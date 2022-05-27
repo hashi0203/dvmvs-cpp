@@ -4,6 +4,11 @@ void layer_norm(qaint* x, const int channels, const int height, const int width)
 
 void add_layer(const qaint* x, qaint* y, const int layer_size, const string param_path, const int act_in0, const int act_in1, int& act_out);
 
+void cat_layer(const qaint* x0, const qaint* x1, qaint* y,
+               const int in_channels0, const int in_channels1, const int height, const int width,
+               const int x0shift, const int x1shift,
+               const string param_path, const int act_in0, const int act_in1, int& act_out);
+
 template<int channels, int in_height, int in_width, int out_height, int out_width>
 void interpolate(float*** input, float output[channels][out_height][out_width]) {
     if (in_height > out_height) {
