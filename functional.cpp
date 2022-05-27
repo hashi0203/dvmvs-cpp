@@ -93,7 +93,33 @@ void cat_layer(const qaint* x0, const qaint* x1, qaint* y,
     for (int idx = 0; idx < in_channels1 * height * width; idx++)
         y[idx + (in_channels0 * height * width)] = x1[idx] >> x1shift;
 
-    act_out = act_cnt++;
+    if (nngen_code) {
+        /*
+        if (x0shift == 0 && x1shift == 0) {
+            act{act_cnt} = ng.concat([act{act_in0}, act{act_in1}], axis=3)
+        } else if (x0shift == 0) {
+            rshift{act_cnt} = ng.constant([{x1shift}], dtype=ng.int8)
+            act{act_cnt} = ng.concat([act{act_in0}, ng.rshift_round(act{act_in1}, rshift{act_cnt})], axis=3)
+        } else {
+            rshift{act_cnt} = ng.constant([{x0shift}], dtype=ng.int8)
+            act{act_cnt} = ng.concat([ng.rshift_round(act{act_in0}, rshift{act_cnt}), act{act_in1}], axis=3)
+        }
+        */
+
+        printf("# [%d] cat\n", act_cnt);
+        if (x0shift == 0 && x1shift == 0) {
+            printf("act%d = ng.concat([act%d, act%d], axis=3)\n", act_cnt, act_in0, act_in1);
+        } else if (x0shift == 0) {
+            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x1shift);
+            printf("act%d = ng.concat([act%d, ng.rshift_round(act%d, rshift%d)], axis=3)\n", act_cnt, act_in0, act_in1, act_cnt);
+        } else {
+            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x0shift);
+            printf("act%d = ng.concat([ng.rshift_round(act%d, rshift%d), act%d], axis=3)\n", act_cnt, act_in0, act_cnt, act_in1);
+        }
+        printf("\n\n");
+
+        act_out = act_cnt++;
+    }
 }
 
 

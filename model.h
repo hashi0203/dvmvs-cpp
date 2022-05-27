@@ -361,6 +361,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
               2, 0, "cat0", act_out_half, act_out_cost_volume, act_out_l0_in);
     save_layer<qaint>("./results-qt/", "l0_in", filename, l0_in, l0_in_channels * l0_in_height * l0_in_width, cin_shifts[conv_cnt]);
     conv_layer(l0_in, skip0, "aggregator0", l0_in_channels, l0_in_height, l0_in_width, l0_mid_channels, l0_in_height, l0_in_width, l0_kernel_size, stride, act_out_l0_in, act_out_skip0);
+    if (shift_ckeck) print1("skip0");
 
     int act_out_l0_out;
     constexpr int l0_out_channels = hyper_channels * 2;
@@ -390,6 +391,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
               0, 3, "cat1", act_out_quarter, act_out_l0_out, act_out_l1_in);
     save_layer<qaint>("./results-qt/", "l1_in", filename, l1_in, l1_in_channels * l1_in_height * l1_in_width, cin_shifts[conv_cnt]);
     conv_layer(l1_in, skip1, "aggregator1", l1_in_channels, l1_in_height, l1_in_width, l1_mid_channels, l1_in_height, l1_in_width, l1_kernel_size, stride, act_out_l1_in, act_out_skip1);
+    if (shift_ckeck) print1("skip1");
 
     int act_out_l1_out;
     constexpr int l1_out_channels = hyper_channels * 4;
@@ -416,6 +418,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     cat_layer(features_one_eight, l1_out, l2_in, fpn_output_channels, l1_out_channels, l2_in_height, l2_in_width,
               0, 1, "cat2", act_out_one_eight, act_out_l1_out, act_out_l2_in);
     conv_layer(l2_in, skip2, "aggregator2", l2_in_channels, l2_in_height, l2_in_width, l2_mid_channels, l2_in_height, l2_in_width, l2_kernel_size, stride, act_out_l2_in, act_out_skip2);
+    if (shift_ckeck) print1("skip2");
 
     int act_out_l2_out;
     constexpr int l2_out_channels = hyper_channels * 8;
@@ -443,12 +446,17 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     cat_layer(features_one_sixteen, l2_out, l3_in, fpn_output_channels, l2_out_channels, l3_in_height, l3_in_width,
               0, 1, "cat2", act_out_one_sixteen, act_out_l2_out, act_out_l3_in);
     conv_layer(l3_in, skip3, "aggregator3", l3_in_channels, l3_in_height, l3_in_width, l3_mid_channels, l3_in_height, l3_in_width, l3_kernel_size, stride, act_out_l3_in, act_out_skip3);
+    if (shift_ckeck) print1("skip3");
 
-    int act_out_l3_out;
     constexpr int l3_out_channels = hyper_channels * 16;
     constexpr int l3_out_height = height_32;
     constexpr int l3_out_width = width_32;
-    EncoderBlock(skip3, bottom, "encoder_block3", l3_mid_channels, l3_in_height, l3_in_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, act_out_skip3, act_out_l3_out);
+    EncoderBlock(skip3, bottom, "encoder_block3", l3_mid_channels, l3_in_height, l3_in_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, act_out_skip3, act_out_bottom);
+    if (shift_ckeck) print1("bottom");
+
+    if (nngen_code)
+        printf("return act%d, act%d, act%d, act%d, act%d\n\n", act_out_skip0, act_out_skip1, act_out_skip2, act_out_skip3, act_out_bottom);
+
 }
 
 
