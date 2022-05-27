@@ -198,86 +198,109 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l13_out_width = stack_out_size(l12_out_width, l13_kernel_size, l13_stride);
     _stack(y12, layer5, "layer5.1", l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats, l12_act_out, act_out_layer5);
 
-    printf("return act%d, act%d, act%d, act%d, act%d", act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
+    printf("return act%d, act%d, act%d, act%d, act%d\n\n", act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
 }
 
 
-// void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
-//                      const qaint layer2[channels_2 * height_4 * width_4],
-//                      const qaint layer3[channels_3 * height_8 * width_8],
-//                      const qaint layer4[channels_4 * height_16 * width_16],
-//                      const qaint layer5[channels_5 * height_32 * width_32],
-//                      qaint features_half[fpn_output_channels * height_2 * width_2],
-//                      qaint features_quarter[fpn_output_channels * height_4 * width_4],
-//                      qaint features_one_eight[fpn_output_channels * height_8 * width_8],
-//                      qaint features_one_sixteen[fpn_output_channels * height_16 * width_16]) {
+void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
+                     const qaint layer2[channels_2 * height_4 * width_4],
+                     const qaint layer3[channels_3 * height_8 * width_8],
+                     const qaint layer4[channels_4 * height_16 * width_16],
+                     const qaint layer5[channels_5 * height_32 * width_32],
+                     qaint features_half[fpn_output_channels * height_2 * width_2],
+                     qaint features_quarter[fpn_output_channels * height_4 * width_4],
+                     qaint features_one_eight[fpn_output_channels * height_8 * width_8],
+                     qaint features_one_sixteen[fpn_output_channels * height_16 * width_16],
+                     const int act_out_layer1,
+                     const int act_out_layer2,
+                     const int act_out_layer3,
+                     const int act_out_layer4,
+                     const int act_out_layer5,
+                     int& act_out_half,
+                     int& act_out_quarter,
+                     int& act_out_one_eight,
+                     int& act_out_one_sixteen) {
 
-//     // Module that adds a FPN from on top of a set of feature maps. This is based on
-//     // `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.
-//     // The feature maps are currently supposed to be in increasing depth order.
-//     // The input to the model is expected to be an OrderedDict[Tensor], containing
-//     // the feature maps on top of which the FPN will be added.
+    // Module that adds a FPN from on top of a set of feature maps. This is based on
+    // `"Feature Pyramid Network for Object Detection" <https://arxiv.org/abs/1612.03144>`_.
+    // The feature maps are currently supposed to be in increasing depth order.
+    // The input to the model is expected to be an OrderedDict[Tensor], containing
+    // the feature maps on top of which the FPN will be added.
 
-//     constexpr int stride = 1;
-//     constexpr int groups = 1;
-//     constexpr bool apply_scale = false;
-//     const string activation = "none";
+    constexpr int stride = 1;
+    constexpr int groups = 1;
+    constexpr bool apply_scale = false;
+    const string activation = "none";
 
-//     constexpr int inner_kernel_size = 1;
-//     constexpr int inner_padding = 0;
-//     constexpr int layer_kernel_size = 3;
-//     constexpr int layer_padding = 1;
+    constexpr int inner_kernel_size = 1;
+    constexpr int inner_padding = 0;
+    constexpr int layer_kernel_size = 3;
+    constexpr int layer_padding = 1;
 
-//     // layer5
-//     qaint inner5[fpn_output_channels * height_32 * width_32];
-//     Conv2d(layer5, inner5, "fpn.inner_blocks.4", channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
+    // layer5
+    qaint inner5[fpn_output_channels * height_32 * width_32];
+    int act_in_inner5;
+    Conv2d(layer5, inner5, "fpn.inner_blocks.4", channels_5, height_32, width_32, fpn_output_channels, height_32, width_32, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation, act_out_layer5, act_in_inner5);
 
-//     // layer4 (order of interpolation and first conv is reversed from original)
-//     qaint top_down4[fpn_output_channels * height_16 * width_16];
-//     interpolate(inner5, top_down4, "nearest", fpn_output_channels, height_32, width_32, height_16, width_16);
-//     save_layer<qaint>("./results-qt/", "top_down4", "00009", top_down4, fpn_output_channels * height_16 * width_16, oout_shifts[other_cnt-1]);
+    // layer4 (order of interpolation and first conv is reversed from original)
+    qaint top_down4[fpn_output_channels * height_16 * width_16];
+    int act_out_top_down4;
+    interpolate(inner5, top_down4, "nearest", fpn_output_channels, height_32, width_32, height_16, width_16, act_in_inner5, act_out_top_down4);
+    save_layer<qaint>("./results-qt/", "top_down4", "00009", top_down4, fpn_output_channels * height_16 * width_16, oout_shifts[other_cnt-1]);
 
-//     qaint inner4[fpn_output_channels * height_16 * width_16];
-//     Conv2d(layer4, inner4, "fpn.inner_blocks.3", channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
-//     save_layer<qaint>("./results-qt/", "inner4", "00009", inner4, fpn_output_channels * height_16 * width_16, cout_shifts[conv_cnt-1]);
+    qaint inner4[fpn_output_channels * height_16 * width_16];
+    int act_in_inner4;
+    Conv2d(layer4, inner4, "fpn.inner_blocks.3", channels_4, height_16, width_16, fpn_output_channels, height_16, width_16, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation, act_out_layer4, act_in_inner4);
+    save_layer<qaint>("./results-qt/", "inner4", "00009", inner4, fpn_output_channels * height_16 * width_16, cout_shifts[conv_cnt-1]);
 
-//     const int layer_size4 = fpn_output_channels * height_16 * width_16;
-//     add_layer(top_down4, inner4, layer_size4, "top_inner4");
-//     Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
+    const int layer_size4 = fpn_output_channels * height_16 * width_16;
+    int act_out_inner4;
+    add_layer(top_down4, inner4, layer_size4, "top_inner4", act_out_top_down4, act_in_inner4, act_out_inner4);
+    Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner4, act_out_one_sixteen);
 
-//     // layer3
-//     qaint top_down3[fpn_output_channels * height_8 * width_8];
-//     interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8);
-//     qaint inner3[fpn_output_channels * height_8 * width_8];
-//     Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
+    // layer3
+    qaint top_down3[fpn_output_channels * height_8 * width_8];
+    int act_out_top_down3;
+    interpolate(inner4, top_down3, "nearest", fpn_output_channels, height_16, width_16, height_8, width_8, act_out_inner4, act_out_top_down3);
+    qaint inner3[fpn_output_channels * height_8 * width_8];
+    int act_in_inner3;
+    Conv2d(layer3, inner3, "fpn.inner_blocks.2", channels_3, height_8, width_8, fpn_output_channels, height_8, width_8, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation, act_out_layer3, act_in_inner3);
 
-//     const int layer_size3 = fpn_output_channels * height_8 * width_8;
-//     add_layer(top_down3, inner3, layer_size3, "top_inner3");
-//     Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
-
-
-//     // layer2
-//     qaint top_down2[fpn_output_channels * height_4 * width_4];
-//     interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4);
-//     qaint inner2[fpn_output_channels * height_4 * width_4];
-//     Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
-
-//     const int layer_size2 = fpn_output_channels * height_4 * width_4;
-//     add_layer(top_down2, inner2, layer_size2, "top_inner2");
-//     Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
+    const int layer_size3 = fpn_output_channels * height_8 * width_8;
+    int act_out_inner3;
+    add_layer(top_down3, inner3, layer_size3, "top_inner3", act_out_top_down3, act_in_inner3, act_out_inner3);
+    Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner3, act_out_one_eight);
 
 
-//     // layer1
-//     qaint top_down1[fpn_output_channels * height_2 * width_2];
-//     interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2);
+    // layer2
+    qaint top_down2[fpn_output_channels * height_4 * width_4];
+    int act_out_top_down2;
+    interpolate(inner3, top_down2, "nearest", fpn_output_channels, height_8, width_8, height_4, width_4, act_out_inner3, act_out_top_down2);
+    qaint inner2[fpn_output_channels * height_4 * width_4];
+    int act_in_inner2;
+    Conv2d(layer2, inner2, "fpn.inner_blocks.1", channels_2, height_4, width_4, fpn_output_channels, height_4, width_4, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation, act_out_layer2, act_in_inner2);
 
-//     qaint inner1[fpn_output_channels * height_2 * width_2];
-//     Conv2d(layer1, inner1, "fpn.inner_blocks.0", channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation);
+    const int layer_size2 = fpn_output_channels * height_4 * width_4;
+    int act_out_inner2;
+    add_layer(top_down2, inner2, layer_size2, "top_inner2", act_out_top_down2, act_in_inner2, act_out_inner2);
+    Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner2, act_out_quarter);
 
-//     const int layer_size1 = fpn_output_channels * height_2 * width_2;
-//     add_layer(top_down1, inner1, layer_size1, "top_inner1");
-//     Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation);
-// }
+
+    // layer1
+    qaint top_down1[fpn_output_channels * height_2 * width_2];
+    int act_out_top_down1;
+    interpolate(inner2, top_down1, "nearest", fpn_output_channels, height_4, width_4, height_2, width_2, act_out_inner2, act_out_top_down1);
+    qaint inner1[fpn_output_channels * height_2 * width_2];
+    int act_in_inner1;
+    Conv2d(layer1, inner1, "fpn.inner_blocks.0", channels_1, height_2, width_2, fpn_output_channels, height_2, width_2, inner_kernel_size, stride, inner_padding, groups, apply_scale, activation, act_out_layer1, act_in_inner1);
+
+    const int layer_size1 = fpn_output_channels * height_2 * width_2;
+    int act_out_inner1;
+    add_layer(top_down1, inner1, layer_size1, "top_inner1", act_out_top_down1, act_in_inner1, act_out_inner1);
+    Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner1, act_out_half);
+
+    printf("return act%d, act%d, act%d, act%d\n\n", act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
+}
 
 
 // void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 * width_2],

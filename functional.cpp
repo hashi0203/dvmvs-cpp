@@ -82,7 +82,8 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
 
 void interpolate(const qaint* input, qaint* output, const string mode,
                 const int channels, const int in_height, const int in_width,
-                const int out_height, const int out_width) {
+                const int out_height, const int out_width,
+                const int act_in, int& act_out) {
 
     // mode    fy  fx
     // nearest 0.5 0.5
@@ -160,6 +161,19 @@ void interpolate(const qaint* input, qaint* output, const string mode,
     // print_neg_shift(param_path, "xshift", xshift);
     // print_neg_shift(param_path, "yshift", yshift);
     // print_neg_shift(param_path, "yshift - xshift", yshift - xshift);
+
+    /*
+    act{act_cnt} = ng.extern([act{act_in}], opcode=0x{act_cnt}, func=interpolate({out_height}, {out_width}, {xshift - yshift}, {mode}))
+    act{act_cnt}.shape = ({out_height}, {out_width})
+    */
+
+    printf("# [%d] interpolate\n", act_cnt);
+    printf("act%d = ng.extern([act%d], opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
+           act_cnt, act_in, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
+    printf("act%d.shape = (1, %d, %d, %d)\n", act_cnt, out_height, out_width, channels);
+    printf("\n\n");
+
+    act_out = act_cnt++;
 }
 
 

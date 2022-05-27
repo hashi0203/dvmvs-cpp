@@ -136,14 +136,20 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5,
                      act_cnt++, act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
 
-    // save_layer<qaint>(save_dir, "layer1", filename, layer1, channels_1 * height_2 * width_2, cout_shifts[3-1]);
-    // save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
-    // save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
+    save_layer<qaint>(save_dir, "layer1", filename, layer1, channels_1 * height_2 * width_2, cout_shifts[3-1]);
+    save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
+    save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
-    // qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
-    // qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
-    // qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
-    // FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen);
+    qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
+    qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
+    qaint reference_feature_one_sixteen[fpn_output_channels * height_16 * width_16];
+    int act_out_half;
+    int act_out_quarter;
+    int act_out_one_eight;
+    int act_out_one_sixteen;
+    FeatureShrinker(layer1, layer2, layer3, layer4, layer5, reference_feature_half, reference_feature_quarter, reference_feature_one_eight, reference_feature_one_sixteen,
+                    act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5,
+                    act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
 
     // save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
     // save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
