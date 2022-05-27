@@ -1,6 +1,9 @@
 #pragma once
 #include "settings.h"
 
+constexpr bool nngen_code = false;
+constexpr bool shift_ckeck = false;
+
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
 // constexpr int test_image_width = 320;
@@ -213,7 +216,8 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
                         const int n_measurement_frames,
                         const qaint image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
                         const float* warpings,
-                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2]);
+                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2],
+                        const int act_in, int& act_out);
 void get_non_differentiable_rectangle_depth_estimation(const float reference_pose[4 * 4],
                                                        const float measurement_pose[4 * 4],
                                                        const float previous_depth[test_image_height][test_image_width],

@@ -138,6 +138,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l6_out_height = conv_out_size(l3_out_height, l6_kernel_size, l6_stride, l6_padding);
     constexpr int l6_out_width = conv_out_size(l3_out_width, l6_kernel_size, l6_stride, l6_padding);
     Conv2d(y3, layer1, "layer1.6", l3_out_channels, l3_out_height, l3_out_width, l6_out_channels, l6_out_height, l6_out_width, l6_kernel_size, l6_stride, l6_padding, l6_groups, apply_scale, l6_activation, l3_act_out, act_out_layer1);
+    if (shift_ckeck) print1("layer1");
 
     // MNASNet blocks: stacks of inverted residuals.
     constexpr int l8_kernel_size = 3;
@@ -148,6 +149,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l8_out_height = stack_out_size(l6_out_height, l8_kernel_size, l8_stride);
     constexpr int l8_out_width = stack_out_size(l6_out_width, l8_kernel_size, l8_stride);
     _stack(layer1, layer2, "layer2.0", l6_out_channels, l6_out_height, l6_out_width, l8_out_channels, l8_out_height, l8_out_width, l8_kernel_size, l8_stride, l8_expansion_factor, l8_repeats, act_out_layer1, act_out_layer2);
+    if (shift_ckeck) print1("layer2");
 
     constexpr int l9_kernel_size = 5;
     constexpr int l9_stride = 2;
@@ -157,6 +159,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l9_out_height = stack_out_size(l8_out_height, l9_kernel_size, l9_stride);
     constexpr int l9_out_width = stack_out_size(l8_out_width, l9_kernel_size, l9_stride);
     _stack(layer2, layer3, "layer3.0", l8_out_channels, l8_out_height, l8_out_width, l9_out_channels, l9_out_height, l9_out_width, l9_kernel_size, l9_stride, l9_expansion_factor, l9_repeats, act_out_layer2, act_out_layer3);
+    if (shift_ckeck) print1("layer3");
 
     constexpr int l10_kernel_size = 5;
     constexpr int l10_stride = 2;
@@ -177,6 +180,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l11_out_height = stack_out_size(l10_out_height, l11_kernel_size, l11_stride);
     constexpr int l11_out_width = stack_out_size(l10_out_width, l11_kernel_size, l11_stride);
     _stack(y10, layer4, "layer4.1", l10_out_channels, l10_out_height, l10_out_width, l11_out_channels, l11_out_height, l11_out_width, l11_kernel_size, l11_stride, l11_expansion_factor, l11_repeats, l10_act_out, act_out_layer4);
+    if (shift_ckeck) print1("layer4");
 
     constexpr int l12_kernel_size = 5;
     constexpr int l12_stride = 2;
@@ -197,8 +201,10 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l13_out_height = stack_out_size(l12_out_height, l13_kernel_size, l13_stride);
     constexpr int l13_out_width = stack_out_size(l12_out_width, l13_kernel_size, l13_stride);
     _stack(y12, layer5, "layer5.1", l12_out_channels, l12_out_height, l12_out_width, l13_out_channels, l13_out_height, l13_out_width, l13_kernel_size, l13_stride, l13_expansion_factor, l13_repeats, l12_act_out, act_out_layer5);
+    if (shift_ckeck) print1("layer5");
 
-    printf("return act%d, act%d, act%d, act%d, act%d\n\n", act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
+    if (nngen_code)
+        printf("return act%d, act%d, act%d, act%d, act%d\n\n", act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
 }
 
 
@@ -257,6 +263,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     int act_out_inner4;
     add_layer(top_down4, inner4, layer_size4, "top_inner4", act_out_top_down4, act_in_inner4, act_out_inner4);
     Conv2d(inner4, features_one_sixteen, "fpn.layer_blocks.3", fpn_output_channels, height_16, width_16, fpn_output_channels, height_16, width_16, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner4, act_out_one_sixteen);
+    if (shift_ckeck) print1("features_one_sixteen");
 
     // layer3
     qaint top_down3[fpn_output_channels * height_8 * width_8];
@@ -270,6 +277,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     int act_out_inner3;
     add_layer(top_down3, inner3, layer_size3, "top_inner3", act_out_top_down3, act_in_inner3, act_out_inner3);
     Conv2d(inner3, features_one_eight, "fpn.layer_blocks.2", fpn_output_channels, height_8, width_8, fpn_output_channels, height_8, width_8, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner3, act_out_one_eight);
+    if (shift_ckeck) print1("features_one_eight");
 
 
     // layer2
@@ -284,6 +292,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     int act_out_inner2;
     add_layer(top_down2, inner2, layer_size2, "top_inner2", act_out_top_down2, act_in_inner2, act_out_inner2);
     Conv2d(inner2, features_quarter, "fpn.layer_blocks.1", fpn_output_channels, height_4, width_4, fpn_output_channels, height_4, width_4, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner2, act_out_quarter);
+    if (shift_ckeck) print1("features_quarter");
 
 
     // layer1
@@ -298,8 +307,10 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     int act_out_inner1;
     add_layer(top_down1, inner1, layer_size1, "top_inner1", act_out_top_down1, act_in_inner1, act_out_inner1);
     Conv2d(inner1, features_half, "fpn.layer_blocks.0", fpn_output_channels, height_2, width_2, fpn_output_channels, height_2, width_2, layer_kernel_size, stride, layer_padding, groups, apply_scale, activation, act_out_inner1, act_out_half);
+    if (shift_ckeck) print1("features_half");
 
-    printf("return act%d, act%d, act%d, act%d\n\n", act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
+    if (nngen_code)
+        printf("return act%d, act%d, act%d, act%d\n\n", act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
 }
 
 

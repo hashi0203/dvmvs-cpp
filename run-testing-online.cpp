@@ -151,15 +151,17 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
                     act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5,
                     act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
 
-    // save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
-    // save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
-    // save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
+    save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
+    save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
+    save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
 
-    // if (n_measurement_frames == 0) return;
+    if (n_measurement_frames == 0) return;
 
-    // qaint cost_volume[n_depth_levels * height_2 * width_2];
-    // cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume);
-    // save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
+    qaint cost_volume[n_depth_levels * height_2 * width_2];
+    int act_out_cost_volume;
+    cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume,
+                       act_out_half, act_out_cost_volume);
+    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
 
     // qaint skip0[hyper_channels * height_2 * width_2];
     // qaint skip1[(hyper_channels * 2) * height_4 * width_4];
@@ -391,10 +393,10 @@ int main() {
         predict(reference_image, n_measurement_frames, measurement_feature_halfs,
                 warpings, reference_feature_half, hidden_state, cell_state, depth_full, image_filenames[f].substr(len_image_filedir, 5));
         delete[] warpings;
-        break;
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
+        break;
 
         float prediction[test_image_height * test_image_width];
         for (int idx = 0; idx < test_image_height * test_image_width; idx++)

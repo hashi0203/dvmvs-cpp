@@ -9,6 +9,7 @@ void ReLU(qaint* x, const int channels, const int height, const int width) {
     other_cnt++;
     for (int idx = 0; idx < channels * height * width; idx++)
         x[idx] = max(0, x[idx]) << (yshift - xshift);
+    if (shift_ckeck) print1(yshift);
 }
 
 
@@ -23,6 +24,7 @@ void celu(qaint* x, const int channels, const int height, const int width) {
                  tb_idx >= (1 << tbbit) ? -1 << celushift :
                  celu_table[tb_idx];
     }
+    if (shift_ckeck) print1(celushift);
 }
 
 
@@ -37,4 +39,5 @@ void Sigmoid(qaint* x, const int channels, const int height, const int width) {
                  sign ? Sigmoid_table[tb_idx] :
                  (1 << sigshift) - Sigmoid_table[tb_idx];
     }
+    if (shift_ckeck) print1(sigshift);
 }

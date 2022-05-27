@@ -59,7 +59,8 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
                         const int n_measurement_frames,
                         const qaint image2s[test_n_measurement_frames * fpn_output_channels * height_2 * width_2],
                         const float* warpings,
-                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2]) {
+                        qaint fused_cost_volume[n_depth_levels * height_2 * width_2],
+                        const int act_in, int& act_out) {
 
     float fused_cost_volume_float[n_depth_levels * height_2 * width_2];
 
@@ -82,6 +83,26 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
         fused_cost_volume[idx] = (fused_cost_volume_float[idx] / n_measurement_frames) / (1 << (xshift - yshift));
 
+    if (nngen_code) {
+        /*
+        act{act_cnt} = ng.extern([act{act_in}, act{act_out_feature0}, act{act_out_feature1}], opcode=0x{act_cnt}, func=fusion({xshift - yshift}, warpings, n_measurement_frames))
+        act{act_cnt}.shape = (1, {height_2}, {width_2}, {n_depth_levels})
+        */
+
+        const int act_out_features = act_cnt++;
+
+        printf("# [%d] conv\n", act_cnt);
+        printf("act%d = ng.extern([act%d, act%ds], opcode=0x%d, func=fusion(%d, warpings, n_measurement_frames))\n",
+            act_cnt, act_in, act_out_features, act_cnt, xshift - yshift);
+        printf("act%d.shape = (1, %d, %d, %d)\n", act_cnt, height_2, width_2, n_depth_levels);
+        printf("\n");
+        printf("return act%d\n\n", act_cnt);
+
+        act_out = act_cnt++;
+    }
+
+    if (shift_ckeck) print1(yshift);
+    if (shift_ckeck) print1("cost_volume");
 }
 
 
