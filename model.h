@@ -24,19 +24,21 @@ void DownconvolutionLayer(const qaint* x, qaint* y, const string param_path,
 }
 
 
-// void UpconvolutionLayer(const qaint* x, qaint* y, const string param_path,
-//                         const int in_channels, const int in_height, const int in_width,
-//                         const int out_channels, const int kernel_size) {
+void UpconvolutionLayer(const qaint* x, qaint* y, const string param_path,
+                        const int in_channels, const int in_height, const int in_width,
+                        const int out_channels, const int kernel_size,
+                        const int act_in, int& act_out) {
 
-//     const int out_height = in_height * 2;
-//     const int out_width = in_width * 2;
-//     qaint up_x[in_channels * out_height * out_width];
-//     interpolate(x, up_x, "bilinear", in_channels, in_height, in_width, out_height, out_width);
-//     // save_layer<qaint>("./results-qt/", "up_x", "00009", up_x, in_channels * out_height * out_width, oout_shifts[other_cnt-1]);
+    int act_out_up_x;
+    const int out_height = in_height * 2;
+    const int out_width = in_width * 2;
+    qaint up_x[in_channels * out_height * out_width];
+    interpolate(x, up_x, "bilinear", in_channels, in_height, in_width, out_height, out_width, act_in, act_out_up_x);
+    // save_layer<qaint>("./results-qt/", "up_x", "00009", up_x, in_channels * out_height * out_width, oout_shifts[other_cnt-1]);
 
-//     constexpr int stride = 1;
-//     conv_layer(up_x, y, param_path + ".conv", in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride);
-// }
+    constexpr int stride = 1;
+    conv_layer(up_x, y, param_path + ".conv", in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, act_out_up_x, act_out);
+}
 
 
 void EncoderBlock(const qaint* x, qaint* y, const string param_path,
@@ -52,42 +54,57 @@ void EncoderBlock(const qaint* x, qaint* y, const string param_path,
 }
 
 
-// void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* y, const string param_path,
-//                   const int in_channels, const int in_height, const int in_width,
-//                   const int kernel_size, const bool plus_one) {
+void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* y, const string param_path,
+                  const int in_channels, const int in_height, const int in_width,
+                  const int kernel_size, const bool plus_one,
+                  const int act_in_x, const int act_in_skip, const int act_in_depth, int& act_out) {
 
-//     const int out_height = in_height * 2;
-//     const int out_width = in_width * 2;
-//     const int out_channels = in_channels / 2;
+    const int out_height = in_height * 2;
+    const int out_width = in_width * 2;
+    const int out_channels = in_channels / 2;
 
-//     qaint y0[out_channels * out_height * out_width];
-//     UpconvolutionLayer(x, y0, param_path + ".up_convolution", in_channels, in_height, in_width, out_channels, kernel_size);
-//     // save_layer<qaint>("./results-qt/", "upconv1", "00009", y0, out_channels * out_height * out_width, oout_shifts[other_cnt-1]);
+    int act_out_y0;
+    qaint y0[out_channels * out_height * out_width];
+    UpconvolutionLayer(x, y0, param_path + ".up_convolution", in_channels, in_height, in_width, out_channels, kernel_size, act_in_x, act_out_y0);
+    // save_layer<qaint>("./results-qt/", "upconv1", "00009", y0, out_channels * out_height * out_width, oout_shifts[other_cnt-1]);
 
-//     // Aggregate skip and upsampled input
-//     const int l1_in_channels = plus_one ? in_channels + 1 : in_channels;
-//     qaint x1[l1_in_channels * out_height * out_width];
-//     // cat
-//     for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
-//         x1[idx] = y0[idx] >> !plus_one;
-//     for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
-//         x1[idx + (out_channels * out_height * out_width)] = skip[idx];
-//     if (plus_one) {
-//         interpolate(depth, x1 + (in_channels * out_height * out_width), "bilinear", 1, in_height, in_width, out_height, out_width);
-//         for (int idx = 0; idx < out_height * out_width; idx++)
-//             x1[idx + ((out_channels * 2) * out_height * out_width)] >>= 3;
-//     }
-//     // if (!plus_one) cin_shifts[conv_cnt]--; // 応急処置
-//     // save_layer<qaint>("./results-qt/", "db_x1", "00009", x1, l1_in_channels * out_height * out_width, cin_shifts[conv_cnt]);
+    // Aggregate skip and upsampled input
+    const int l1_in_channels = plus_one ? in_channels + 1 : in_channels;
+    qaint x1[l1_in_channels * out_height * out_width];
+    // cat
+    int act_out_x1;
+    if (plus_one) {
+        int act_out_depth;
+        interpolate(depth, x1 + (in_channels * out_height * out_width), "bilinear", 1, in_height, in_width, out_height, out_width, act_in_depth, act_out_depth);
+        // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        //     x1[idx] = y0[idx];
+        // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        //     x1[idx + (out_channels * out_height * out_width)] = skip[idx];
+        // for (int idx = 0; idx < out_height * out_width; idx++)
+        //     x1[idx + ((out_channels * 2) * out_height * out_width)] >>= 3;
+        cat_layer(y0, skip, x1 + (in_channels * out_height * out_width), x1,
+                  out_channels, out_channels, 1, out_height, out_width,
+                  0, 0, 3, "cat6", act_out_y0, act_in_skip, act_out_depth, act_out_x1);
+    } else {
+        // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        //     x1[idx] = y0[idx] >> 1;
+        // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
+        //     x1[idx + (out_channels * out_height * out_width)] = skip[idx];
+        cat_layer(y0, skip, x1, out_channels, out_channels, out_height, out_width,
+                  1, 0, "cat5", act_out_y0, act_in_skip, act_out_x1);
+    }
+    // if (!plus_one) cin_shifts[conv_cnt]--; // 応急処置
+    // save_layer<qaint>("./results-qt/", "db_x1", "00009", x1, l1_in_channels * out_height * out_width, cin_shifts[conv_cnt]);
 
-//     constexpr int stride = 1;
+    constexpr int stride = 1;
 
-//     qaint y1[out_channels * out_height * out_width];
-//     conv_layer(x1, y1, param_path + ".convolution1", l1_in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride);
+    int act_out_y1;
+    qaint y1[out_channels * out_height * out_width];
+    conv_layer(x1, y1, param_path + ".convolution1", l1_in_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, act_out_x1, act_out_y1);
 
-//     // Learn from aggregation
-//     conv_layer(y1, y, param_path + ".convolution2", out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride);
-// }
+    // Learn from aggregation
+    conv_layer(y1, y, param_path + ".convolution2", out_channels, out_height, out_width, out_channels, out_height, out_width, kernel_size, stride, act_out_y1, act_out);
+}
 
 
 void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
@@ -460,108 +477,134 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
 }
 
 
-// void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_width],
-//                        const qaint skip0[hyper_channels * height_2 * width_2],
-//                        const qaint skip1[(hyper_channels * 2) * height_4 * width_4],
-//                        const qaint skip2[(hyper_channels * 4) * height_8 * width_8],
-//                        const qaint skip3[(hyper_channels * 8) * height_16 * width_16],
-//                        const qaint bottom[(hyper_channels * 16) * height_32 * width_32],
-//                        qaint depth_full[test_image_height * test_image_width]) {
+void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_width],
+                       const qaint skip0[hyper_channels * height_2 * width_2],
+                       const qaint skip1[(hyper_channels * 2) * height_4 * width_4],
+                       const qaint skip2[(hyper_channels * 4) * height_8 * width_8],
+                       const qaint skip3[(hyper_channels * 8) * height_16 * width_16],
+                       const qaint bottom[(hyper_channels * 16) * height_32 * width_32],
+                       qaint depth_full[test_image_height * test_image_width],
+                       const int act_in,
+                       const int act_out_skip0,
+                       const int act_out_skip1,
+                       const int act_out_skip2,
+                       const int act_out_skip3,
+                       const int act_out_bottom,
+                       int& act_out_depth_full) {
 
-//     // 1st set
-//     constexpr int l0_in_channels = hyper_channels * 16;
-//     constexpr int l0_in_height = height_32;
-//     constexpr int l0_in_width = width_32;
+    // 1st set
+    constexpr int l0_in_channels = hyper_channels * 16;
+    constexpr int l0_in_height = height_32;
+    constexpr int l0_in_width = width_32;
 
-//     constexpr int l0_kernel_size = 3;
-//     constexpr bool l0_plus_one = false;
-//     constexpr int l0_out_channels = hyper_channels * 8;
-//     constexpr int l0_out_height = height_16;
-//     constexpr int l0_out_width = width_16;
-//     qaint* null_depth = nullptr;
-//     qaint decoder_block1[l0_out_channels * l0_out_height * l0_out_width];
-//     DecoderBlock(bottom, skip3, null_depth, decoder_block1, "decoder_block1", l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, l0_plus_one);
-//     save_layer<qaint>("./results-qt/", "decoder_block1", "00009", decoder_block1, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
+    constexpr int l0_kernel_size = 3;
+    constexpr bool l0_plus_one = false;
+    int act_out_decoder_block1;
+    constexpr int l0_out_channels = hyper_channels * 8;
+    constexpr int l0_out_height = height_16;
+    constexpr int l0_out_width = width_16;
+    qaint* null_depth = nullptr;
+    qaint decoder_block1[l0_out_channels * l0_out_height * l0_out_width];
+    DecoderBlock(bottom, skip3, null_depth, decoder_block1, "decoder_block1", l0_in_channels, l0_in_height, l0_in_width, l0_kernel_size, l0_plus_one, act_out_bottom, act_out_skip3, 0, act_out_decoder_block1);
+    save_layer<qaint>("./results-qt/", "decoder_block1", "00009", decoder_block1, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
 
-//     qaint sigmoid_depth_one_sixteen[1 * l0_out_height * l0_out_width];
-//     depth_layer_3x3(decoder_block1, sigmoid_depth_one_sixteen, "depth_layer_one_sixteen", l0_out_channels, l0_out_height, l0_out_width);
-//     save_layer<qaint>("./results-qt/", "sigmoid_depth_one_sixteen", "00009", sigmoid_depth_one_sixteen, 1 * l0_out_height * l0_out_width, sigshift);
-
-
-//     // 2nd set
-//     constexpr int l1_kernel_size = 3;
-//     constexpr bool l1_plus_one = true;
-//     constexpr int l1_out_channels = hyper_channels * 4;
-//     constexpr int l1_out_height = height_8;
-//     constexpr int l1_out_width = width_8;
-//     qaint decoder_block2[l1_out_channels * l1_out_height * l1_out_width];
-//     DecoderBlock(decoder_block1, skip2, sigmoid_depth_one_sixteen, decoder_block2, "decoder_block2", l0_out_channels, l0_out_height, l0_out_width, l1_kernel_size, l1_plus_one);
-
-//     qaint sigmoid_depth_one_eight[1 * l1_out_height * l1_out_width];
-//     depth_layer_3x3(decoder_block2, sigmoid_depth_one_eight, "depth_layer_one_eight", l1_out_channels, l1_out_height, l1_out_width);
+    int act_out_depth_one_sixteen;
+    qaint sigmoid_depth_one_sixteen[1 * l0_out_height * l0_out_width];
+    depth_layer_3x3(decoder_block1, sigmoid_depth_one_sixteen, "depth_layer_one_sixteen", l0_out_channels, l0_out_height, l0_out_width, act_out_decoder_block1, act_out_depth_one_sixteen);
+    save_layer<qaint>("./results-qt/", "sigmoid_depth_one_sixteen", "00009", sigmoid_depth_one_sixteen, 1 * l0_out_height * l0_out_width, sigshift);
 
 
-//     // 3rd set
-//     constexpr int l2_kernel_size = 3;
-//     constexpr bool l2_plus_one = true;
-//     constexpr int l2_out_channels = hyper_channels * 2;
-//     constexpr int l2_out_height = height_4;
-//     constexpr int l2_out_width = width_4;
-//     qaint decoder_block3[l2_out_channels * l2_out_height * l2_out_width];
-//     DecoderBlock(decoder_block2, skip1, sigmoid_depth_one_eight, decoder_block3, "decoder_block3", l1_out_channels, l1_out_height, l1_out_width, l2_kernel_size, l2_plus_one);
+    // 2nd set
+    constexpr int l1_kernel_size = 3;
+    constexpr bool l1_plus_one = true;
+    int act_out_decoder_block2;
+    constexpr int l1_out_channels = hyper_channels * 4;
+    constexpr int l1_out_height = height_8;
+    constexpr int l1_out_width = width_8;
+    qaint decoder_block2[l1_out_channels * l1_out_height * l1_out_width];
+    DecoderBlock(decoder_block1, skip2, sigmoid_depth_one_sixteen, decoder_block2, "decoder_block2", l0_out_channels, l0_out_height, l0_out_width, l1_kernel_size, l1_plus_one, act_out_decoder_block1, act_out_skip2, act_out_depth_one_sixteen, act_out_decoder_block2);
 
-//     qaint sigmoid_depth_quarter[1 * l2_out_height * l2_out_width];
-//     depth_layer_3x3(decoder_block3, sigmoid_depth_quarter, "depth_layer_quarter", l2_out_channels, l2_out_height, l2_out_width);
-
-
-//     // 4th set
-//     constexpr int l3_kernel_size = 5;
-//     constexpr bool l3_plus_one = true;
-//     constexpr int l3_out_channels = hyper_channels;
-//     constexpr int l3_out_height = height_2;
-//     constexpr int l3_out_width = width_2;
-//     qaint decoder_block4[l3_out_channels * l3_out_height * l3_out_width];
-//     DecoderBlock(decoder_block3, skip0, sigmoid_depth_quarter, decoder_block4, "decoder_block4", l2_out_channels, l2_out_height, l2_out_width, l3_kernel_size, l3_plus_one);
-
-//     qaint sigmoid_depth_half[1 * l3_out_height * l3_out_width];
-//     depth_layer_3x3(decoder_block4, sigmoid_depth_half, "depth_layer_half", l3_out_channels, l3_out_height, l3_out_width);
-//     save_layer<qaint>("./results-qt/", "sigmoid_depth_half", "00009", sigmoid_depth_half, 1 * l3_out_height * l3_out_width, sigshift);
+    int act_out_depth_one_eight;
+    qaint sigmoid_depth_one_eight[1 * l1_out_height * l1_out_width];
+    depth_layer_3x3(decoder_block2, sigmoid_depth_one_eight, "depth_layer_one_eight", l1_out_channels, l1_out_height, l1_out_width, act_out_decoder_block2, act_out_depth_one_eight);
 
 
-//     // 5th set
-//     constexpr int l4_in_height = l3_out_height * 2;
-//     constexpr int l4_in_width = l3_out_width * 2;
-//     qaint scaled_depth[1 * l4_in_height * l4_in_width];
-//     interpolate(sigmoid_depth_half, scaled_depth, "bilinear", 1, l3_out_height, l3_out_width, l4_in_height, l4_in_width);
+    // 3rd set
+    constexpr int l2_kernel_size = 3;
+    constexpr bool l2_plus_one = true;
+    int act_out_decoder_block3;
+    constexpr int l2_out_channels = hyper_channels * 2;
+    constexpr int l2_out_height = height_4;
+    constexpr int l2_out_width = width_4;
+    qaint decoder_block3[l2_out_channels * l2_out_height * l2_out_width];
+    DecoderBlock(decoder_block2, skip1, sigmoid_depth_one_eight, decoder_block3, "decoder_block3", l1_out_channels, l1_out_height, l1_out_width, l2_kernel_size, l2_plus_one, act_out_decoder_block2, act_out_skip1, act_out_depth_one_eight, act_out_decoder_block3);
 
-//     qaint scaled_decoder[l3_out_channels * l4_in_height * l4_in_width];
-//     interpolate(decoder_block4, scaled_decoder, "bilinear", l3_out_channels, l3_out_height, l3_out_width, l4_in_height, l4_in_width);
+    int act_out_depth_quarter;
+    qaint sigmoid_depth_quarter[1 * l2_out_height * l2_out_width];
+    depth_layer_3x3(decoder_block3, sigmoid_depth_quarter, "depth_layer_quarter", l2_out_channels, l2_out_height, l2_out_width, act_out_decoder_block3, act_out_depth_quarter);
 
-//     constexpr int l4_in_channels = l3_out_channels + 4;
-//     qaint scaled_combined[l4_in_channels * l4_in_height * l4_in_width];
-//     // cat
-//     for (int idx = 0; idx < l3_out_channels * l4_in_height * l4_in_width; idx++)
-//         scaled_combined[idx] = scaled_decoder[idx] >> 2;
-//     for (int idx = 0; idx < 1 * l4_in_height * l4_in_width; idx++)
-//         scaled_combined[idx + (l3_out_channels * l4_in_height * l4_in_width)] = scaled_depth[idx] >> 4;
-//     for (int idx = 0; idx < 3 * l4_in_height * l4_in_width; idx++)
-//         scaled_combined[idx + ((l3_out_channels+1) * l4_in_height * l4_in_width)] = image[idx];
-//     // cin_shifts[conv_cnt]--; // 応急処置
-//     save_layer<qaint>("./results-qt/", "scaled_combined", "00009", scaled_combined, l4_in_channels * l4_in_height * l4_in_width, cin_shifts[conv_cnt]);
 
-//     constexpr int l4_kernel_size = 5;
-//     constexpr int l4_stride = 1;
-//     constexpr int l4_out_channels = hyper_channels;
-//     constexpr int l4_out_height = test_image_height;
-//     constexpr int l4_out_width = test_image_width;
-//     qaint refined0[l4_out_channels * l4_out_height * l4_out_width];
-//     conv_layer(scaled_combined, refined0, "refine.0", l4_in_channels, l4_in_height, l4_in_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride);
+    // 4th set
+    constexpr int l3_kernel_size = 5;
+    constexpr bool l3_plus_one = true;
+    int act_out_decoder_block4;
+    constexpr int l3_out_channels = hyper_channels;
+    constexpr int l3_out_height = height_2;
+    constexpr int l3_out_width = width_2;
+    qaint decoder_block4[l3_out_channels * l3_out_height * l3_out_width];
+    DecoderBlock(decoder_block3, skip0, sigmoid_depth_quarter, decoder_block4, "decoder_block4", l2_out_channels, l2_out_height, l2_out_width, l3_kernel_size, l3_plus_one, act_out_decoder_block3, act_out_skip0, act_out_depth_quarter, act_out_decoder_block4);
 
-//     qaint refined1[l4_out_channels * l4_out_height * l4_out_width];
-//     conv_layer(refined0, refined1, "refine.1", l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride);
+    int act_out_depth_half;
+    qaint sigmoid_depth_half[1 * l3_out_height * l3_out_width];
+    depth_layer_3x3(decoder_block4, sigmoid_depth_half, "depth_layer_half", l3_out_channels, l3_out_height, l3_out_width, act_out_decoder_block4, act_out_depth_half);
+    save_layer<qaint>("./results-qt/", "sigmoid_depth_half", "00009", sigmoid_depth_half, 1 * l3_out_height * l3_out_width, sigshift);
 
-//     depth_layer_3x3(refined1, depth_full, "depth_layer_full", l4_out_channels, l4_out_height, l4_out_width);
-// }
+
+    // 5th set
+    int act_out_scaled_depth;
+    constexpr int l4_in_height = l3_out_height * 2;
+    constexpr int l4_in_width = l3_out_width * 2;
+    qaint scaled_depth[1 * l4_in_height * l4_in_width];
+    interpolate(sigmoid_depth_half, scaled_depth, "bilinear", 1, l3_out_height, l3_out_width, l4_in_height, l4_in_width, act_out_depth_half, act_out_scaled_depth);
+
+    int act_out_scaled_decoder;
+    qaint scaled_decoder[l3_out_channels * l4_in_height * l4_in_width];
+    interpolate(decoder_block4, scaled_decoder, "bilinear", l3_out_channels, l3_out_height, l3_out_width, l4_in_height, l4_in_width, act_out_decoder_block4, act_out_scaled_decoder);
+
+    constexpr int l4_in_channels = l3_out_channels + 4;
+    qaint scaled_combined[l4_in_channels * l4_in_height * l4_in_width];
+    // cat
+    // for (int idx = 0; idx < l3_out_channels * l4_in_height * l4_in_width; idx++)
+    //     scaled_combined[idx] = scaled_decoder[idx] >> 2;
+    // for (int idx = 0; idx < 1 * l4_in_height * l4_in_width; idx++)
+    //     scaled_combined[idx + (l3_out_channels * l4_in_height * l4_in_width)] = scaled_depth[idx] >> 4;
+    // for (int idx = 0; idx < 3 * l4_in_height * l4_in_width; idx++)
+    //     scaled_combined[idx + ((l3_out_channels+1) * l4_in_height * l4_in_width)] = image[idx];
+    // cin_shifts[conv_cnt]--; // 応急処置
+    int act_out_scaled_combined;
+    cat_layer(scaled_decoder, scaled_depth, image, scaled_combined,
+              l3_out_channels, 1, 3, l4_in_height, l4_in_width,
+              2, 4, 0, "cat7", act_out_scaled_decoder, act_out_scaled_depth, act_in, act_out_scaled_combined);
+    save_layer<qaint>("./results-qt/", "scaled_combined", "00009", scaled_combined, l4_in_channels * l4_in_height * l4_in_width, cin_shifts[conv_cnt]);
+
+    constexpr int l4_kernel_size = 5;
+    constexpr int l4_stride = 1;
+    int act_out_refined0;
+    constexpr int l4_out_channels = hyper_channels;
+    constexpr int l4_out_height = test_image_height;
+    constexpr int l4_out_width = test_image_width;
+    qaint refined0[l4_out_channels * l4_out_height * l4_out_width];
+    conv_layer(scaled_combined, refined0, "refine.0", l4_in_channels, l4_in_height, l4_in_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, act_out_scaled_combined, act_out_refined0);
+
+    int act_out_refined1;
+    qaint refined1[l4_out_channels * l4_out_height * l4_out_width];
+    conv_layer(refined0, refined1, "refine.1", l4_out_channels, l4_out_height, l4_out_width, l4_out_channels, l4_out_height, l4_out_width, l4_kernel_size, l4_stride, act_out_refined0, act_out_refined1);
+
+    depth_layer_3x3(refined1, depth_full, "depth_layer_full", l4_out_channels, l4_out_height, l4_out_width, act_out_refined1, act_out_depth_full);
+
+    if (nngen_code)
+        printf("return act%d\n\n", act_out_depth_full);
+}
 
 
 void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 * width_32],
@@ -638,7 +681,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                act_cnt, cout_shifts[conv_cnt-1] - tbshift);
         printf("ii%d, ff%d, oo%d = [ng.sigmoid(ng.rshift_round(slice%ds[i], rshift%d), "
-               "lut_addrwidth=9, lut_clip=8.0, range_rate=1.0) for i in range(3)]\n",
+               "lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=ng.int16) for i in range(3)]\n",
                act_cnt, act_cnt, act_cnt, act_cnt, act_cnt);
         printf("\n");
 
@@ -706,6 +749,5 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
     if (nngen_code)
         printf("return act%d, act%d\n\n", act_out_hidden_state, act_out_cell_state);
-
 
 }
