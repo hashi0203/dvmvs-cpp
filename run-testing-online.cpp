@@ -183,11 +183,13 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
     save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
-    // save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
-    // save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
-    // LSTMFusion(bottom, hidden_state, cell_state, filename);
-    // save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
-    // save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
+    save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
+    save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
+    int act_out_hidden_state;
+    int act_out_cell_state;
+    LSTMFusion(bottom, hidden_state, cell_state, filename, act_out_bottom, act_out_hidden_state, act_out_cell_state);
+    save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
+    save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
     // CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, depth_full);
     // save_layer<qaint>(save_dir, "depth_full", filename, depth_full, test_image_height * test_image_width, sigshift);

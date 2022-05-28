@@ -444,7 +444,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     // // cin_shifts[conv_cnt]--; // 応急処置
     int act_out_l3_in;
     cat_layer(features_one_sixteen, l2_out, l3_in, fpn_output_channels, l2_out_channels, l3_in_height, l3_in_width,
-              0, 1, "cat2", act_out_one_sixteen, act_out_l2_out, act_out_l3_in);
+              0, 1, "cat3", act_out_one_sixteen, act_out_l2_out, act_out_l3_in);
     conv_layer(l3_in, skip3, "aggregator3", l3_in_channels, l3_in_height, l3_in_width, l3_mid_channels, l3_in_height, l3_in_width, l3_kernel_size, stride, act_out_l3_in, act_out_skip3);
     if (shift_ckeck) print1("skip3");
 
@@ -564,58 +564,148 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
 // }
 
 
-// void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 * width_32],
-//                 qaint hidden_state[hid_channels * height_32 * width_32],
-//                 qaint cell_state[hid_channels * height_32 * width_32],
-//                 const string filename) {
+void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 * width_32],
+                qaint hidden_state[hid_channels * height_32 * width_32],
+                qaint cell_state[hid_channels * height_32 * width_32],
+                const string filename,
+                const int act_out_current_encoding,
+                int& act_out_hidden_state,
+                int& act_out_cell_state) {
 
-//     constexpr int in_channels = hyper_channels * 16;
-//     constexpr int l0_in_channels = in_channels + hid_channels;
-//     constexpr int l0_out_channels = 4 * hid_channels;
-//     qaint combined[l0_in_channels * height_32 * width_32];
-//     // cat
-//     for (int idx = 0; idx < in_channels * height_32 * width_32; idx++)
-//         combined[idx] = current_encoding[idx];
-//     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-//         combined[idx + (in_channels * height_32 * width_32)] = hidden_state[idx] >> 1;
+    const int act_in_hidden_state = act_cnt++;
+    const int act_in_cell_state = act_cnt++;
 
-//     constexpr int kernel_size = 3;
-//     constexpr int stride = 1;
-//     constexpr int padding = (kernel_size - 1) / 2;
-//     constexpr int groups = 1;
-//     constexpr bool apply_scale = false;
-//     const string activation = "none";
-//     qaint combined_conv[l0_out_channels * height_32 * width_32];
-//     Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_scale, activation);
-//     save_layer<qaint>("./results-qt/", "combined_conv", filename, combined_conv, l0_out_channels * height_32 * width_32, cout_shifts[conv_cnt-1]);
+    constexpr int in_channels = hyper_channels * 16;
+    constexpr int l0_in_channels = in_channels + hid_channels;
+    constexpr int l0_out_channels = 4 * hid_channels;
+    qaint combined[l0_in_channels * height_32 * width_32];
+    // cat
+    // for (int idx = 0; idx < in_channels * height_32 * width_32; idx++)
+    //     combined[idx] = current_encoding[idx];
+    // for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+    //     combined[idx + (in_channels * height_32 * width_32)] = hidden_state[idx] >> 1;
+    // 要注意
+    int act_out_combined;
+    cat_layer(current_encoding, hidden_state, combined, in_channels, hid_channels, height_32, width_32,
+              0, 0, "cat4", act_out_current_encoding, act_in_hidden_state, act_out_combined);
 
-//     qaint* ii = combined_conv;
-//     qaint* ff = combined_conv + 1 * (hid_channels * height_32 * width_32);
-//     qaint* oo = combined_conv + 2 * (hid_channels * height_32 * width_32);
-//     qaint* gg = combined_conv + 3 * (hid_channels * height_32 * width_32);
+    constexpr int kernel_size = 3;
+    constexpr int stride = 1;
+    constexpr int padding = (kernel_size - 1) / 2;
+    constexpr int groups = 1;
+    constexpr bool apply_scale = false;
+    const string activation = "none";
+    int act_out_combined_conv;
+    qaint combined_conv[l0_out_channels * height_32 * width_32];
+    Conv2d(combined, combined_conv, "lstm_cell.conv", l0_in_channels, height_32, width_32, l0_out_channels, height_32, width_32, kernel_size, stride, padding, groups, apply_scale, activation, act_out_combined, act_out_combined_conv);
+    save_layer<qaint>("./results-qt/", "combined_conv", filename, combined_conv, l0_out_channels * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
-//     Sigmoid(ii, hid_channels, height_32, width_32);
-//     Sigmoid(ff, hid_channels, height_32, width_32);
-//     Sigmoid(oo, hid_channels, height_32, width_32);
-//     save_layer<qaint>("./results-qt/", "ii", filename, ii, hid_channels * height_32 * width_32, sigshift);
+    qaint* ii = combined_conv;
+    qaint* ff = combined_conv + 1 * (hid_channels * height_32 * width_32);
+    qaint* oo = combined_conv + 2 * (hid_channels * height_32 * width_32);
+    qaint* gg = combined_conv + 3 * (hid_channels * height_32 * width_32);
 
-//     layer_norm(gg, hid_channels, height_32, width_32);
-//     save_layer<qaint>("./results-qt/", "gg", filename, gg, hid_channels * height_32 * width_32, celushift);
-//     celu(gg, hid_channels, height_32, width_32);
+    Sigmoid(ii, hid_channels, height_32, width_32);
+    Sigmoid(ff, hid_channels, height_32, width_32);
+    Sigmoid(oo, hid_channels, height_32, width_32);
+    save_layer<qaint>("./results-qt/", "ii", filename, ii, hid_channels * height_32 * width_32, sigshift);
 
-//     // 要注意
-//     constexpr int mulshift = 4;
-//     constexpr int sumshift = (sigshift - mulshift) + (celushift - mulshift) - cellshift;
-//     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-//         cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * (gg[idx] >> mulshift)) >> sumshift;
+    layer_norm(gg, hid_channels, height_32, width_32);
+    celu(gg, hid_channels, height_32, width_32);
+    save_layer<qaint>("./results-qt/", "gg", filename, gg, hid_channels * height_32 * width_32, celushift);
 
-//     layer_norm(cell_state, hid_channels, height_32, width_32);
-//     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-//         hidden_state[idx] = cell_state[idx];
+    int act_out_mid;
+    if (nngen_code) {
+        /*
+        slice{act_cnt}s = [ng.slice_(act{act_out_combined_conv},
+                                     (0, 0, 0, i * {hid_channels}),
+                                     (1, {height_32}, {width_32}, (i+1) * {hid_channels}),
+                                     (1, 1, 1, 1)) for i in range(4)]
 
-//     celu(hidden_state, hid_channels, height_32, width_32);
-//     // 要注意
-//     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-//         hidden_state[idx] = (((long long) hidden_state[idx]) * oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
+        rshift{act_cnt} = ng.constant([{cout_shifts[conv_cnt-1] - tbshift}], dtype=ng.int8)
+        ii{act_cnt}, ff{act_cnt}, oo{act_cnt} = [ng.sigmoid(ng.rshift_round(slice{act_cnt}s[i], rshift{act_cnt}),
+                                                            lut_addrwidth=9, lut_clip=8.0,
+                                                            range_rate=1.0) for i in range(3)]
 
-// }
+        gg{act_cnt} = ng.extern([slice{act_cnt}s[3]], opcode=0x{act_cnt}, func=lambda x : celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(x)))
+        */
+
+        printf("# [%d] sig_ln_celu\n", act_cnt);
+        printf("slice%ds = [ng.slice_(act%d, (0, 0, 0, i * %d), (1, %d, %d, (i+1) * %d), (1, 1, 1, 1)) for i in range(4)]\n",
+               act_cnt, act_out_combined_conv, hid_channels, height_32, width_32, hid_channels);
+        printf("\n");
+
+        printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
+               act_cnt, cout_shifts[conv_cnt-1] - tbshift);
+        printf("ii%d, ff%d, oo%d = [ng.sigmoid(ng.rshift_round(slice%ds[i], rshift%d), "
+               "lut_addrwidth=9, lut_clip=8.0, range_rate=1.0) for i in range(3)]\n",
+               act_cnt, act_cnt, act_cnt, act_cnt, act_cnt);
+        printf("\n");
+
+        printf("gg%d = ng.extern([slice%ds[3]], opcode=0x%d, func=lambda x : celu(%d)(ln(%d)(x)))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], lnout_shifts[ln_cnt-1]);
+        printf("\n\n");
+
+        act_out_mid = act_cnt++;
+    }
+
+    // 要注意
+    constexpr int mulshift = 4;
+    constexpr int sumshift = (sigshift - mulshift) + (celushift - mulshift) - cellshift;
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * (gg[idx] >> mulshift)) >> sumshift;
+
+    layer_norm(cell_state, hid_channels, height_32, width_32);
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        hidden_state[idx] = cell_state[idx];
+
+    if (nngen_code) {
+        /*
+        in_rshift{act_cnt} = ng.constant([{mulshift}], dtype=ng.int8)
+        out_rshift{act_cnt} = ng.constant([{sumshift}], dtype=ng.int8)
+        sum{act_cnt} = ng.rshift_round(ng.add(ng.multiply(ng.rshift_round(ff{act_out_mid}, in_rshift{act_cnt}), act{act_in_cell_state}),
+                                              ng.multiply(ng.rshift_round(ii{act_out_mid}, in_rshift{act_cnt}), ng.rshift_round(gg{act_out_mid}, in_rshift{act_cnt}))), out_rshift{act_cnt})
+        act{act_cnt} = ng.extern([sum{act_cnt}], opcode=0x{act_cnt}, func=ln({lnout_shifts[ln_cnt-1]}))
+        */
+
+        printf("# [%d] cell_state\n", act_cnt);
+        printf("in_rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mulshift);
+        printf("out_rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, sumshift);
+        printf("sum%d = ng.rshift_round(ng.add(ng.multiply(ng.rshift_round(ff%d, in_rshift%d), act%d), "
+               "ng.multiply(ng.rshift_round(ii%d, in_rshift%d), ng.rshift_round(gg%d, in_rshift%d))), out_rshift%d)\n",
+               act_cnt, act_out_mid, act_cnt, act_in_cell_state, act_out_mid, act_cnt, act_out_mid, act_cnt, act_cnt);
+        printf("act%d = ng.extern([sum%d], opcode=0x%d, func=ln(%d))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1]);
+        printf("\n\n");
+
+        act_out_cell_state = act_cnt++;
+    }
+
+    celu(hidden_state, hid_channels, height_32, width_32);
+    // 要注意
+    for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
+        hidden_state[idx] = (((long long) hidden_state[idx]) * oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
+
+    if (nngen_code) {
+        /*
+        celu{act_cnt} = ng.extern([act{act_out_cell_state}], opcode=0x{act_cnt}, func=celu({lnout_shifts[ln_cnt-1]}))
+        rshift{act_cnt} = ng.constant([{celushift + sigshift - oin_shifts[other_cnt]}], dtype=ng.int8)
+        act{act_cnt} = ng.rshift_round(ng.multiply(celu{act_cnt}, oo{act_out_mid}, dtype=ng.int64), rshift{act_cnt}, dtype=act_dtype)
+        */
+
+        printf("# [%d] hidden_state\n", act_cnt);
+        printf("celu%d = ng.extern([act%d], opcode=0x%d, func=celu(%d))\n",
+               act_cnt, act_out_cell_state, act_cnt, lnout_shifts[ln_cnt-1]);
+        printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, celushift + sigshift - oin_shifts[other_cnt]);
+        printf("act%d = ng.rshift_round(ng.multiply(celu%d, oo%d, dtype=ng.int64), rshift%d, dtype=act_dtype)\n",
+               act_cnt, act_cnt, act_out_mid, act_cnt);
+        printf("\n\n");
+
+        act_out_hidden_state = act_cnt++;
+    }
+
+    if (nngen_code)
+        printf("return act%d, act%d\n\n", act_out_hidden_state, act_out_cell_state);
+
+
+}
