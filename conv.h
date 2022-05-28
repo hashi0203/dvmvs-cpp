@@ -136,7 +136,7 @@ void Conv2d(const qaint* input,
         } else if (activation == "sigmoid") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                 act_cnt, mshift - tbshift);
-            printf("act%d = ng.sigmoid(ng.rshift_round(sum%d, rshift%d), lut_addrwidth=9, lut_clip=8.0, range_rate=1.0)\n",
+            printf("act%d = ng.sigmoid(ng.rshift_round(sum%d, rshift%d), lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=ng.int16)\n",
                 act_cnt, act_cnt, act_cnt);
         } else if (activation == "none") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
