@@ -254,14 +254,13 @@ void interpolate(const qaint* input, qaint* output, const string mode,
 
     if (nngen_code) {
         /*
-        act{act_cnt} = ng.extern([act{act_in}], opcode=0x{act_cnt}, func=interpolate({out_height}, {out_width}, {xshift - yshift}, {mode}))
-        act{act_cnt}.shape = ({out_height}, {out_width})
+        act{act_cnt} = ng.extern([act{act_in}], shape=(1, {out_height}, {out_width}, {channels}), opcode=0x{act_cnt},
+                                 func=interpolate({out_height}, {out_width}, {xshift - yshift}, {mode}))
         */
 
         printf("# [%d] interpolate\n", act_cnt);
-        printf("act%d = ng.extern([act%d], opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
-               act_cnt, act_in, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
-        printf("act%d.shape = (1, %d, %d, %d)\n", act_cnt, out_height, out_width, channels);
+        printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
+               act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
         printf("\n\n");
 
         act_out = act_cnt++;

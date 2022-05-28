@@ -286,7 +286,7 @@ int main() {
 
     ofstream ofs;
 
-    for (int f = 0; f < n_test_frames; f++) {
+    for (int f = 20; f < 25; f++) {
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -409,7 +409,6 @@ int main() {
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
-        break;
 
         float prediction[test_image_height * test_image_width];
         for (int idx = 0; idx < test_image_height * test_image_width; idx++)
