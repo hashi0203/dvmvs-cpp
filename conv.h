@@ -87,32 +87,32 @@ void Conv2d(const qaint* input,
         const char* param_name = param_path.c_str();
         printf("# [%d] conv\n", act_cnt);
         printf("weight%d = ng.variable(dtype=weight_dtype, shape=(%d, %d, %d, %d), name=\"%s.weight\")\n",
-            act_cnt, out_channels, kernel_size, kernel_size, in_channels, param_name);
+               act_cnt, out_channels, kernel_size, kernel_size, in_channels, param_name);
         if (groups == 1) {
             printf("weight%d.set_value(params[\"%s.weight\"])\n", act_cnt, param_name);
         } else {
             printf("weight%d.set_value(np.array([[[[params[\"%s.weight\"][i][j][k][0] if i == l else 0 for l in range(%d)] "
                                                 "for k in range(%d)] for j in range(%d)] for i in range(%d)]))\n",
-                act_cnt, param_name, in_channels, kernel_size, kernel_size, out_channels);
+                   act_cnt, param_name, in_channels, kernel_size, kernel_size, out_channels);
         }
         printf("\n");
 
         printf("bias%d = ng.variable(dtype=bias_dtype, shape=(%d,), name=\"%s.bias\")\n",
-            act_cnt, out_channels, param_name);
+               act_cnt, out_channels, param_name);
         printf("bias%d.set_value(params[\"%s.bias\"])\n", act_cnt, param_name);
         printf("\n");
 
         if (apply_scale) {
             printf("scale%d = ng.variable(dtype=scale_dtype, shape=(%d,), name=\"%s.scale\")\n",
-                act_cnt, out_channels, param_name);
+                   act_cnt, out_channels, param_name);
             printf("scale%d.set_value(params[\"%s.scale\"])\n", act_cnt, param_name);
             printf("\n");
 
             printf("conv%d = ng.multiply(ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=act_dtype, sum_dtype=ng.int32), scale%d)\n",
-                act_cnt, act_in, act_cnt, stride, stride, act_cnt);
+                   act_cnt, act_in, act_cnt, stride, stride, act_cnt);
         } else {
             printf("conv%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=act_dtype, sum_dtype=ng.int32)\n",
-                act_cnt, act_in, act_cnt, stride, stride);
+                   act_cnt, act_in, act_cnt, stride, stride);
         }
         printf("\n");
 
@@ -120,29 +120,29 @@ void Conv2d(const qaint* input,
             printf("sum%d = ng.add(conv%d, bias%d)\n", act_cnt, act_cnt, act_cnt);
         } else if (bshift > xshift + wshift + sshift) {
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                act_cnt, mshift - (xshift + wshift + sshift));
+                   act_cnt, mshift - (xshift + wshift + sshift));
             printf("sum%d = ng.add(ng.lshift(conv%d, lshift%d), bias%d)\n", act_cnt, act_cnt, act_cnt, act_cnt);
         } else {
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                act_cnt, mshift - bshift);
+                   act_cnt, mshift - bshift);
             printf("sum%d = ng.add(conv%d, ng.lshift(bias%d, lshift%d))\n", act_cnt, act_cnt, act_cnt, act_cnt);
         }
 
         if (activation == "relu") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                act_cnt, mshift - oout_shifts[other_cnt]);
+                   act_cnt, mshift - oout_shifts[other_cnt]);
             printf("act%d = ng.relu(ng.rshift_round(sum%d, rshift%d))\n",
-                act_cnt, act_cnt, act_cnt);
+                   act_cnt, act_cnt, act_cnt);
         } else if (activation == "sigmoid") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                act_cnt, mshift - tbshift);
+                   act_cnt, mshift - tbshift);
             printf("act%d = ng.sigmoid(ng.rshift_round(sum%d, rshift%d), lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=ng.int16)\n",
-                act_cnt, act_cnt, act_cnt);
+                   act_cnt, act_cnt, act_cnt);
         } else if (activation == "none") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                act_cnt, mshift - yshift);
+                   act_cnt, mshift - yshift);
             printf("act%d = ng.rshift_round(sum%d, rshift%d)\n",
-                act_cnt, act_cnt, act_cnt);
+                   act_cnt, act_cnt, act_cnt);
         }
         printf("\n\n");
 
