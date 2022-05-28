@@ -176,8 +176,8 @@ void interpolate(const qaint* input, qaint* output, const string mode,
             for (int j = 0; j < out_height; j++) for (int k = 0; k < out_width; k++) {
                 const float y = j * fy;
                 const float x = k * fx;
-                const int y_int = floor(y);
-                const int x_int = floor(x);
+                const int y_int = (y < in_height-1) ? floor(y) : floor(y) - 1;
+                const int x_int = (x < in_width-1) ? floor(x) : floor(x) - 1;
                 const int ys[2] = {y_int, y_int + 1};
                 const int xs[2] = {x_int, x_int + 1};
                 const float dys[2] = {y - ys[0], ys[1] - y};
