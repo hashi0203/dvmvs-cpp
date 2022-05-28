@@ -123,6 +123,53 @@ void cat_layer(const qaint* x0, const qaint* x1, qaint* y,
 }
 
 
+void cat_layer(const qaint* x0, const qaint* x1, const qaint* x2, qaint* y,
+               const int in_channels0, const int in_channels1, const int in_channels2, const int height, const int width,
+               const int x0shift, const int x1shift, const int x2shift,
+               const string param_path, const int act_in0, const int act_in1, const int act_in2, int& act_out) {
+
+    for (int idx = 0; idx < in_channels0 * height * width; idx++)
+        y[idx] = x0[idx] >> x0shift;
+    for (int idx = 0; idx < in_channels1 * height * width; idx++)
+        y[idx + (in_channels0 * height * width)] = x1[idx] >> x1shift;
+    for (int idx = 0; idx < in_channels2 * height * width; idx++)
+        y[idx + ((in_channels0 + in_channels1) * height * width)] = x2[idx] >> x2shift;
+
+    if (nngen_code) {
+        /*
+        if (x0shift == 0 && x1shift == 0 && x2shift > 0) {
+            rshift{act_cnt} = ng.constant([{x2shift}], dtype=ng.int8)
+            act{act_cnt} = ng.concat([act{act_in0}, act{act_in1}, ng.rshift_round(act{act_in2}, rshift{act_cnt})], axis=3)
+        } else if (x0shift > 0 && x1shift > 0 && x2shift == 0) {
+            rshift{act_cnt}s = [ng.constant([{x0shift}], dtype=ng.int8), ng.constant([{x1shift}], dtype=ng.int8)]
+            act{act_cnt} = ng.concat([ng.rshift_round(act{act_in0}, rshift{act_cnt}s[0]),
+                                      ng.rshift_round(act{act_in1}, rshift{act_cnt}s[1]),
+                                      act{act_in2}], axis=3)
+        } else {
+            printf("error\n");
+        }
+        */
+
+        printf("# [%d] cat\n", act_cnt);
+        if (x0shift == 0 && x1shift == 0 && x2shift > 0) {
+            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x2shift);
+            printf("act%d = ng.concat([act%d, act%d, ng.rshift_round(act%d, rshift%d)], axis=3)\n",
+                   act_cnt, act_in0, act_in1, act_in2, act_cnt);
+        } else if (x0shift > 0 && x1shift > 0 && x2shift == 0) {
+            printf("rshift%ds = [ng.constant([%d], dtype=ng.int8), ng.constant([%d], dtype=ng.int8)]\n",
+                   act_cnt, x0shift, x1shift);
+            printf("act%d = ng.concat([ng.rshift_round(act%d, rshift%ds[0]), ng.rshift_round(act%d, rshift%ds[1]), act%d], axis=3)\n",
+                   act_cnt, act_in0, act_cnt, act_in1, act_cnt, act_in2);
+        } else {
+            printf("error\n");
+        }
+        printf("\n\n");
+
+        act_out = act_cnt++;
+    }
+}
+
+
 void interpolate(const qaint* input, qaint* output, const string mode,
                 const int channels, const int in_height, const int in_width,
                 const int out_height, const int out_width,

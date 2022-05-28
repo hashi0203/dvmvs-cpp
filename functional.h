@@ -9,6 +9,11 @@ void cat_layer(const qaint* x0, const qaint* x1, qaint* y,
                const int x0shift, const int x1shift,
                const string param_path, const int act_in0, const int act_in1, int& act_out);
 
+void cat_layer(const qaint* x0, const qaint* x1, const qaint* x2, qaint* y,
+               const int in_channels0, const int in_channels1, const int in_channels2, const int height, const int width,
+               const int x0shift, const int x1shift, const int x2shift,
+               const string param_path, const int act_in0, const int act_in1, const int act_in2, int& act_out);
+
 template<int channels, int in_height, int in_width, int out_height, int out_width>
 void interpolate(float*** input, float output[channels][out_height][out_width]) {
     if (in_height > out_height) {
