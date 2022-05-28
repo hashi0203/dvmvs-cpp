@@ -67,12 +67,12 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - yshift);
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
             printf("act%d = ng.rshift_round(ng.add(ng.lshift(act%d, lshift%d), act%d), rshift%d)\n",
-                act_cnt, act_in1, act_cnt, act_in0, act_cnt);
+                   act_cnt, act_in1, act_cnt, act_in0, act_cnt);
         } else if (mshift == yshift) {
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - xshift);
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
             printf("act%d = ng.rshift_round(ng.add(act%d, ng.lshift(act%d, lshift%d)), rshift%d)\n",
-                act_cnt, act_in1, act_in0, act_cnt, act_cnt);
+                   act_cnt, act_in1, act_in0, act_cnt, act_cnt);
         } else {
             printf("error\n");
         }
@@ -213,7 +213,7 @@ void interpolate(const qaint* input, qaint* output, const string mode,
 
         printf("# [%d] interpolate\n", act_cnt);
         printf("act%d = ng.extern([act%d], opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
-            act_cnt, act_in, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
+               act_cnt, act_in, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
         printf("act%d.shape = (1, %d, %d, %d)\n", act_cnt, out_height, out_width, channels);
         printf("\n\n");
 
