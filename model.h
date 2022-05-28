@@ -74,6 +74,7 @@ void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* 
     // cat
     int act_out_x1;
     if (plus_one) {
+        // 要注意: 1回目だけ 3 じゃなくて 2、interpolate はシフトしない
         int act_out_depth;
         interpolate(depth, x1 + (in_channels * out_height * out_width), "bilinear", 1, in_height, in_width, out_height, out_width, act_in_depth, act_out_depth);
         // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
