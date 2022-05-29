@@ -31,7 +31,7 @@ def main(args):
     assert len(args) <= 2
 
     if len(args) == 0:
-        for i in range(9, 23):
+        for i in range(9, 30):
             compare_results(base_dir, i)
     elif len(args) == 1:
         try:

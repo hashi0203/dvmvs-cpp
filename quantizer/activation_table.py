@@ -15,11 +15,10 @@ def quantize(x, shift):
 if __name__ == '__main__':
     scale = 3
     xbit = 8 # 8 でもまあいい
-    sigshift = 16
+    sigshift = 14
     celushift = 16
 
     x = np.arange(1 << xbit) / (1 << xbit) * (1 << scale)
-    print(x)
     print("constexpr int tbbit = %d;" % xbit)
     print("constexpr int tbshift = %d;" % (xbit - scale))
     print("constexpr int celushift = %d;" % celushift)

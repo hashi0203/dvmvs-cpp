@@ -694,7 +694,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     }
 
     // 要注意
-    constexpr int mulshift = 4;
+    constexpr int mulshift = 2;
     constexpr int sumshift = (sigshift - mulshift) + (celushift - mulshift) - cellshift;
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
         cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * (gg[idx] >> mulshift)) >> sumshift;
