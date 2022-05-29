@@ -16,7 +16,7 @@ if __name__ == '__main__':
     scale = 3
     xbit = 8 # 8 でもまあいい
     sigshift = 14
-    celushift = 16
+    celushift = 12
 
     x = np.arange(1 << xbit) / (1 << xbit) * (1 << scale)
     print("constexpr int tbbit = %d;" % xbit)

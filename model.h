@@ -695,9 +695,9 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
     // 要注意
     constexpr int mulshift = 2;
-    constexpr int sumshift = (sigshift - mulshift) + (celushift - mulshift) - cellshift;
+    constexpr int sumshift = (sigshift - mulshift) + celushift - cellshift;
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * (gg[idx] >> mulshift)) >> sumshift;
+        cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * gg[idx]) >> sumshift;
 
     layer_norm(cell_state, hid_channels, height_32, width_32);
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
@@ -726,9 +726,8 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     }
 
     celu(hidden_state, hid_channels, height_32, width_32);
-    // 要注意
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        hidden_state[idx] = (((long long) hidden_state[idx]) * oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
+        hidden_state[idx] = (hidden_state[idx] * (qmint) oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
 
     if (nngen_code) {
         /*

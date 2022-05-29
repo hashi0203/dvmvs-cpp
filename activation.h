@@ -16,12 +16,12 @@ void ReLU(qaint* x, const int channels, const int height, const int width) {
 void celu(qaint* x, const int channels, const int height, const int width) {
     const int xshift = lnout_shifts[ln_cnt-1];
     if (xshift < tbshift) print3("xshift < tbshift:", xshift, tbshift);
-    if (xshift > celushift) print3("xshift > celushift:", xshift, celushift);
+    if (xshift != celushift) print3("xshift != celushift:", xshift, celushift);
 
     for (int idx = 0; idx < channels * height * width; idx++) {
         const qtint tb_idx = (-x[idx]) >> (xshift - tbshift);
-        x[idx] = x[idx] > 0 ? x[idx] << (celushift - xshift) :
-                 tb_idx >= (1 << tbbit) ? -1 << celushift :
+        x[idx] = x[idx] > 0 ? x[idx] :
+                 tb_idx >= (1 << tbbit) ? -1 << xshift :
                  celu_table[tb_idx];
     }
     if (shift_ckeck) print1(celushift);
