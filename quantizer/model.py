@@ -143,9 +143,9 @@ class DecoderBlock(torch.nn.Module):
         else:
             in0 = depth.cpu().detach().numpy().copy()
             depth = torch.nn.functional.interpolate(depth, scale_factor=2, mode='bilinear', align_corners=True)
-            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), depth.cpu().detach().numpy().copy()]))
+            activations.append(("interpolate", [in0, depth.cpu().detach().numpy().copy()]))
+            activations.append(("cat", [x.cpu().detach().numpy().copy(), skip.cpu().detach().numpy().copy(), in0]))
             x = torch.cat([x, skip, depth], dim=1)
-            activations.append(("interpolate", [in0, x.cpu().detach().numpy().copy()]))
 
         x, activations = save_acts(self.convolution1, x, activations)
         x, activations = save_acts(self.convolution2, x, activations)
@@ -337,7 +337,7 @@ class CostVolumeDecoder(torch.nn.Module):
         activations.append(("interpolate", [sigmoid_depth_half.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy()]))
         scaled_decoder = torch.nn.functional.interpolate(decoder_block4, scale_factor=2, mode='bilinear', align_corners=True)
         activations.append(("interpolate", [decoder_block4.cpu().detach().numpy().copy(), scaled_decoder.cpu().detach().numpy().copy()]))
-        activations.append(("cat", [scaled_decoder.cpu().detach().numpy().copy(), scaled_depth.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
+        activations.append(("cat", [decoder_block4.cpu().detach().numpy().copy(), sigmoid_depth_half.cpu().detach().numpy().copy(), image.cpu().detach().numpy().copy()]))
         scaled_combined = torch.cat([scaled_decoder, scaled_depth, image], dim=1)
         scaled_combined, activations = save_acts(self.refine[0], scaled_combined, activations)
         scaled_combined, activations = save_acts(self.refine[1], scaled_combined, activations)

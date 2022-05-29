@@ -21,14 +21,14 @@ def quantize(act, bit, alpha=0.95):
 
     param = [np.abs(p.reshape(-1)) for p in param]
 
-    if act[0] in ["add", "conv", "interpolate", "relu"]:
+    if act[0] in ["add", "conv", "relu"]:
         param = [np.sort(p) for p in param]
         idx = [int(round(len(p) * alpha)) for p in param]
         scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
         shift = [int(np.floor(np.log2(s))) for s in scale]
         print(act[0], [p[i] for p, i in zip(param, idx)], shift)
         return shift
-    elif act[0] in ["cost_volume", "cat", "layer_norm", "cell_hidden"]:
+    elif act[0] in ["interpolate", "cost_volume", "cat", "layer_norm", "cell_hidden"]:
         param = [np.sort(p) for p in param]
         idx = [int(round(len(p) * alpha)) for p in param]
         scale = [float(INTMAX[bit-1] / p[i]) for p, i in zip(param, idx)]
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     shifts = []
     for act in acts:
         shift = quantize(act, bit)
-        if act[0] in ["cost_volume", "cat", "layer_norm", "cell_hidden"]:
+        if act[0] in ["interpolate", "cost_volume", "cat", "layer_norm", "cell_hidden"]:
             shifts.append((act[0], shift))
         elif shift is not None:
             assert len(shift) == 2 or len(shift) == 3
@@ -85,6 +85,6 @@ if __name__ == '__main__':
     print(cnt)
     print(shifts)
 
-    print("constexpr int ln_idx[2] = {0, %d};" % (len(ln_aves[1])))
-    print("constexpr qaint ln_aves[%d + %d] = {%s, %s};" % (len(ln_aves[0]), len(ln_aves[1]), ", ".join(map(str, ln_aves[0])), ", ".join(map(str, ln_aves[1]))))
-    print("constexpr qaint ln_inv_stds[%d + %d] = {%s, %s};" % (len(ln_inv_stds[0]), len(ln_inv_stds[1]), ", ".join(map(str, ln_inv_stds[0])), ", ".join(map(str, ln_inv_stds[1]))))
+    # print("constexpr int ln_idx[2] = {0, %d};" % (len(ln_aves[1])))
+    # print("constexpr qaint ln_aves[%d + %d] = {%s, %s};" % (len(ln_aves[0]), len(ln_aves[1]), ", ".join(map(str, ln_aves[0])), ", ".join(map(str, ln_aves[1]))))
+    # print("constexpr qaint ln_inv_stds[%d + %d] = {%s, %s};" % (len(ln_inv_stds[0]), len(ln_inv_stds[1]), ", ".join(map(str, ln_inv_stds[0])), ", ".join(map(str, ln_inv_stds[1]))))

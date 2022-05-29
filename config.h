@@ -130,6 +130,8 @@ typedef int qmint;
 
 //  16 bit
 // [('cost_volume', [9, 7]), ('cat', [9, 7]), ('cat', [10, 13]), ('cat', [11, 12]), ('cat', [11, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 14]), ('layer_norm', [9, 10, 13]), ('layer_norm', [12, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 12]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [13, 13, 16]), ('cat', [14, 16, 12])]
+// [('interpolate', [13, 13]), ('interpolate', [12, 12]), ('interpolate', [11, 11]), ('interpolate', [10, 10]), ('cost_volume', [9, 7]), ('cat', [9, 7]), ('cat', [10, 13]), ('cat', [11, 12]), ('cat', [11, 12]), ('cell_hidden', [12, 14]), ('cat', [13, 14]), ('layer_norm', [9, 10, 13]), ('layer_norm', [12, 12]), ('cell_hidden', [12, 14]), ('interpolate', [14, 14]), ('cat', [13, 12]), ('interpolate', [15, 15]), ('interpolate', [15, 16]), ('cat', [13, 13, 15]), ('interpolate', [14, 14]), ('interpolate', [16, 16]), ('cat', [13, 13, 16]), ('interpolate', [14, 14]), ('interpolate', [16, 16]), ('cat', [13, 13, 16]), ('interpolate', [16, 16]), ('interpolate', [14, 14]), ('cat', [14, 16, 12])]
+
 
 // 20 bit
 // constexpr int cvinshift = 13;

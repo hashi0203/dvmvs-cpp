@@ -199,10 +199,10 @@ void interpolate(const qaint* input, qaint* output, const string mode,
     // bilinear 0.49206 0.49474
     // bilinear 0.49206 0.49474
 
-    const int xshift = oin_shifts[other_cnt];
-    const int yshift = oout_shifts[other_cnt];
-    other_cnt++;
-    if (yshift != xshift) print4("xshift and yshift differ in interpolation:", mode, xshift, yshift);
+    // const int xshift = oin_shifts[other_cnt];
+    // const int yshift = oout_shifts[other_cnt];
+    // other_cnt++;
+    // if (yshift != xshift) print4("xshift and yshift differ in interpolation:", mode, xshift, yshift);
 
     if (mode == "nearest") {
         const float fy = (float) in_height / out_height;
@@ -236,7 +236,8 @@ void interpolate(const qaint* input, qaint* output, const string mode,
                         const int input_idx = (i * in_height + ys[yi]) * in_width + xs[xi];
                         sum += dys[1-yi] * dxs[1-xi] * input[input_idx];
                     }
-                    output[output_idx] = ((qaint) round(sum)) >> (xshift - yshift);
+                    // output[output_idx] = ((qaint) round(sum)) >> (xshift - yshift);
+                    output[output_idx] = round(sum);
                 }
             }
         } else {
@@ -260,12 +261,13 @@ void interpolate(const qaint* input, qaint* output, const string mode,
 
         printf("# [%d] interpolate\n", act_cnt);
         printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
-               act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
+               act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, 0, mode.c_str());
+            //    act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, xshift - yshift, mode.c_str());
         printf("\n\n");
 
         act_out = act_cnt++;
     }
-    if (shift_ckeck) print1(yshift);
+    // if (shift_ckeck) print1(yshift);
 }
 
 

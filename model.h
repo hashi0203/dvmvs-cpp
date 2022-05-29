@@ -53,7 +53,7 @@ void EncoderBlock(const qaint* x, qaint* y, const string param_path,
     StandardLayer(y0, y, param_path + ".standard_convolution", out_channels, out_height, out_width, kernel_size, act_out_dc, act_out);
 }
 
-
+int cat_cnt = 0;
 void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* y, const string param_path,
                   const int in_channels, const int in_height, const int in_width,
                   const int kernel_size, const bool plus_one,
@@ -83,9 +83,11 @@ void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* 
         //     x1[idx + (out_channels * out_height * out_width)] = skip[idx];
         // for (int idx = 0; idx < out_height * out_width; idx++)
         //     x1[idx + ((out_channels * 2) * out_height * out_width)] >>= 3;
+        const int rshift = (cat_cnt % 3 == 0) ? 2 : 3;
         cat_layer(y0, skip, x1 + (in_channels * out_height * out_width), x1,
                   out_channels, out_channels, 1, out_height, out_width,
-                  0, 0, 3, "cat6", act_out_y0, act_in_skip, act_out_depth, act_out_x1);
+                  0, 0, rshift, "cat6", act_out_y0, act_in_skip, act_out_depth, act_out_x1);
+        cat_cnt = ((cat_cnt) + 1) % 3;
     } else {
         // for (int idx = 0; idx < out_channels * out_height * out_width; idx++)
         //     x1[idx] = y0[idx] >> 1;
