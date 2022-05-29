@@ -3,8 +3,8 @@
 void layer_norm(qaint* x, const int channels, const int height, const int width) {
     constexpr float eps = 1e-5;
     const int n1 = height * width;
-    const qaint* ln_ave = ln_aves + ln_idx[ln_cnt];
-    const qaint* ln_inv_std = ln_inv_stds + ln_idx[ln_cnt];
+    // const qaint* ln_ave = ln_aves + ln_idx[ln_cnt];
+    // const qaint* ln_inv_std = ln_inv_stds + ln_idx[ln_cnt];
     for (int i = 0; i < channels; i++) {
         float e = 0;
         float v = 0;
