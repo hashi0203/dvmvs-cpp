@@ -11,7 +11,7 @@ def quantize(param, bit):
     param = param.reshape(-1)
     m = max(-np.min(param), np.max(param))
     if m == 0:
-        return np.inf, 0, param
+        return np.inf, 32, param
     scale = float(INTMAX[bit] / m)
     shift = int(np.floor(np.log2(scale)))
     scaled_param = param * (2 ** shift)
@@ -48,7 +48,7 @@ def main():
     fb = [open(base_dir / "n_biases", "wb"),
           open(base_dir / "biases_quantized", "wb"),
           open(base_dir / "bias_shifts", "wb")]
-    bbit = 22
+    bbit = 28
 
     fs = [open(base_dir / "n_scales", "wb"),
           open(base_dir / "scales_quantized", "wb"),
@@ -78,8 +78,8 @@ def main():
                 wrv = weight / np.sqrt(running_var + 1e-5)
                 scales_out.append(wrv)
                 params_out[files[idx-1][:-7] + ".scale"] = wrv
-                biases_out.append(bias - running_mean * wrv)
-                params_out[files[idx-1][:-7] + ".bias"] = bias - running_mean * wrv
+                biases_out.append(bias / wrv - running_mean)
+                params_out[files[idx-1][:-7] + ".bias"] = bias / wrv - running_mean
                 idx += 4
             elif ".weight" in files[idx]:
                 weights_out.append(params[idx])

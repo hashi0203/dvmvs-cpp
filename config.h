@@ -1,7 +1,7 @@
 #pragma once
 #include "settings.h"
 
-constexpr bool nngen_code = true;
+constexpr bool nngen_code = false;
 constexpr bool shift_ckeck = false;
 
 constexpr int org_image_width = 540;
@@ -80,28 +80,28 @@ extern int add_cnt;
 extern int other_cnt;
 extern int act_cnt;
 
-constexpr int qwbit = 8;
+// constexpr int qwbit = 8;
 typedef char qwint;
 constexpr int n_weights = 34619560;
 extern qwint* weights;
 extern int w_idx[n_convs];
 extern int w_shifts[n_convs];
 
-constexpr int qbbit = 22;
+// constexpr int qbbit = 28;
 typedef int qbint;
 constexpr int n_biases = 24885;
 extern qbint* biases;
 extern int b_idx[n_convs];
 extern int b_shifts[n_convs];
 
-constexpr int qsbit = 8;
+// constexpr int qsbit = 8;
 typedef char qsint;
 constexpr int n_scales = 22544;
 extern qsint* scales;
 extern int s_idx[n_bns];
 extern int s_shifts[n_bns];
 
-constexpr int qabit = 16;
+// constexpr int qabit = 16;
 typedef short qaint;
 extern int cin_shifts[n_convs];
 extern int cout_shifts[n_convs];
