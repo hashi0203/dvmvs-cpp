@@ -55,7 +55,8 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
             rshift{act_cnt} = ng.constant([mshift - outshift], dtype=ng.int8)
             act{act_cnt} = rshift_round_and_clip(ng.add(act{act_in1}, ng.lshift(act{act_in0}, lshift{act_cnt}, dtype=mid_dtype))), rshift{act_cnt}, dtype=act_dtype)
         } else {
-            printf("error: unexpected shifts in add_layer ((xshift, yshift, outshift) = ({xshift}, {yshift}, {outshift})).\n");
+            printf("error: unexpected shifts in add_layer ((xshift, yshift, outshift) = (%d, %d, %d)).\n",
+                   xshift, yshift, outshift);
         }
         */
 
@@ -149,7 +150,8 @@ void cat_layer(const qaint* x0, const qaint* x1, const qaint* x2, qaint* y,
                                       ng.rshift_round(act{act_in1}, rshift{act_cnt}s[1]),
                                       act{act_in2}], axis=3)
         } else {
-            printf("error: unexpected shifts in add_layer ((xshift, yshift, outshift) = ({x0shift}, {x1shift}, {x2shift})).\n");
+            printf("error: unexpected shifts in cat_layer ((x0shift, x1shift, x2shift) = (%d, %d, %d)).\n",
+                   x0shift, x1shift, x2shift);
         }
         */
 
