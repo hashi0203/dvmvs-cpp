@@ -16,6 +16,8 @@ def compare_results(base_dir, i):
         data1 = fileopen(base_dir / "results-qt" / filename)
         data2 = fileopen(base_dir / "../dvmvs-cpp2/results" / filename)
         print(filename + ":", np.corrcoef(data1, data2)[0, 1])
+        print(np.mean(data1), np.std(data1))
+        print(np.mean(data2), np.std(data2))
     except:
         pass
 
@@ -23,6 +25,8 @@ def compare_interm(base_dir, filename1, filename2):
     data1 = fileopen(base_dir / "results-qt" / filename1)
     data2 = fileopen(base_dir / "../dvmvs-cpp2/results" / filename2)
     print(filename1 + ", " + filename2 + ":", np.corrcoef(data1, data2)[0, 1])
+    print(np.mean(data1), np.std(data1))
+    print(np.mean(data2), np.std(data2))
 
 
 def main(args):
