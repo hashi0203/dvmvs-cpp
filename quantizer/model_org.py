@@ -294,7 +294,8 @@ class CostVolumeDecoder(torch.nn.Module):
         scaled_decoder = torch.nn.functional.interpolate(decoder_block4, scale_factor=2, mode='bilinear', align_corners=True)
         scaled_combined = torch.cat([scaled_decoder, scaled_depth, image], dim=1)
         scaled_combined = self.refine(scaled_combined)
-        inverse_depth_full = self.inverse_depth_multiplier * self.depth_layer_full(scaled_combined) + self.inverse_depth_base
+        depth_org = self.depth_layer_full(scaled_combined)
+        inverse_depth_full = self.inverse_depth_multiplier * depth_org + self.inverse_depth_base
 
         depth_full = 1.0 / inverse_depth_full.squeeze(1)
         depth_half = 1.0 / inverse_depth_half.squeeze(1)
@@ -302,7 +303,7 @@ class CostVolumeDecoder(torch.nn.Module):
         depth_one_eight = 1.0 / inverse_depth_one_eight.squeeze(1)
         depth_one_sixteen = 1.0 / inverse_depth_one_sixteen.squeeze(1)
 
-        return depth_full, depth_half, depth_quarter, depth_one_eight, depth_one_sixteen
+        return depth_full, depth_half, depth_quarter, depth_one_eight, depth_one_sixteen, depth_org
 
 
 class LSTMFusion(torch.nn.Module):

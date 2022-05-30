@@ -19,6 +19,8 @@ def predict(evaluate):
                                                                        Config.test_image_height,
                                                                        Config.test_n_measurement_frames)
 
+    base_dir = Path("/home/nhsmt1123/master-thesis/dvmvs-cpp-qt2/")
+
     print("Predicting with System:", system_name)
     print("# of Measurement Frames:", Config.test_n_measurement_frames)
 
@@ -98,8 +100,11 @@ def predict(evaluate):
         reference_depths = None
         depth_filenames = None
 
+    save_input = {}
+    save_output = {}
+
     with torch.no_grad():
-        for i in tqdm(range(20, len(poses))):
+        for i in tqdm(range(0, 20)):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -162,10 +167,54 @@ def predict(evaluate):
             #     measurement_feature_half, _, _, _ = feature_shrinker(*feature_extractor(measurement_image_torch))
             #     measurement_feature_halfs.append(measurement_feature_half)
 
+            if "input" in save_input:
+                save_input["input"] = np.vstack([save_input["input"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["input"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
+
             layer1, layer2, layer3, layer4, layer5 = feature_extractor(reference_image_torch)
+
+            if "layer1" in save_output:
+                save_output["layer1"] = np.vstack([save_output["layer1"], layer1.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["layer1"] = layer1.cpu().detach().numpy().copy()[np.newaxis]
+            if "layer2" in save_output:
+                save_output["layer2"] = np.vstack([save_output["layer2"], layer2.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["layer2"] = layer2.cpu().detach().numpy().copy()[np.newaxis]
+            if "layer3" in save_output:
+                save_output["layer3"] = np.vstack([save_output["layer3"], layer3.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["layer3"] = layer3.cpu().detach().numpy().copy()[np.newaxis]
+            if "layer4" in save_output:
+                save_output["layer4"] = np.vstack([save_output["layer4"], layer4.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["layer4"] = layer4.cpu().detach().numpy().copy()[np.newaxis]
+            if "layer5" in save_output:
+                save_output["layer5"] = np.vstack([save_output["layer5"], layer5.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["layer5"] = layer5.cpu().detach().numpy().copy()[np.newaxis]
 
             reference_feature_half, reference_feature_quarter, \
             reference_feature_one_eight, reference_feature_one_sixteen = feature_shrinker(layer1, layer2, layer3, layer4, layer5)
+
+            if "feature_half" in save_output:
+                save_output["feature_half"] = np.vstack([save_output["feature_half"], reference_feature_half.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["feature_half"] = reference_feature_half.cpu().detach().numpy().copy()[np.newaxis]
+            if "feature_quarter" in save_output:
+                save_output["feature_quarter"] = np.vstack([save_output["feature_quarter"], reference_feature_quarter.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["feature_quarter"] = reference_feature_quarter.cpu().detach().numpy().copy()[np.newaxis]
+            if "feature_one_eight" in save_output:
+                save_output["feature_one_eight"] = np.vstack([save_output["feature_one_eight"], reference_feature_one_eight.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["feature_one_eight"] = reference_feature_one_eight.cpu().detach().numpy().copy()[np.newaxis]
+            if "feature_one_sixteen" in save_output:
+                save_output["feature_one_sixteen"] = np.vstack([save_output["feature_one_sixteen"], reference_feature_one_sixteen.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["feature_one_sixteen"] = reference_feature_one_sixteen.cpu().detach().numpy().copy()[np.newaxis]
+
 
             keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half)
 
@@ -179,6 +228,31 @@ def predict(evaluate):
                 measurement_poses_torch.append(torch.from_numpy(pose).float().to(device).unsqueeze(0))
                 measurement_feature_halfs.append(feature_half)
 
+            mfhs = np.array([measurement_feature_half.cpu().detach().numpy().copy() for measurement_feature_half in measurement_feature_halfs]).reshape(-1, *reference_feature_half.shape)
+            mfhs = np.concatenate([mfhs] + [np.zeros((1, *reference_feature_half.shape), dtype=mfhs.dtype) for _ in range(Config.test_n_measurement_frames - mfhs.shape[0])])
+            if "measurement_features" in save_input:
+                save_input["measurement_features"] = np.vstack([save_input["measurement_features"], mfhs[np.newaxis]])
+            else:
+                save_input["measurement_features"] = mfhs[np.newaxis]
+            if "n_measurement_frames" in save_input:
+                save_input["n_measurement_frames"].append(len(measurement_poses_torch))
+            else:
+                save_input["n_measurement_frames"] = [len(measurement_poses_torch)]
+            if "half_K" in save_input:
+                pass
+            else:
+                save_input["half_K"] = half_K_torch.cpu().detach().numpy().copy()
+            if "pose1s" in save_input:
+                save_input["pose1s"] = np.vstack([save_input["pose1s"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["pose1s"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
+            pose2s = np.array([measurement_pose_torch.cpu().detach().numpy().copy() for measurement_pose_torch in measurement_poses_torch]).reshape(-1, *reference_pose_torch.shape)
+            pose2s = np.concatenate([pose2s] + [np.zeros((1, *reference_pose_torch.shape), dtype=pose2s.dtype) for _ in range(Config.test_n_measurement_frames - pose2s.shape[0])])
+            if "pose2ss" in save_input:
+                save_input["pose2ss"] = np.vstack([save_input["pose2ss"], pose2s[np.newaxis]])
+            else:
+                save_input["pose2ss"] = pose2s[np.newaxis]
+
             cost_volume = cost_volume_fusion(image1=reference_feature_half,
                                              image2s=measurement_feature_halfs,
                                              pose1=reference_pose_torch,
@@ -191,11 +265,44 @@ def predict(evaluate):
                                              device=device,
                                              dot_product=True)
 
+            if "cost_volume" in save_output:
+                save_output["cost_volume"] = np.vstack([save_output["cost_volume"], cost_volume.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["cost_volume"] = cost_volume.cpu().detach().numpy().copy()[np.newaxis]
+
+
             skip0, skip1, skip2, skip3, bottom = cost_volume_encoder(features_half=reference_feature_half,
                                                                      features_quarter=reference_feature_quarter,
                                                                      features_one_eight=reference_feature_one_eight,
                                                                      features_one_sixteen=reference_feature_one_sixteen,
                                                                      cost_volume=cost_volume)
+
+            if "skip0" in save_output:
+                save_output["skip0"] = np.vstack([save_output["skip0"], skip0.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["skip0"] = skip0.cpu().detach().numpy().copy()[np.newaxis]
+            if "skip1" in save_output:
+                save_output["skip1"] = np.vstack([save_output["skip1"], skip1.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["skip1"] = skip1.cpu().detach().numpy().copy()[np.newaxis]
+            if "skip2" in save_output:
+                save_output["skip2"] = np.vstack([save_output["skip2"], skip2.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["skip2"] = skip2.cpu().detach().numpy().copy()[np.newaxis]
+            if "skip3" in save_output:
+                save_output["skip3"] = np.vstack([save_output["skip3"], skip3.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["skip3"] = skip3.cpu().detach().numpy().copy()[np.newaxis]
+            if "bottom" in save_output:
+                save_output["bottom"] = np.vstack([save_output["bottom"], bottom.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["bottom"] = bottom.cpu().detach().numpy().copy()[np.newaxis]
+
+
+            if "full_K" in save_input:
+                pass
+            else:
+                save_input["full_K"] = full_K_torch.cpu().detach().numpy().copy()
 
             if previous_depth is not None:
                 depth_estimation = get_non_differentiable_rectangle_depth_estimation(reference_pose_torch=reference_pose_torch,
@@ -211,6 +318,25 @@ def predict(evaluate):
             else:
                 depth_estimation = torch.zeros(size=(1, 1, int(Config.test_image_height / 32.0), int(Config.test_image_width / 32.0))).to(device)
 
+            if "hidden_state" in save_input:
+                save_input["hidden_state"] = np.vstack([save_input["hidden_state"], lstm_state[0].cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                if lstm_state is None:
+                    save_input["hidden_state"] = lstm_fusion.lstm_cell.init_hidden(batch_size=bottom.size()[0], image_size=bottom.size()[2:])[0].cpu().detach().numpy().copy()[np.newaxis]
+                else:
+                    save_input["hidden_state"] = lstm_state[0].cpu().detach().numpy().copy()[np.newaxis]
+            if "cell_state" in save_input:
+                save_input["cell_state"] = np.vstack([save_input["cell_state"], lstm_state[1].cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                if lstm_state is None:
+                    save_input["cell_state"] = lstm_fusion.lstm_cell.init_hidden(batch_size=bottom.size()[0], image_size=bottom.size()[2:])[1].cpu().detach().numpy().copy()[np.newaxis]
+                else:
+                    save_input["cell_state"] = lstm_state[1].cpu().detach().numpy().copy()[np.newaxis]
+            if "lstm_K" in save_input:
+                pass
+            else:
+                save_input["lstm_K"] = lstm_K_bottom.cpu().detach().numpy().copy()
+
             lstm_state = lstm_fusion(current_encoding=bottom,
                                      current_state=lstm_state,
                                      previous_pose=previous_pose,
@@ -218,9 +344,24 @@ def predict(evaluate):
                                      estimated_current_depth=depth_estimation,
                                      camera_matrix=lstm_K_bottom)
 
-            prediction, _, _, _, _ = cost_volume_decoder(reference_image_torch, skip0, skip1, skip2, skip3, lstm_state[0])
+            if "hidden_state" in save_output:
+                save_output["hidden_state"] = np.vstack([save_output["hidden_state"], lstm_state[0].cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["hidden_state"] = lstm_state[0].cpu().detach().numpy().copy()[np.newaxis]
+            if "cell_state" in save_output:
+                save_output["cell_state"] = np.vstack([save_output["cell_state"], lstm_state[1].cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["cell_state"] = lstm_state[1].cpu().detach().numpy().copy()[np.newaxis]
+
+
+            prediction, _, _, _, _, depth_org = cost_volume_decoder(reference_image_torch, skip0, skip1, skip2, skip3, lstm_state[0])
             previous_depth = prediction.view(1, 1, Config.test_image_height, Config.test_image_width)
             previous_pose = reference_pose_torch
+
+            if "depth_org" in save_output:
+                save_output["depth_org"] = np.vstack([save_output["depth_org"], depth_org.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_output["depth_org"] = depth_org.cpu().detach().numpy().copy()[np.newaxis]
 
             inference_timer.record_end_time_and_elapsed_time()
 
@@ -250,6 +391,8 @@ def predict(evaluate):
         #              scene_name=scene,
         #              save_folder=".")
 
+    np.savez_compressed(base_dir / "params" / "inputs", **save_input)
+    np.savez_compressed(base_dir / "params" / "outputs", **save_output)
 
 if __name__ == '__main__':
     predict(evaluate=True)
