@@ -81,7 +81,7 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
     print_neg_shift("cost_volume_fusion", "yshift", yshift);
     print_neg_shift("cost_volume_fusion", "xshift - yshift", xshift - yshift);
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
-        fused_cost_volume[idx] = (fused_cost_volume_float[idx] / n_measurement_frames) / (1 << (xshift - yshift));
+        fused_cost_volume[idx] = clip((fused_cost_volume_float[idx] / n_measurement_frames) / (1 << (xshift - yshift)));
 
     if (nngen_code) {
         /*

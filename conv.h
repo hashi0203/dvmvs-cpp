@@ -170,7 +170,7 @@ void Conv2d(const qaint* input,
                                 const int weight_idx = ((och * icpg + ic) * kernel_size + kh) * kernel_size + kw;
 
                                 sum += (ih < 0 || ih >= in_height || iw < 0 || iw >= in_width) ? 0 :
-                                        input[input_idx] * (qmint) weight[weight_idx];
+                                       input[input_idx] * (qmint) weight[weight_idx];
                             }
                         }
                     }
@@ -179,7 +179,7 @@ void Conv2d(const qaint* input,
                     sum <<= mshift - (xshift + wshift + sshift);
                     sum += bias[och] << (mshift - bshift);
                     const int output_idx = (och * out_height + oh) * out_width + ow;
-                    output[output_idx] = sum >> (mshift - yshift);
+                    output[output_idx] = clip(sum >> (mshift - yshift));
                 }
             }
         }

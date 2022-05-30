@@ -20,7 +20,7 @@ void layer_norm(qaint* x, const int channels, const int height, const int width)
         //     print2(((qmint) ln_inv_std[i]) / (float) (1 << lnin_shifts[ln_cnt]), 1.0 / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]));
         // }
         for (int idx = 0; idx < height * width; idx++)
-            x[i * (height * width) + idx] = (x[i * (height * width) + idx] - e) / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]);
+            x[i * (height * width) + idx] = clip((x[i * (height * width) + idx] - e) / sqrt(v + eps) * (1 << lnout_shifts[ln_cnt]));
             // x[i * (height * width) + idx] = ((x[i * (height * width) + idx] - ln_ave[i]) * ((qmint) ln_inv_std[i])) >> lnin_shifts[ln_cnt];
     }
     ln_cnt++;
@@ -37,7 +37,7 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
     add_cnt++;
     const int mshift = max(max(xshift, yshift), outshift);
     for (int idx = 0; idx < layer_size; idx++)
-        y[idx] = (((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - outshift);
+        y[idx] = clip((((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - outshift));
 
     if (nngen_code) {
         /*
@@ -171,9 +171,9 @@ void cat_layer(const qaint* x0, const qaint* x1, const qaint* x2, qaint* y,
 
 
 void interpolate(const qaint* input, qaint* output, const string mode,
-                const int channels, const int in_height, const int in_width,
-                const int out_height, const int out_width,
-                const int act_in, int& act_out) {
+                 const int channels, const int in_height, const int in_width,
+                 const int out_height, const int out_width,
+                 const int act_in, int& act_out) {
 
     // mode    fy  fx
     // nearest 0.5 0.5

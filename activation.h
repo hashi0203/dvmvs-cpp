@@ -8,7 +8,7 @@ void ReLU(qaint* x, const int channels, const int height, const int width) {
     print_neg_shift("relu", "yshift - xshift", yshift - xshift);
     other_cnt++;
     for (int idx = 0; idx < channels * height * width; idx++)
-        x[idx] = (x[idx] > 0) ? x[idx] << (yshift - xshift) : 0;
+        x[idx] = (x[idx] > 0) ? clip(x[idx] << (yshift - xshift)) : 0;
     if (shift_ckeck) print1(yshift);
 }
 

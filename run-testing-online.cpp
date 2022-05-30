@@ -3,10 +3,16 @@
 template<class T>
 void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
     if (mode == "txt") {
+        // int cnt_n = 0;
+        // int cnt_p = 0;
         ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
-        for (int idx = 0; idx < layer_size; idx++)
+        for (int idx = 0; idx < layer_size; idx++) {
             ofs << layer[idx] / (float) (1 << shift) << "\n";
+            // if (layer[idx] < -(1 << 15)) cnt_n++;
+            // if ((1 << 15) <= layer[idx]) cnt_p++;
+        }
         ofs.close();
+        // print3(cnt_n, cnt_p, (cnt_n + cnt_p) / (float) layer_size);
     } else if (mode == "bin") {
         ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
         for (int idx = 0; idx < layer_size; idx++)
@@ -124,6 +130,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     ln_cnt = 0;
 
     const int act_in = act_cnt++;
+    save_layer<qaint>(save_dir, "input", filename, reference_image, 3 * test_image_height * test_image_width, cin_shifts[0]);
 
     qaint layer1[channels_1 * height_2 * width_2];
     qaint layer2[channels_2 * height_4 * width_4];

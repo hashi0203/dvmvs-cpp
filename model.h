@@ -83,9 +83,12 @@ void DecoderBlock(const qaint* x, const qaint* skip, const qaint* depth, qaint* 
         //     x1[idx + (out_channels * out_height * out_width)] = skip[idx];
         // for (int idx = 0; idx < out_height * out_width; idx++)
         //     x1[idx + ((out_channels * 2) * out_height * out_width)] >>= 3;
+        // const int rshift0 = (cat_cnt % 3 == 2) ? 1 : 0;
+        // const int rshift1 = (cat_cnt % 3 == 1) ? 1 : 0;
         const int rshift = (cat_cnt % 3 == 0) ? 2 : 3;
         cat_layer(y0, skip, x1 + (in_channels * out_height * out_width), x1,
                   out_channels, out_channels, 1, out_height, out_width,
+                //   rshift0, rshift1, 3, "cat6", act_out_y0, act_in_skip, act_out_depth, act_out_x1);
                   0, 0, rshift, "cat6", act_out_y0, act_in_skip, act_out_depth, act_out_x1);
         cat_cnt = ((cat_cnt) + 1) % 3;
     } else {
@@ -138,7 +141,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l0_out_width = conv_out_size(test_image_width, l0_kernel_size, l0_stride, l0_padding);
     qaint y0[l0_out_channels * l0_out_height * l0_out_width];
     Conv2d(x, y0, "layer1.0", 3, test_image_height, test_image_width, l0_out_channels, l0_out_height, l0_out_width, l0_kernel_size, l0_stride, l0_padding, l0_groups, apply_scale, l0_activation, act_in, l0_act_out);
-    save_layer<qaint>("./results-qt/", "layer-y0", "00009", y0, l0_out_channels * l0_out_height * l0_out_width, cout_shifts[conv_cnt-1]);
+    save_layer<qaint>("./results-qt/", "layer-y0", "00009", y0, l0_out_channels * l0_out_height * l0_out_width, oout_shifts[other_cnt-1]);
 
     // Depthwise separable, no skip.
     constexpr int l3_kernel_size = 3;
@@ -152,7 +155,7 @@ void FeatureExtractor(const qaint x[3 * test_image_height * test_image_width],
     constexpr int l3_out_width = conv_out_size(l0_out_width, l3_kernel_size, l3_stride, l3_padding);
     qaint y3[l3_out_channels * l3_out_height * l3_out_width];
     Conv2d(y0, y3, "layer1.3", l0_out_channels, l0_out_height, l0_out_width, l3_out_channels, l3_out_height, l3_out_width, l3_kernel_size, l3_stride, l3_padding, l3_groups, apply_scale, l3_activation, l0_act_out, l3_act_out);
-    save_layer<qaint>("./results-qt/", "layer-y3", "00009", y3, l3_out_channels * l3_out_height * l3_out_width, cout_shifts[conv_cnt-1]);
+    save_layer<qaint>("./results-qt/", "layer-y3", "00009", y3, l3_out_channels * l3_out_height * l3_out_width, oout_shifts[other_cnt-1]);
 
     constexpr int l6_kernel_size = 1;
     constexpr int l6_stride = 1;
@@ -409,6 +412,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     int act_out_l1_in;
     cat_layer(features_quarter, l0_out, l1_in, fpn_output_channels, l0_out_channels, l1_in_height, l1_in_width,
               0, 3, "cat1", act_out_quarter, act_out_l0_out, act_out_l1_in);
+            //   0, 2, "cat1", act_out_quarter, act_out_l0_out, act_out_l1_in);
     save_layer<qaint>("./results-qt/", "l1_in", filename, l1_in, l1_in_channels * l1_in_height * l1_in_width, cin_shifts[conv_cnt]);
     conv_layer(l1_in, skip1, "aggregator1", l1_in_channels, l1_in_height, l1_in_width, l1_mid_channels, l1_in_height, l1_in_width, l1_kernel_size, stride, act_out_l1_in, act_out_skip1);
     if (shift_ckeck) print1("skip1");
@@ -437,6 +441,7 @@ void CostVolumeEncoder(const qaint features_half[fpn_output_channels * height_2 
     int act_out_l2_in;
     cat_layer(features_one_eight, l1_out, l2_in, fpn_output_channels, l1_out_channels, l2_in_height, l2_in_width,
               0, 1, "cat2", act_out_one_eight, act_out_l1_out, act_out_l2_in);
+            //   0, 2, "cat2", act_out_one_eight, act_out_l1_out, act_out_l2_in);
     conv_layer(l2_in, skip2, "aggregator2", l2_in_channels, l2_in_height, l2_in_width, l2_mid_channels, l2_in_height, l2_in_width, l2_kernel_size, stride, act_out_l2_in, act_out_skip2);
     if (shift_ckeck) print1("skip2");
 
@@ -588,6 +593,7 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
     cat_layer(scaled_decoder, scaled_depth, image, scaled_combined,
               l3_out_channels, 1, 3, l4_in_height, l4_in_width,
               2, 4, 0, "cat7", act_out_scaled_decoder, act_out_scaled_depth, act_in, act_out_scaled_combined);
+            //   1, 3, 0, "cat7", act_out_scaled_decoder, act_out_scaled_depth, act_in, act_out_scaled_combined);
     save_layer<qaint>("./results-qt/", "scaled_combined", "00009", scaled_combined, l4_in_channels * l4_in_height * l4_in_width, cin_shifts[conv_cnt]);
 
     constexpr int l4_kernel_size = 5;
@@ -634,6 +640,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     int act_out_combined;
     cat_layer(current_encoding, hidden_state, combined, in_channels, hid_channels, height_32, width_32,
               0, 0, "cat4", act_out_current_encoding, act_in_hidden_state, act_out_combined);
+            //   0, 1, "cat4", act_out_current_encoding, act_in_hidden_state, act_out_combined);
 
     constexpr int kernel_size = 3;
     constexpr int stride = 1;
@@ -699,7 +706,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     constexpr int mulshift = 2;
     constexpr int sumshift = (sigshift - mulshift) + celushift - cellshift;
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        cell_state[idx] = ((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * gg[idx]) >> sumshift;
+        cell_state[idx] = clip(((((qmint) ff[idx] >> mulshift) * cell_state[idx]) + ((qmint) ii[idx] >> mulshift) * gg[idx]) >> sumshift);
 
     layer_norm(cell_state, hid_channels, height_32, width_32);
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
@@ -729,7 +736,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
     celu(hidden_state, hid_channels, height_32, width_32);
     for (int idx = 0; idx < hid_channels * height_32 * width_32; idx++)
-        hidden_state[idx] = (hidden_state[idx] * (qmint) oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]);
+        hidden_state[idx] = clip((hidden_state[idx] * (qmint) oo[idx]) >> (celushift + sigshift - oin_shifts[other_cnt]));
 
     if (nngen_code) {
         /*
