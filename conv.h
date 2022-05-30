@@ -55,14 +55,12 @@ void Conv2d(const qaint* input,
             scale{act_cnt}.set_value(params[param_name + ".scale"])
 
             conv{act_cnt} = ng.multiply(ng.conv2d(act{act_in}, weight{act_cnt},
-                                                strides=(1, {stride}, {stride}, 1),
-                                                dtype=act_dtype,
-                                                sum_dtype=ng.int32), scale{act_cnt})
+                                                  strides=(1, {stride}, {stride}, 1),
+                                                  dtype=mid_dtype), scale{act_cnt})
         else:
             conv{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt},
-                                    strides=(1, stride, stride, 1),
-                                    dtype=act_dtype,
-                                    sum_dtype=ng.int32)
+                                      strides=(1, stride, stride, 1),
+                                      dtype=mid_dtype)
 
         if bshift == xshift + wshift + sshift:
             sum{act_cnt} = ng.add(conv{act_cnt}, bias{act_cnt})
@@ -75,13 +73,14 @@ void Conv2d(const qaint* input,
 
         if activation == "relu":
             rshift{act_cnt} = ng.constant([mshift - oout_shifts[other_cnt]], dtype=ng.int8)
-            act{act_cnt} = ng.relu(ng.rshift_round(sum{act_cnt}, rshift{act_cnt}))
+            act{act_cnt} = ng.relu(rshift_round_and_clip(sum{act_cnt}, rshift{act_cnt}, dtype=act_dtype))
         elif activation == "sigmoid":
             rshift{act_cnt} = ng.constant([mshift - tbshift], dtype=ng.int8)
-            act{act_cnt} = ng.sigmoid(ng.rshift_round(sum{act_cnt}, rshift{act_cnt}), lut_addrwidth=9, lut_clip=8.0, range_rate=1.0)
+            act{act_cnt} = ng.sigmoid(ng.rshift_round(sum{act_cnt}, rshift{act_cnt}, dtype=act_dtype),
+                                      lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=act_dtype)
         elif activation == "none":
             rshift{act_cnt} = ng.constant([mshift - yshift], dtype=ng.int8)
-            act{act_cnt} = ng.rshift_round(sum{act_cnt}, rshift{act_cnt})
+            act{act_cnt} = rshift_round_and_clip(sum{act_cnt}, rshift{act_cnt}, dtype=act_dtype)
         */
 
         const char* param_name = param_path.c_str();
@@ -108,10 +107,10 @@ void Conv2d(const qaint* input,
             printf("scale%d.set_value(params[\"%s.scale\"])\n", act_cnt, param_name);
             printf("\n");
 
-            printf("conv%d = ng.multiply(ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=act_dtype, sum_dtype=ng.int32), scale%d)\n",
+            printf("conv%d = ng.multiply(ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=mid_dtype), scale%d)\n",
                    act_cnt, act_in, act_cnt, stride, stride, act_cnt);
         } else {
-            printf("conv%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=act_dtype, sum_dtype=ng.int32)\n",
+            printf("conv%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), dtype=mid_dtype)\n",
                    act_cnt, act_in, act_cnt, stride, stride);
         }
         printf("\n");
@@ -131,17 +130,17 @@ void Conv2d(const qaint* input,
         if (activation == "relu") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                    act_cnt, mshift - oout_shifts[other_cnt]);
-            printf("act%d = ng.relu(ng.rshift_round(sum%d, rshift%d))\n",
+            printf("act%d = ng.relu(rshift_round_and_clip(sum%d, rshift%d, dtype=act_dtype))\n",
                    act_cnt, act_cnt, act_cnt);
         } else if (activation == "sigmoid") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                    act_cnt, mshift - tbshift);
-            printf("act%d = ng.sigmoid(ng.rshift_round(sum%d, rshift%d), lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=ng.int16)\n",
+            printf("act%d = ng.sigmoid(ng.rshift_round(sum%d, rshift%d, dtype=act_dtype), lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=act_dtype)\n",
                    act_cnt, act_cnt, act_cnt);
         } else if (activation == "none") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                    act_cnt, mshift - yshift);
-            printf("act%d = ng.rshift_round(sum%d, rshift%d)\n",
+            printf("act%d = rshift_round_and_clip(sum%d, rshift%d, dtype=act_dtype)\n",
                    act_cnt, act_cnt, act_cnt);
         }
         printf("\n\n");

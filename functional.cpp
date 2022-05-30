@@ -45,15 +45,15 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
             act{act_cnt} = ng.add(act{act_in1}, act{act_in0})
         } else if (mshift == xshift && mshift == yshift) {
             rshift{act_cnt} = ng.constant([mshift - outshift], dtype=ng.int8)
-            act{act_cnt} = ng.rshift_round(ng.add(act{act_in1}, act{act_in0}), rshift{act_cnt})
+            act{act_cnt} = rshift_round_and_clip(ng.add(act{act_in1}, act{act_in0}, dtype=mid_dtype), rshift{act_cnt}, dtype=act_dtype)
         } else if (mshift == xshift) {
             lshift{act_cnt} = ng.constant([mshift - yshift], dtype=ng.int8)
             rshift{act_cnt} = ng.constant([mshift - outshift], dtype=ng.int8)
-            act{act_cnt} = ng.rshift_round(ng.add(ng.lshift(act{act_in1}, lshift{act_cnt}), act{act_in0}), rshift{act_cnt})
+            act{act_cnt} = rshift_round_and_clip(ng.add(ng.lshift(act{act_in1}, lshift{act_cnt}, dtype=mid_dtype), act{act_in0})), rshift{act_cnt}, dtype=act_dtype)
         } else if (mshift == yshift) {
             lshift{act_cnt} = ng.constant([mshift - xshift], dtype=ng.int8)
             rshift{act_cnt} = ng.constant([mshift - outshift], dtype=ng.int8)
-            act{act_cnt} = ng.rshift_round(ng.add(act{act_in1}, ng.lshift(act{act_in0}, lshift{act_cnt})), rshift{act_cnt})
+            act{act_cnt} = rshift_round_and_clip(ng.add(act{act_in1}, ng.lshift(act{act_in0}, lshift{act_cnt}, dtype=mid_dtype))), rshift{act_cnt}, dtype=act_dtype)
         }
         */
 
@@ -62,16 +62,16 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
             printf("act%d = ng.add(act%d, act%d)\n", act_cnt, act_in1, act_in0);
         } else if (mshift == xshift && mshift == yshift) {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = ng.rshift_round(ng.add(act%d, act%d), rshift%d)\n", act_cnt, act_in1, act_in0, act_cnt);
+            printf("act%d = rshift_round_and_clip(ng.add(act%d, act%d, dtype=mid_dtype), rshift%d, dtype=act_dtype)\n", act_cnt, act_in1, act_in0, act_cnt);
         } else if (mshift == xshift) {
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - yshift);
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = ng.rshift_round(ng.add(ng.lshift(act%d, lshift%d), act%d), rshift%d)\n",
+            printf("act%d = rshift_round_and_clip(ng.add(ng.lshift(act%d, lshift%d, dtype=mid_dtype), act%d), rshift%d, dtype=act_dtype)\n",
                    act_cnt, act_in1, act_cnt, act_in0, act_cnt);
         } else if (mshift == yshift) {
             printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - xshift);
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = ng.rshift_round(ng.add(act%d, ng.lshift(act%d, lshift%d)), rshift%d)\n",
+            printf("act%d = rshift_round_and_clip(ng.add(act%d, ng.lshift(act%d, lshift%d, dtype=mid_dtype)), rshift%d, dtype=act_dtype)\n",
                    act_cnt, act_in1, act_in0, act_cnt, act_cnt);
         } else {
             printf("error\n");

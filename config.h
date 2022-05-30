@@ -1,7 +1,7 @@
 #pragma once
 #include "settings.h"
 
-constexpr bool nngen_code = false;
+constexpr bool nngen_code = true;
 constexpr bool shift_ckeck = false;
 
 constexpr int org_image_width = 540;
