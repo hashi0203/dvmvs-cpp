@@ -402,7 +402,7 @@ int main() {
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 in_hidden_state[i][j][k] = hidden_state[(i * height_32 + j) * width_32 + k] / (float) (1 << hiddenshift);
             float out_hidden_state[hid_channels][height_32][width_32];
-            warp_from_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
+            warp_frame_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
 
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k] * (1 << hiddenshift);

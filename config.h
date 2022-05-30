@@ -238,11 +238,11 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
                                                        const float full_K[3][3],
                                                        const float half_K[3][3],
                                                        float depth_hypothesis[1][height_2][width_2]);
-void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width_32],
-                     const float depth_dst[height_32][width_32],
-                     const float trans[4][4],
-                     const float camera_matrix[3][3],
-                     float image_dst[hyper_channels * 16][height_32][width_32]);
+void warp_frame_depth(const float image_src[hyper_channels * 16][height_32][width_32],
+                      const float depth_dst[height_32][width_32],
+                      const float trans[4][4],
+                      const float camera_matrix[3][3],
+                      float image_dst[hyper_channels * 16][height_32][width_32]);
 bool is_pose_available(const float pose[4 * 4]);
 
 // keyframe_buffer
