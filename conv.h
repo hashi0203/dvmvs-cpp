@@ -41,37 +41,66 @@ void Conv2d(const qaint* input,
         weight{act_cnt} = ng.variable(dtype=weight_dtype,
                                     shape=({out_channels}, {kernel_size}, {kernel_size}, {in_channels}),
                                     name={param_name} + ".weight")
-        if groups == 1:
+        if (groups == 1) {
             weight{act_cnt}.set_value(params[{param_name} + ".weight"])
-        else:
+        } else {
             weight{act_cnt}.set_value(np.array([[[[params[{param_name} + ".weight"][i][j][k][0] if i == l else 0 for l in range({in_channels})]
                                                 for k in range({kernel_size})] for j in range({kernel_size})] for i in range({out_channels})]))
+        }
 
-        bias{act_cnt} = ng.variable(dtype=bias_dtype, shape=({out_channels},), name={param_name} + ".bias")
-        bias{act_cnt}.set_value(np.round(params[{param_name} + ".bias"] / (float) (1 << {(bshift - (xshift + wshift))})).astype(params[{param_name} + ".bias"].dtype)
+        if (bshift == 32) {
+            if (apply_scale || activation != "none") {
+                printf("error: unexpected params in conv without bias ((apply_scale, activation) = (%s, %s)).\n",
+                       apply_scale ? "true" : "false", activation.c_str());
+            }
 
-        if apply_scale:
-            scale{act_cnt} = ng.variable(dtype=scale_dtype, shape=({out_channels},), name={param_name} + ".scale")
-            scale{act_cnt}.set_value(params[{param_name} + ".scale"])
-
-            conv{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
-                                      bias=bias{act_cnt}, scale=scale{act_cnt}, asymmetric_clip=True,
-                                      dtype=mid_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
-        else:
-            conv{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
-                                      bias=bias{act_cnt}, asymmetric_clip=True,
-                                      dtype=mid_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
-
-        if activation == "relu":
-            rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - oout_shifts[other_cnt]}], dtype=ng.int8)
-            act{act_cnt} = ng.relu(rshift_round_and_clip(conv{act_cnt}, rshift{act_cnt}, dtype=act_dtype))
-        elif activation == "sigmoid":
-            rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - tbshift}], dtype=ng.int8)
-            act{act_cnt} = ng.sigmoid(ng.rshift_round(conv{act_cnt}, rshift{act_cnt}, dtype=act_dtype),
-                                      lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=act_dtype)
-        elif activation == "none":
             rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - yshift}], dtype=ng.int8)
-            act{act_cnt} = rshift_round_and_clip(conv{act_cnt}, rshift{act_cnt}, dtype=act_dtype)
+            act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
+                                     rshift_out=rshift{act_cnt}, asymmetric_clip=True,
+                                     dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
+        } else {
+            bias{act_cnt} = ng.variable(dtype=bias_dtype, shape=({out_channels},), name={param_name} + ".bias")
+            if (bshift == (xshift + wshift)) {
+                bias{act_cnt}.set_value(params[{param_name} + ".bias"])
+            } else {
+                bias{act_cnt}.set_value(np.round(params[{param_name} + ".bias"] / (float) (1 << {(bshift - (xshift + wshift))})).astype(params[{param_name} + ".bias"].dtype)
+            }
+
+            if (apply_scale) {
+                scale{act_cnt} = ng.variable(dtype=scale_dtype, shape=({out_channels},), name={param_name} + ".scale")
+                scale{act_cnt}.set_value(params[{param_name} + ".scale"])
+
+                if (activation == "relu") {
+                    rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - oout_shifts[other_cnt]}], dtype=ng.int8)
+                    act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
+                                             bias=bias{act_cnt}, scale=scale{act_cnt}, rshift_out=rshift{act_cnt},
+                                             act_func=ng.relu, asymmetric_clip=True,
+                                             dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
+                } else if (activation == "none") {
+                    rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - yshift}], dtype=ng.int8)
+                    act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
+                                             bias=bias{act_cnt}, scale=scale{act_cnt}, rshift_out=rshift{act_cnt},
+                                             asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
+                } else {
+                    printf("error: unexpected activation in conv with apply_scale: %s\n", activation.c_str());
+                }
+            } else {
+                if (activation == "sigmoid") {
+                    rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - tbshift}], dtype=ng.int8)
+                    act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
+                                             bias=bias{act_cnt}, rshift_out=rshift{act_cnt},
+                                             act_func=ng.sigmoid, asymmetric_clip=True,
+                                             dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
+                } else if (activation == "none") {
+                    rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - yshift}], dtype=ng.int8)
+                    act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
+                                             bias=bias{act_cnt}, rshift_out=rshift{act_cnt},
+                                             asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
+                } else {
+                    printf("error: unexpected activation in conv without apply_scale: %s\n", activation.c_str());
+                }
+            }
+        }
         */
 
         const char* param_name = param_path.c_str();
@@ -87,43 +116,66 @@ void Conv2d(const qaint* input,
         }
         printf("\n");
 
-        printf("bias%d = ng.variable(dtype=bias_dtype, shape=(%d,), name=\"%s.bias\")\n",
-               act_cnt, out_channels, param_name);
-        printf("bias%d.set_value(np.round(params[\"%s.bias\"] / (float) (1 << %d)).astype(params[\"%s.bias\"].dtype))\n",
-               act_cnt, param_name, bshift - (xshift + wshift), param_name);
-        printf("\n");
+        if (bshift == 32) {
+            if (apply_scale || activation != "none") {
+                printf("error: unexpected params in conv without bias ((apply_scale, activation) = (%s, %s)).\n",
+                       apply_scale ? "true" : "false", activation.c_str());
+            }
 
-        if (apply_scale) {
-            printf("scale%d = ng.variable(dtype=scale_dtype, shape=(%d,), name=\"%s.scale\")\n",
-                   act_cnt, out_channels, param_name);
-            printf("scale%d.set_value(params[\"%s.scale\"])\n", act_cnt, param_name);
-            printf("\n");
-
-            printf("conv%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, scale=scale%d, "
-                   "asymmetric_clip=True, dtype=mid_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
-                   act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt);
-        } else {
-            printf("conv%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, "
-                   "asymmetric_clip=True, dtype=mid_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
-                   act_cnt, act_in, act_cnt, stride, stride, act_cnt);
-        }
-        printf("\n");
-
-        if (activation == "relu") {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                   act_cnt, xshift + wshift + sshift - oout_shifts[other_cnt]);
-            printf("act%d = ng.relu(rshift_round_and_clip(conv%d, rshift%d, dtype=act_dtype))\n",
-                   act_cnt, act_cnt, act_cnt);
-        } else if (activation == "sigmoid") {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
-                   act_cnt, xshift + wshift + sshift - tbshift);
-            printf("act%d = ng.sigmoid(ng.rshift_round(conv%d, rshift%d, dtype=act_dtype), lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=act_dtype)\n",
-                   act_cnt, act_cnt, act_cnt);
-        } else if (activation == "none") {
             printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                    act_cnt, xshift + wshift + sshift - yshift);
-            printf("act%d = rshift_round_and_clip(conv%d, rshift%d, dtype=act_dtype)\n",
-                   act_cnt, act_cnt, act_cnt);
+            printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), rshift_out=rshift%d, "
+                   "asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                   act_cnt, act_in, act_cnt, stride, stride, act_cnt);
+        } else {
+            printf("bias%d = ng.variable(dtype=bias_dtype, shape=(%d,), name=\"%s.bias\")\n",
+                   act_cnt, out_channels, param_name);
+            if (bshift == (xshift + wshift)) {
+                printf("bias%d.set_value(params[\"%s.bias\"])\n", act_cnt, param_name);
+            } else {
+                printf("bias%d.set_value(np.round(params[\"%s.bias\"] / (float) (1 << %d)).astype(params[\"%s.bias\"].dtype))\n",
+                       act_cnt, param_name, bshift - (xshift + wshift), param_name);
+            }
+            printf("\n");
+
+            if (apply_scale) {
+                printf("scale%d = ng.variable(dtype=scale_dtype, shape=(%d,), name=\"%s.scale\")\n",
+                    act_cnt, out_channels, param_name);
+                printf("scale%d.set_value(params[\"%s.scale\"])\n", act_cnt, param_name);
+                printf("\n");
+
+                if (activation == "relu") {
+                    printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
+                           act_cnt, xshift + wshift + sshift - oout_shifts[other_cnt]);
+                    printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, scale=scale%d, "
+                           "rshift_out=rshift%d, act_func=ng.relu, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                           act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt, act_cnt);
+                } else if (activation == "none") {
+                    printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
+                           act_cnt, xshift + wshift + sshift - yshift);
+                    printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, scale=scale%d, "
+                           "rshift_out=rshift%d, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                           act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt, act_cnt);
+                } else {
+                    printf("error: unexpected activation in conv with apply_scale: %s\n", activation.c_str());
+                }
+            } else {
+                if (activation == "sigmoid") {
+                    printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
+                           act_cnt, xshift + wshift + sshift - tbshift);
+                    printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, "
+                           "rshift_out=rshift%d, act_func=ng.sigmoid, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                           act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt);
+                } else if (activation == "none") {
+                    printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
+                           act_cnt, xshift + wshift + sshift - yshift);
+                    printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, "
+                           "rshift_out=rshift%d, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                           act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt);
+                } else {
+                    printf("error: unexpected activation in conv without apply_scale: %s\n", activation.c_str());
+                }
+            }
         }
         printf("\n\n");
 
