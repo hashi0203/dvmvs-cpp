@@ -89,7 +89,7 @@ void Conv2d(const qaint* input,
                     rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - tbshift}], dtype=ng.int8)
                     act{act_cnt} = ng.conv2d(act{act_in}, weight{act_cnt}, strides=(1, {stride}, {stride}, 1),
                                              bias=bias{act_cnt}, rshift_out=rshift{act_cnt},
-                                             act_func=ng.sigmoid, asymmetric_clip=True,
+                                             act_func=sigmoid, asymmetric_clip=True,
                                              dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)
                 } else if (activation == "none") {
                     rshift{act_cnt} = ng.constant([{xshift + wshift + sshift - yshift}], dtype=ng.int8)
@@ -164,7 +164,7 @@ void Conv2d(const qaint* input,
                     printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                            act_cnt, xshift + wshift + sshift - tbshift);
                     printf("act%d = ng.conv2d(act%d, weight%d, strides=(1, %d, %d, 1), bias=bias%d, "
-                           "rshift_out=rshift%d, act_func=ng.sigmoid, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
+                           "rshift_out=rshift%d, act_func=sigmoid, asymmetric_clip=True, dtype=act_dtype, mul_dtype=mid_dtype, sum_dtype=mid_dtype)\n",
                            act_cnt, act_in, act_cnt, stride, stride, act_cnt, act_cnt);
                 } else if (activation == "none") {
                     printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",

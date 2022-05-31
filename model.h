@@ -676,9 +676,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
                                      (1, 1, 1, 1)) for i in range(4)]
 
         rshift{act_cnt} = ng.constant([{cout_shifts[conv_cnt-1] - tbshift}], dtype=ng.int8)
-        ii{act_cnt}, ff{act_cnt}, oo{act_cnt} = [ng.sigmoid(ng.rshift_round(slice{act_cnt}s[i], rshift{act_cnt}),
-                                                            lut_addrwidth=9, lut_clip=8.0, range_rate=0.5,
-                                                            dtype=act_dtype) for i in range(3)]
+        ii{act_cnt}, ff{act_cnt}, oo{act_cnt} = [sigmoid(ng.rshift_round(slice{act_cnt}s[i], rshift{act_cnt})) for i in range(3)]
 
         gg{act_cnt} = ng.extern([slice{act_cnt}s[3]], opcode=0x{act_cnt}, func=lambda x : celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(x)))
         */
@@ -690,8 +688,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
         printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n",
                act_cnt, cout_shifts[conv_cnt-1] - tbshift);
-        printf("ii%d, ff%d, oo%d = [ng.sigmoid(ng.rshift_round(slice%ds[i], rshift%d), "
-               "lut_addrwidth=9, lut_clip=8.0, range_rate=0.5, dtype=act_dtype) for i in range(3)]\n",
+        printf("ii%d, ff%d, oo%d = [sigmoid(ng.rshift_round(slice%ds[i], rshift%d)) for i in range(3)]\n",
                act_cnt, act_cnt, act_cnt, act_cnt, act_cnt);
         printf("\n");
 
