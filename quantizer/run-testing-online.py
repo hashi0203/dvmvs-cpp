@@ -110,13 +110,6 @@ def predict(evaluate):
 
             # POLL THE KEYFRAME BUFFER
             response = keyframe_buffer.try_new_keyframe(reference_pose)
-            if response == 2 or response == 4 or response == 5:
-                continue
-            elif response == 3:
-                previous_depth = None
-                previous_pose = None
-                lstm_state = None
-                continue
 
             preprocessor = PreprocessImage(K=K,
                                            old_width=reference_image.shape[1],
@@ -131,13 +124,30 @@ def predict(evaluate):
                                                      mean_rgb=mean_rgb,
                                                      std_rgb=std_rgb)
 
-            if reference_depths is not None:
-                reference_depth = cv2.imread(depth_filenames[i], -1).astype(float) / 1000.0
-                reference_depth = preprocessor.apply_depth(reference_depth)
-                reference_depths.append(reference_depth)
+            # if reference_depths is not None:
+            #     reference_depth = cv2.imread(depth_filenames[i], -1).astype(float) / 1000.0
+            #     reference_depth = preprocessor.apply_depth(reference_depth)
+            #     reference_depths.append(reference_depth)
 
             reference_image_torch = torch.from_numpy(np.transpose(reference_image, (2, 0, 1))).float().to(device).unsqueeze(0)
             reference_pose_torch = torch.from_numpy(reference_pose).float().to(device).unsqueeze(0)
+            if "reference_image" in save_input:
+                save_input["reference_image"] = np.vstack([save_input["reference_image"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["reference_image"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
+            if "reference_pose" in save_input:
+                save_input["reference_pose"] = np.vstack([save_input["reference_pose"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["reference_pose"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
+
+
+            if response == 2 or response == 4 or response == 5:
+                continue
+            elif response == 3:
+                previous_depth = None
+                previous_pose = None
+                lstm_state = None
+                continue
 
             full_K_torch = torch.from_numpy(preprocessor.get_updated_intrinsics()).float().to(device).unsqueeze(0)
 
@@ -146,6 +156,14 @@ def predict(evaluate):
 
             lstm_K_bottom = full_K_torch.clone().cuda()
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
+
+            if "full_K" not in save_input:
+                save_input["full_K"] = full_K_torch.cpu().detach().numpy().copy()
+            if "half_K" not in save_input:
+                save_input["half_K"] = half_K_torch.cpu().detach().numpy().copy()
+            if "lstm_K" not in save_input:
+                save_input["lstm_K"] = lstm_K_bottom.cpu().detach().numpy().copy()
+
 
             # measurement_poses_torch = []
             # measurement_images_torch = []
@@ -166,11 +184,6 @@ def predict(evaluate):
             # for measurement_image_torch in measurement_images_torch:
             #     measurement_feature_half, _, _, _ = feature_shrinker(*feature_extractor(measurement_image_torch))
             #     measurement_feature_halfs.append(measurement_feature_half)
-
-            if "input" in save_input:
-                save_input["input"] = np.vstack([save_input["input"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
-            else:
-                save_input["input"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
 
             layer1, layer2, layer3, layer4, layer5 = feature_extractor(reference_image_torch)
 
@@ -238,20 +251,12 @@ def predict(evaluate):
                 save_input["n_measurement_frames"].append(len(measurement_poses_torch))
             else:
                 save_input["n_measurement_frames"] = [len(measurement_poses_torch)]
-            if "half_K" in save_input:
-                pass
+            measurement_poses = np.array([measurement_pose_torch.cpu().detach().numpy().copy() for measurement_pose_torch in measurement_poses_torch]).reshape(-1, *reference_pose_torch.shape)
+            measurement_poses = np.concatenate([measurement_poses] + [np.zeros((1, *reference_pose_torch.shape), dtype=measurement_poses.dtype) for _ in range(Config.test_n_measurement_frames - measurement_poses.shape[0])])
+            if "measurement_poses" in save_input:
+                save_input["measurement_poses"] = np.vstack([save_input["measurement_poses"], measurement_poses[np.newaxis]])
             else:
-                save_input["half_K"] = half_K_torch.cpu().detach().numpy().copy()
-            if "pose1s" in save_input:
-                save_input["pose1s"] = np.vstack([save_input["pose1s"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
-            else:
-                save_input["pose1s"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
-            pose2s = np.array([measurement_pose_torch.cpu().detach().numpy().copy() for measurement_pose_torch in measurement_poses_torch]).reshape(-1, *reference_pose_torch.shape)
-            pose2s = np.concatenate([pose2s] + [np.zeros((1, *reference_pose_torch.shape), dtype=pose2s.dtype) for _ in range(Config.test_n_measurement_frames - pose2s.shape[0])])
-            if "pose2ss" in save_input:
-                save_input["pose2ss"] = np.vstack([save_input["pose2ss"], pose2s[np.newaxis]])
-            else:
-                save_input["pose2ss"] = pose2s[np.newaxis]
+                save_input["measurement_poses"] = measurement_poses[np.newaxis]
 
             cost_volume = cost_volume_fusion(image1=reference_feature_half,
                                              image2s=measurement_feature_halfs,
@@ -297,12 +302,12 @@ def predict(evaluate):
                 save_output["bottom"] = np.vstack([save_output["bottom"], bottom.cpu().detach().numpy().copy()[np.newaxis]])
             else:
                 save_output["bottom"] = bottom.cpu().detach().numpy().copy()[np.newaxis]
-
-
-            if "full_K" in save_input:
-                pass
+            if "current_pose" in save_input:
+                save_input["current_pose"] = np.vstack([save_input["current_pose"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
             else:
-                save_input["full_K"] = full_K_torch.cpu().detach().numpy().copy()
+                save_input["current_pose"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
+
+
 
             if previous_depth is not None:
                 depth_estimation = get_non_differentiable_rectangle_depth_estimation(reference_pose_torch=reference_pose_torch,
@@ -332,10 +337,6 @@ def predict(evaluate):
                     save_input["cell_state"] = lstm_fusion.lstm_cell.init_hidden(batch_size=bottom.size()[0], image_size=bottom.size()[2:])[1].cpu().detach().numpy().copy()[np.newaxis]
                 else:
                     save_input["cell_state"] = lstm_state[1].cpu().detach().numpy().copy()[np.newaxis]
-            if "lstm_K" in save_input:
-                pass
-            else:
-                save_input["lstm_K"] = lstm_K_bottom.cpu().detach().numpy().copy()
 
             lstm_state = lstm_fusion(current_encoding=bottom,
                                      current_state=lstm_state,
