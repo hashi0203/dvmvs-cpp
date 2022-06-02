@@ -261,6 +261,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     // The input to the model is expected to be an OrderedDict[Tensor], containing
     // the feature maps on top of which the FPN will be added.
 
+    if (nngen_code) printf("externs = []\n\n");
     constexpr int stride = 1;
     constexpr int groups = 1;
     constexpr bool apply_scale = false;
@@ -338,7 +339,7 @@ void FeatureShrinker(const qaint layer1[channels_1 * height_2 * width_2],
     if (shift_ckeck) print1("features_half");
 
     if (nngen_code)
-        printf("return act%d, act%d, act%d, act%d\n\n", act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
+        printf("return (act%d, act%d, act%d, act%d), externs\n\n", act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
 }
 
 
@@ -500,6 +501,7 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
                        const int act_out_bottom,
                        int& act_out_depth_full) {
 
+    if (nngen_code) printf("externs = []\n\n");
     // 1st set
     constexpr int l0_in_channels = hyper_channels * 16;
     constexpr int l0_in_height = height_32;
@@ -612,7 +614,7 @@ void CostVolumeDecoder(const qaint image[3 * test_image_height * test_image_widt
     depth_layer_3x3(refined1, depth_full, "depth_layer_full", l4_out_channels, l4_out_height, l4_out_width, act_out_refined1, act_out_depth_full);
 
     if (nngen_code)
-        printf("return act%d\n\n", act_out_depth_full);
+        printf("return (act%d,), externs\n\n", act_out_depth_full);
 }
 
 
@@ -624,6 +626,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
                 int& act_out_hidden_state,
                 int& act_out_cell_state) {
 
+    if (nngen_code) printf("externs = []\n\n");
     const int act_in_hidden_state = act_cnt++;
     const int act_in_cell_state = act_cnt++;
 
@@ -679,6 +682,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         ii{act_cnt}, ff{act_cnt}, oo{act_cnt} = [sigmoid(ng.rshift_round(slice{act_cnt}s[i], rshift{act_cnt})) for i in range(3)]
 
         gg{act_cnt} = ng.extern([slice{act_cnt}s[3]], opcode=0x{act_cnt}, func=lambda x : celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(x)))
+        externs.append((gg{act_cnt}, [slice{act_cnt}s[3]], "gg{act_cnt} = celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(slice{act_cnt}s[3]))"))
         */
 
         printf("# [%d] sig_ln_celu\n", act_cnt);
@@ -694,6 +698,8 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
         printf("gg%d = ng.extern([slice%ds[3]], opcode=0x%d, func=lambda x : celu(%d)(ln(%d)(x)))\n",
                act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], lnout_shifts[ln_cnt-1]);
+        printf("externs.append((gg%d, [slice%ds[3]], \"gg%d = celu(%d)(ln(%d)(slice%ds[3]))\"))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], lnout_shifts[ln_cnt-1], act_cnt);
         printf("\n\n");
 
         act_out_mid = act_cnt++;
@@ -716,6 +722,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         sum{act_cnt} = rshift_round_and_clip(ng.add(ng.multiply(ng.rshift_round(ff{act_out_mid}, in_rshift{act_cnt}), act{act_in_cell_state}, dtype=mid_dtype),
                                                     ng.multiply(ng.rshift_round(ii{act_out_mid}, in_rshift{act_cnt}), gg{act_out_mid}, dtype=mid_dtype)), out_rshift{act_cnt}, dtype=act_dtype)
         act{act_cnt} = ng.extern([sum{act_cnt}], opcode=0x{act_cnt}, func=ln({lnout_shifts[ln_cnt-1]}))
+        externs.append((act{act_cnt}, [sum{act_cnt}], "act{act_cnt} = ln({lnout_shifts[ln_cnt-1]})(sum{act_cnt})"))
         */
 
         printf("# [%d] cell_state\n", act_cnt);
@@ -726,6 +733,8 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
                act_cnt, act_out_mid, act_cnt, act_in_cell_state, act_out_mid, act_cnt, act_out_mid, act_cnt);
         printf("act%d = ng.extern([sum%d], opcode=0x%d, func=ln(%d))\n",
                act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1]);
+        printf("externs.append((act%d, [sum%d], \"act%d = ln(%d)(sum%d)\"))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], act_cnt);
         printf("\n\n");
 
         act_out_cell_state = act_cnt++;
@@ -738,6 +747,7 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     if (nngen_code) {
         /*
         celu{act_cnt} = ng.extern([act{act_out_cell_state}], opcode=0x{act_cnt}, func=celu({lnout_shifts[ln_cnt-1]}))
+        externs.append((celu{act_cnt}, [act{act_out_cell_state}], "celu{act_cnt} = celu({lnout_shifts[ln_cnt-1]})(act{act_out_cell_state})"))
         rshift{act_cnt} = ng.constant([{celushift + sigshift - oin_shifts[other_cnt]}], dtype=ng.int8)
         act{act_cnt} = rshift_round_and_clip(ng.multiply(celu{act_cnt}, oo{act_out_mid}, dtype=mid_dtype), rshift{act_cnt}, dtype=act_dtype)
         */
@@ -745,6 +755,8 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         printf("# [%d] hidden_state\n", act_cnt);
         printf("celu%d = ng.extern([act%d], opcode=0x%d, func=celu(%d))\n",
                act_cnt, act_out_cell_state, act_cnt, lnout_shifts[ln_cnt-1]);
+        printf("externs.append((celu%d, [act%d], \"celu%d = celu(%d)(act%d)\"))\n",
+               act_cnt, act_out_cell_state, act_cnt, lnout_shifts[ln_cnt-1], act_out_cell_state);
         printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, celushift + sigshift - oin_shifts[other_cnt]);
         printf("act%d = rshift_round_and_clip(ng.multiply(celu%d, oo%d, dtype=mid_dtype), rshift%d, dtype=act_dtype)\n",
                act_cnt, act_cnt, act_out_mid, act_cnt);
@@ -754,6 +766,6 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
     }
 
     if (nngen_code)
-        printf("return act%d, act%d\n\n", act_out_hidden_state, act_out_cell_state);
+        printf("return (act%d, act%d), externs\n\n", act_out_hidden_state, act_out_cell_state);
 
 }
