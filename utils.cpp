@@ -88,15 +88,20 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
         act{act_cnt} = ng.extern([frame_number, act{act_in}, n_measurement_frames, *act{act_out_features}],
                                  shape=(1, {height_2}, {width_2}, {n_depth_levels}), dtype=act_dtype,
                                  opcode=0x{act_cnt}, func=fusion({xshift - yshift}, K, pose1s, pose2ss))
+        externs.append((act{act_cnt}, [act{act_in}, *act{act_out_features}],
+                        "act{act_cnt} = fusion({xshift - yshift}, K, pose1s, pose2ss)(frame_number, act{act_in}, n_measurement_frames, *act{act_out_features})"))
         */
 
         const int act_out_features = act_cnt++;
 
+        printf("externs = []\n\n");
         printf("# [%d] conv\n", act_cnt);
         printf("act%d = ng.extern([frame_number, act%d, n_measurement_frames, *act%ds], shape=(1, %d, %d, %d), dtype=act_dtype, opcode=0x%d, func=fusion(%d, K, pose1s, pose2ss))\n",
                act_cnt, act_in, act_out_features, height_2, width_2, n_depth_levels, act_cnt, xshift - yshift);
-        printf("\n");
-        printf("return act%d\n\n", act_cnt);
+        printf("externs.append((act%d, [act%d, *act%ds], \"act%d = fusion(%d, K, pose1s, pose2ss)(frame_number, act%d, n_measurement_frames, *act%ds)\"))\n",
+               act_cnt, act_in, act_out_features, act_cnt, xshift - yshift, act_in, act_out_features);
+        printf("\n\n");
+        printf("return (act%d,), externs\n\n", act_cnt);
 
         act_out = act_cnt++;
     }
