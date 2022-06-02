@@ -45,7 +45,7 @@ void Conv2d(const qaint* input,
             weight{act_cnt}.set_value(params[{param_name} + ".weight"])
         } else {
             weight{act_cnt}_value = params[{param_name} + ".weight"]
-            weigh{act_cnt}_value = np.zeros(({out_channels}, {kernel_size}, {kernel_size}, {in_channels}))
+            weigh{act_cnt}_value = np.zeros(({out_channels}, {kernel_size}, {kernel_size}, {in_channels}), dtype=np.int8)
             for i, j, k in np.ndindex(({out_channels}, {kernel_size}, {kernel_size})):
                 weight{act_cnt}_value[i][j][k][i] = weight{act_cnt}_value_org[i][j][k][0]
             weight{act_cnt}.set_value(weight{act_cnt}_value)
@@ -114,7 +114,7 @@ void Conv2d(const qaint* input,
             printf("weight%d.set_value(params[\"%s.weight\"])\n", act_cnt, param_name);
         } else {
             printf("weight%d_value_org = params[\"%s.weight\"]\n", act_cnt, param_name);
-            printf("weight%d_value = np.zeros((%d, %d, %d, %d))\n", act_cnt, out_channels, kernel_size, kernel_size, in_channels);
+            printf("weight%d_value = np.zeros((%d, %d, %d, %d), dtype=np.int8)\n", act_cnt, out_channels, kernel_size, kernel_size, in_channels);
             printf("for i, j, k in np.ndindex((%d, %d, %d)):\n", out_channels, kernel_size, kernel_size);
             printf("\tweight%d_value[i][j][k][i] = weight%d_value_org[i][j][k][0]\n", act_cnt, act_cnt);
             printf("weight%d.set_value(weight%d_value)\n", act_cnt, act_cnt);
