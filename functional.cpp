@@ -182,19 +182,10 @@ void interpolate(const qaint* input, qaint* output, const string mode,
                  const int act_in, int& act_out) {
 
     // mode    fy  fx
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 0.5 0.5
-    // nearest 16 16
+    //  nearest 0.5 0.5
+    //  nearest 0.5 0.5
+    //  nearest 0.5 0.5
+    //  nearest 0.5 0.5
     // bilinear 0.33333 0.4
     // bilinear 0.42857 0.45455
     // bilinear 0.42857 0.45455
@@ -261,16 +252,25 @@ void interpolate(const qaint* input, qaint* output, const string mode,
 
     if (nngen_code) {
         /*
-        act{act_cnt} = ng.extern([act{act_in}], shape=(1, {out_height}, {out_width}, {channels}), opcode=0x{act_cnt},
-                                 func=interpolate({out_height}, {out_width}, 0, {mode}))
-        externs.append((act{act_cnt}, [act{act_in}], "act{act_cnt} = interpolate({out_height}, {out_width}, 0, {mode})(act{act_in})"))
+        if (mode == "nearest") {
+            act{act_cnt} = ng.upsampling2d(act{act_in}, factors=(1, {out_height / in_height}, {out_width / in_width}, 1))
+        } else if (mode == "bilinear") {
+            act{act_cnt} = ng.extern([act{act_in}], shape=(1, {out_height}, {out_width}, {channels}), opcode=0x{act_cnt},
+                                    func=interpolate({out_height}, {out_width}, 0, {mode}))
+            externs.append((act{act_cnt}, [act{act_in}], "act{act_cnt} = interpolate({out_height}, {out_width}, 0, {mode})(act{act_in})"))
+        }
         */
 
         printf("# [%d] interpolate\n", act_cnt);
-        printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
-               act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, 0, mode.c_str());
-        printf("externs.append((act%d, [act%d], \"act%d = interpolate(%d, %d, %d, \'%s\')(act%d)\"))\n",
-               act_cnt, act_in, act_cnt, out_height, out_width, 0, mode.c_str(), act_in);
+        if (mode == "nearest") {
+            printf("act%d = ng.upsampling2d(act%d, factors=(1, %d, %d, 1))\n",
+                   act_cnt, act_in, out_height / in_height, out_width / in_width);
+        } else if (mode == "bilinear") {
+            printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
+                   act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, 0, mode.c_str());
+            printf("externs.append((act%d, [act%d], \"act%d = interpolate(%d, %d, %d, \'%s\')(act%d)\"))\n",
+                   act_cnt, act_in, act_cnt, out_height, out_width, 0, mode.c_str(), act_in);
+        }
         printf("\n\n");
 
         act_out = act_cnt++;
