@@ -681,8 +681,9 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
         rshift{act_cnt} = ng.constant([{cout_shifts[conv_cnt-1] - tbshift}], dtype=ng.int8)
         ii{act_cnt}, ff{act_cnt}, oo{act_cnt} = [sigmoid(ng.rshift_round(slice{act_cnt}s[i], rshift{act_cnt}, par=par), par=par) for i in range(3)]
 
-        gg{act_cnt} = ng.extern([slice{act_cnt}s[3]], opcode=0x{act_cnt}, func=lambda x : celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(x)))
-        externs.append((gg{act_cnt}, [slice{act_cnt}s[3]], "gg{act_cnt} = celu({lnout_shifts[ln_cnt-1]})(ln({lnout_shifts[ln_cnt-1]})(slice{act_cnt}s[3]))"))
+        ln{act_cnt} = ng.extern([slice{act_cnt}s[3]], opcode=0x{act_cnt}, func=ln({lnout_shifts[ln_cnt-1]}))
+        externs.append((ln{act_cnt}, [slice{act_cnt}s[3]], "ln{act_cnt} = ln({lnout_shifts[ln_cnt-1]})(slice{act_cnt}s[3])"))
+        gg{act_cnt} = ng.celu(ln{act_cnt}, rshift_lut_in={lnout_shifts[ln_cnt-1] - tbshift}, lut_clip=8.0, range_rate=0.125, dtype=act_dtype, par=par)
         */
 
         printf("# [%d] sig_ln_celu\n", act_cnt);
@@ -696,10 +697,12 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
                act_cnt, act_cnt, act_cnt, act_cnt, act_cnt);
         printf("\n");
 
-        printf("gg%d = ng.extern([slice%ds[3]], opcode=0x%d, func=lambda x : celu(%d)(ln(%d)(x)))\n",
-               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], lnout_shifts[ln_cnt-1]);
-        printf("externs.append((gg%d, [slice%ds[3]], \"gg%d = celu(%d)(ln(%d)(slice%ds[3]))\"))\n",
-               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], lnout_shifts[ln_cnt-1], act_cnt);
+        printf("ln%d = ng.extern([slice%ds[3]], opcode=0x%d, func=ln(%d))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1]);
+        printf("externs.append((ln%d, [slice%ds[3]], \"ln%d = ln(%d)(slice%ds[3])\"))\n",
+               act_cnt, act_cnt, act_cnt, lnout_shifts[ln_cnt-1], act_cnt);
+        printf("gg%d = ng.celu(ln%d, rshift_lut_in=%d, lut_clip=8.0, range_rate=0.125, dtype=act_dtype, par=par)\n",
+               act_cnt, act_cnt, lnout_shifts[ln_cnt-1] - tbshift);
         printf("\n\n");
 
         act_out_mid = act_cnt++;
@@ -747,17 +750,14 @@ void LSTMFusion(const qaint current_encoding[(hyper_channels * 16) * height_32 *
 
     if (nngen_code) {
         /*
-        celu{act_cnt} = ng.extern([act{act_out_cell_state}], opcode=0x{act_cnt}, func=celu({lnout_shifts[ln_cnt-1]}))
-        externs.append((celu{act_cnt}, [act{act_out_cell_state}], "celu{act_cnt} = celu({lnout_shifts[ln_cnt-1]})(act{act_out_cell_state})"))
+        celu{act_cnt} = ng.celu(act{act_out_cell_state}, rshift_lut_in={lnout_shifts[ln_cnt-1] - tbshift}, lut_clip=8.0, range_rate=0.125, dtype=act_dtype, par=par)
         rshift{act_cnt} = ng.constant([{celushift + sigshift - oin_shifts[other_cnt]}], dtype=ng.int8)
         act{act_cnt} = rshift_round_and_clip(ng.multiply(celu{act_cnt}, oo{act_out_mid}, par=par, dtype=mid_dtype), rshift{act_cnt}, par=par, dtype=act_dtype)
         */
 
         printf("# [%d] hidden_state\n", act_cnt);
-        printf("celu%d = ng.extern([act%d], opcode=0x%d, func=celu(%d))\n",
-               act_cnt, act_out_cell_state, act_cnt, lnout_shifts[ln_cnt-1]);
-        printf("externs.append((celu%d, [act%d], \"celu%d = celu(%d)(act%d)\"))\n",
-               act_cnt, act_out_cell_state, act_cnt, lnout_shifts[ln_cnt-1], act_out_cell_state);
+        printf("celu%d = ng.celu(act%d, rshift_lut_in=%d, lut_clip=8.0, range_rate=0.125, dtype=act_dtype, par=par)\n",
+               act_cnt, act_out_cell_state, lnout_shifts[ln_cnt-1] - tbshift);
         printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, celushift + sigshift - oin_shifts[other_cnt]);
         printf("act%d = rshift_round_and_clip(ng.multiply(celu%d, oo%d, par=par, dtype=mid_dtype), rshift%d, par=par, dtype=act_dtype)\n",
                act_cnt, act_cnt, act_out_mid, act_cnt);
