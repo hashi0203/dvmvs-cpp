@@ -1,5 +1,5 @@
 CC := g++
-CFLAGS := -Wall -std=c++11
+CFLAGS := -Wall -std=c++11 -O3
 OPENCV := `pkg-config --cflags --libs opencv4`
 # OPENCV := -I/usr/local/include/opencv2 -I/usr/local/include/opencv -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui
 EIGEN := -I /usr/include/eigen3

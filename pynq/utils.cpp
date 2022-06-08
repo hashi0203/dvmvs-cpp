@@ -82,30 +82,6 @@ void cost_volume_fusion(const qaint image1[fpn_output_channels * height_2 * widt
     print_neg_shift("cost_volume_fusion", "xshift - yshift", xshift - yshift);
     for (int idx = 0; idx < n_depth_levels * height_2 * width_2; idx++)
         fused_cost_volume[idx] = clip((fused_cost_volume_float[idx] / n_measurement_frames) / (1 << (xshift - yshift)));
-
-    if (nngen_code) {
-        /*
-        fusion = Fusion({xshift - yshift}, K, pose1s, pose2ss)
-        act{act_cnt} = ng.extern([act{act_in}], shape=(1, {height_2}, {width_2}, {n_depth_levels}),
-                                 dtype=act_dtype, opcode=0x{act_cnt}, func=fusion)
-        externs.append((act{act_cnt}, [act{act_in}], "act{act_cnt} = fusion(act{act_in})"))
-        */
-
-        printf("externs = []\n\n");
-        printf("# [%d] cost volume fusion\n", act_cnt);
-        printf("fusion = Fusion(%d, K, pose1s, pose2ss)\n", xshift - yshift);
-        printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), dtype=act_dtype, opcode=0x%d, func=fusion)\n",
-               act_cnt, act_in, height_2, width_2, n_depth_levels, act_cnt);
-        printf("externs.append((act%d, [act%d], \"act%d = fusion(act%d)\"))\n",
-               act_cnt, act_in, act_cnt, act_in);
-        printf("\n\n");
-        printf("return (act%d,), externs, fusion\n\n", act_cnt);
-
-        act_out = act_cnt++;
-    }
-
-    if (shift_ckeck) print1(yshift);
-    if (shift_ckeck) print1("cost_volume");
 }
 
 
@@ -154,7 +130,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
         projections[i][j][k] = round(projections_float[i][j][k]);
 
-    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+    for (int i = 0; i < height_2; i++) for (int j = 0; j < width_2; j++)
         depth_hypothesis[0][i][j] = 0;
 
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {

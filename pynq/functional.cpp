@@ -39,51 +39,6 @@ void add_layer(const qaint* x, qaint* y, const int layer_size, const string para
     for (int idx = 0; idx < layer_size; idx++)
         y[idx] = clip((((qmint) y[idx] << (mshift - yshift)) + (((qmint) x[idx] << (mshift - xshift)))) >> (mshift - outshift));
 
-    if (nngen_code) {
-        /*
-        if (mshift == xshift && mshift == yshift && mshift == outshift) {
-            act{act_cnt} = ng.add(act{act_in1}, act{act_in0}, par=par)
-        } else if (mshift == xshift && mshift == yshift) {
-            rshift{act_cnt} = ng.constant([{mshift - outshift}], dtype=ng.int8)
-            act{act_cnt} = rshift_round_and_clip(ng.add(act{act_in1}, act{act_in0}, par=par, dtype=mid_dtype), rshift{act_cnt}, par=par, dtype=act_dtype)
-        } else if (mshift == xshift) {
-            lshift{act_cnt} = ng.constant([{mshift - yshift}], dtype=ng.int8)
-            rshift{act_cnt} = ng.constant([{mshift - outshift}], dtype=ng.int8)
-            act{act_cnt} = rshift_round_and_clip(ng.add(ng.lshift(act{act_in1}, lshift{act_cnt}, par=par, dtype=mid_dtype), act{act_in0}, par=par), rshift{act_cnt}, par=par, dtype=act_dtype)
-        } else if (mshift == yshift) {
-            lshift{act_cnt} = ng.constant([{mshift - xshift}], dtype=ng.int8)
-            rshift{act_cnt} = ng.constant([{mshift - outshift}], dtype=ng.int8)
-            act{act_cnt} = rshift_round_and_clip(ng.add(act{act_in1}, ng.lshift(act{act_in0}, lshift{act_cnt}, par=par, dtype=mid_dtype), par=par), rshift{act_cnt}, par=par, dtype=act_dtype)
-        } else {
-            printf("error: unexpected shifts in add_layer ((xshift, yshift, outshift) = (%d, %d, %d)).\n",
-                   xshift, yshift, outshift);
-        }
-        */
-
-        printf("# [%d] add\n", act_cnt);
-        if (mshift == xshift && mshift == yshift && mshift == outshift) {
-            printf("act%d = ng.add(act%d, act%d, par=par)\n", act_cnt, act_in1, act_in0);
-        } else if (mshift == xshift && mshift == yshift) {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = rshift_round_and_clip(ng.add(act%d, act%d, par=par, dtype=mid_dtype), rshift%d, par=par, dtype=act_dtype)\n", act_cnt, act_in1, act_in0, act_cnt);
-        } else if (mshift == xshift) {
-            printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - yshift);
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = rshift_round_and_clip(ng.add(ng.lshift(act%d, lshift%d, par=par, dtype=mid_dtype), act%d, par=par), rshift%d, par=par, dtype=act_dtype)\n",
-                   act_cnt, act_in1, act_cnt, act_in0, act_cnt);
-        } else if (mshift == yshift) {
-            printf("lshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - xshift);
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, mshift - outshift);
-            printf("act%d = rshift_round_and_clip(ng.add(act%d, ng.lshift(act%d, lshift%d, par=par, dtype=mid_dtype), par=par), rshift%d, par=par, dtype=act_dtype)\n",
-                   act_cnt, act_in1, act_in0, act_cnt, act_cnt);
-        } else {
-            printf("error: unexpected shifts in add_layer ((xshift, yshift, outshift) = (%d, %d, %d)).\n",
-                   xshift, yshift, outshift);
-        }
-        printf("\n\n");
-        act_out = act_cnt++;
-    }
-    if (shift_ckeck) print1(outshift);
 }
 
 
@@ -97,33 +52,6 @@ void cat_layer(const qaint* x0, const qaint* x1, qaint* y,
     for (int idx = 0; idx < in_channels1 * height * width; idx++)
         y[idx + (in_channels0 * height * width)] = x1[idx] >> x1shift;
 
-    if (nngen_code) {
-        /*
-        if (x0shift == 0 && x1shift == 0) {
-            act{act_cnt} = ng.concat([act{act_in0}, act{act_in1}], axis=3)
-        } else if (x0shift == 0) {
-            rshift{act_cnt} = ng.constant([{x1shift}], dtype=ng.int8)
-            act{act_cnt} = ng.concat([act{act_in0}, ng.rshift_round(act{act_in1}, rshift{act_cnt}, par=par)], axis=3)
-        } else {
-            rshift{act_cnt} = ng.constant([{x0shift}], dtype=ng.int8)
-            act{act_cnt} = ng.concat([ng.rshift_round(act{act_in0}, rshift{act_cnt}, par=par), act{act_in1}], axis=3)
-        }
-        */
-
-        printf("# [%d] cat\n", act_cnt);
-        if (x0shift == 0 && x1shift == 0) {
-            printf("act%d = ng.concat([act%d, act%d], axis=3)\n", act_cnt, act_in0, act_in1);
-        } else if (x0shift == 0) {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x1shift);
-            printf("act%d = ng.concat([act%d, ng.rshift_round(act%d, rshift%d, par=par)], axis=3)\n", act_cnt, act_in0, act_in1, act_cnt);
-        } else {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x0shift);
-            printf("act%d = ng.concat([ng.rshift_round(act%d, rshift%d, par=par), act%d], axis=3)\n", act_cnt, act_in0, act_cnt, act_in1);
-        }
-        printf("\n\n");
-
-        act_out = act_cnt++;
-    }
 }
 
 
@@ -139,40 +67,6 @@ void cat_layer(const qaint* x0, const qaint* x1, const qaint* x2, qaint* y,
     for (int idx = 0; idx < in_channels2 * height * width; idx++)
         y[idx + ((in_channels0 + in_channels1) * height * width)] = x2[idx] >> x2shift;
 
-    if (nngen_code) {
-        /*
-        if (x0shift == 0 && x1shift == 0 && x2shift > 0) {
-            rshift{act_cnt} = ng.constant([{x2shift}], dtype=ng.int8)
-            act{act_cnt} = ng.concat([act{act_in0}, act{act_in1}, ng.rshift_round(act{act_in2}, rshift{act_cnt}, par=par)], axis=3)
-        } else if (x0shift > 0 && x1shift > 0 && x2shift == 0) {
-            rshift{act_cnt}s = [ng.constant([{x0shift}], dtype=ng.int8), ng.constant([{x1shift}], dtype=ng.int8)]
-            act{act_cnt} = ng.concat([ng.rshift_round(act{act_in0}, rshift{act_cnt}s[0], par=par),
-                                      ng.rshift_round(act{act_in1}, rshift{act_cnt}s[1], par=par),
-                                      act{act_in2}], axis=3)
-        } else {
-            printf("error: unexpected shifts in cat_layer ((x0shift, x1shift, x2shift) = (%d, %d, %d)).\n",
-                   x0shift, x1shift, x2shift);
-        }
-        */
-
-        printf("# [%d] cat\n", act_cnt);
-        if (x0shift == 0 && x1shift == 0 && x2shift > 0) {
-            printf("rshift%d = ng.constant([%d], dtype=ng.int8)\n", act_cnt, x2shift);
-            printf("act%d = ng.concat([act%d, act%d, ng.rshift_round(act%d, rshift%d, par=par)], axis=3)\n",
-                   act_cnt, act_in0, act_in1, act_in2, act_cnt);
-        } else if (x0shift > 0 && x1shift > 0 && x2shift == 0) {
-            printf("rshift%ds = [ng.constant([%d], dtype=ng.int8), ng.constant([%d], dtype=ng.int8)]\n",
-                   act_cnt, x0shift, x1shift);
-            printf("act%d = ng.concat([ng.rshift_round(act%d, rshift%ds[0], par=par), ng.rshift_round(act%d, rshift%ds[1], par=par), act%d], axis=3)\n",
-                   act_cnt, act_in0, act_cnt, act_in1, act_cnt, act_in2);
-        } else {
-            printf("error: unexpected shifts in cat_layer ((x0shift, x1shift, x2shift) = (%d, %d, %d)).\n",
-                   x0shift, x1shift, x2shift);
-        }
-        printf("\n\n");
-
-        act_out = act_cnt++;
-    }
 }
 
 
@@ -245,37 +139,6 @@ void interpolate(const qaint* input, qaint* output, const string mode,
         cout << "The 'mode' option in interpolation should be 'nearest' or 'bilinear,' but it is " << mode << "\n";
         exit(1);
     }
-
-    // print_neg_shift(param_path, "xshift", xshift);
-    // print_neg_shift(param_path, "yshift", yshift);
-    // print_neg_shift(param_path, "yshift - xshift", yshift - xshift);
-
-    if (nngen_code) {
-        /*
-        if (mode == "nearest") {
-            act{act_cnt} = ng.upsampling2d(act{act_in}, factors=(1, {out_height / in_height}, {out_width / in_width}, 1))
-        } else if (mode == "bilinear") {
-            act{act_cnt} = ng.extern([act{act_in}], shape=(1, {out_height}, {out_width}, {channels}), opcode=0x{act_cnt},
-                                    func=interpolate({out_height}, {out_width}, 0, {mode}))
-            externs.append((act{act_cnt}, [act{act_in}], "act{act_cnt} = interpolate({out_height}, {out_width}, 0, {mode})(act{act_in})"))
-        }
-        */
-
-        printf("# [%d] interpolate\n", act_cnt);
-        if (mode == "nearest") {
-            printf("act%d = ng.upsampling2d(act%d, factors=(1, %d, %d, 1))\n",
-                   act_cnt, act_in, out_height / in_height, out_width / in_width);
-        } else if (mode == "bilinear") {
-            printf("act%d = ng.extern([act%d], shape=(1, %d, %d, %d), opcode=0x%d, func=interpolate(%d, %d, %d, \"%s\"))\n",
-                   act_cnt, act_in, out_height, out_width, channels, act_cnt, out_height, out_width, 0, mode.c_str());
-            printf("externs.append((act%d, [act%d], \"act%d = interpolate(%d, %d, %d, \'%s\')(act%d)\"))\n",
-                   act_cnt, act_in, act_cnt, out_height, out_width, 0, mode.c_str(), act_in);
-        }
-        printf("\n\n");
-
-        act_out = act_cnt++;
-    }
-    // if (shift_ckeck) print1(yshift);
 }
 
 

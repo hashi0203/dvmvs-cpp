@@ -416,7 +416,6 @@ int main() {
 
         keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half);
         if (response == 0) continue;
-        if (nngen_code) break;
 
         float prediction[test_image_height * test_image_width];
         for (int idx = 0; idx < test_image_height * test_image_width; idx++)
