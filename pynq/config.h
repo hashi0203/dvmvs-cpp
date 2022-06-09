@@ -19,12 +19,12 @@ constexpr float test_optimal_R_measure = 0.0;
 
 // SET THESE: TESTING FOLDER LOCATIONS
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
-const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
+// const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
 
 const string dataset_name = "hololens-dataset";
 const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_image_width) + "_" + to_string(test_image_height) + "_" + to_string(test_n_measurement_frames) + "_dvmvs_fusionnet_online";
 
-const string scene_folder = test_online_scene_path;
+const string scene_folder = "../params_pynq/";
 const string scene = "000";
 
 constexpr int n_test_frames = 30;
