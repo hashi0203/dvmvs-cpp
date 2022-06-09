@@ -1,27 +1,27 @@
 #include "config.h"
 
-template<class T>
-void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
-    if (mode == "txt") {
-        // int cnt_n = 0;
-        // int cnt_p = 0;
-        ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
-        for (int idx = 0; idx < layer_size; idx++) {
-            ofs << layer[idx] / (float) (1 << shift) << "\n";
-            // if (layer[idx] < -(1 << 15)) cnt_n++;
-            // if ((1 << 15) <= layer[idx]) cnt_p++;
-        }
-        ofs.close();
-        // print3(cnt_n, cnt_p, (cnt_n + cnt_p) / (float) layer_size);
-    } else if (mode == "bin") {
-        ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
-        for (int idx = 0; idx < layer_size; idx++)
-            ofs.write((char*) &layer[idx], sizeof(T));
-        ofs.close();
-    } else {
-        print2("unexpected mode:", mode);
-    }
-}
+// template<class T>
+// void save_layer(string save_dir, string layer_name, string filename, const T* layer, const int layer_size, const int shift, string mode="txt") {
+//     if (mode == "txt") {
+//         // int cnt_n = 0;
+//         // int cnt_p = 0;
+//         ofstream ofs(save_dir + layer_name + "-" + filename + ".txt");
+//         for (int idx = 0; idx < layer_size; idx++) {
+//             ofs << layer[idx] / (float) (1 << shift) << "\n";
+//             // if (layer[idx] < -(1 << 15)) cnt_n++;
+//             // if ((1 << 15) <= layer[idx]) cnt_p++;
+//         }
+//         ofs.close();
+//         // print3(cnt_n, cnt_p, (cnt_n + cnt_p) / (float) layer_size);
+//     } else if (mode == "bin") {
+//         ofstream ofs(save_dir + layer_name + "-" + filename, ios::out|ios::binary|ios::trunc);
+//         for (int idx = 0; idx < layer_size; idx++)
+//             ofs.write((char*) &layer[idx], sizeof(T));
+//         ofs.close();
+//     } else {
+//         print2("unexpected mode:", mode);
+//     }
+// }
 
 #include "functional.h"
 #include "activation.h"
@@ -64,7 +64,7 @@ int oout_shifts[n_others];
 int ln_cnt;
 
 
-const string save_dir = "./results/";
+// const string save_dir = "./results/";
 
 void set_idx(string filename, const int n_files, int* start_idx) {
     int n_params[n_files];
@@ -130,7 +130,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     ln_cnt = 0;
 
     const int act_in = act_cnt++;
-    save_layer<qaint>(save_dir, "input", filename, reference_image, 3 * test_image_height * test_image_width, cin_shifts[0]);
+    // save_layer<qaint>(save_dir, "input", filename, reference_image, 3 * test_image_height * test_image_width, cin_shifts[0]);
 
     qaint layer1[channels_1 * height_2 * width_2];
     qaint layer2[channels_2 * height_4 * width_4];
@@ -145,9 +145,9 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     FeatureExtractor(reference_image, layer1, layer2, layer3, layer4, layer5,
                      act_in, act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5);
 
-    save_layer<qaint>(save_dir, "layer1", filename, layer1, channels_1 * height_2 * width_2, cout_shifts[3-1]);
-    save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
-    save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
+    // save_layer<qaint>(save_dir, "layer1", filename, layer1, channels_1 * height_2 * width_2, cout_shifts[3-1]);
+    // save_layer<qaint>(save_dir, "layer2", filename, layer2, channels_2 * height_4 * width_4, cout_shifts[12-1]);
+    // save_layer<qaint>(save_dir, "layer5", filename, layer5, channels_5 * height_32 * width_32, cout_shifts[conv_cnt-1]);
 
     qaint reference_feature_quarter[fpn_output_channels * height_4 * width_4];
     qaint reference_feature_one_eight[fpn_output_channels * height_8 * width_8];
@@ -160,9 +160,9 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
                     act_out_layer1, act_out_layer2, act_out_layer3, act_out_layer4, act_out_layer5,
                     act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen);
 
-    save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
-    save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
-    save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
+    // save_layer<qaint>(save_dir, "feature_one_sixteen", filename, reference_feature_one_sixteen, fpn_output_channels * height_16 * width_16, cout_shifts[54-1]);
+    // save_layer<qaint>(save_dir, "feature_one_eight", filename, reference_feature_one_eight, fpn_output_channels * height_8 * width_8, cout_shifts[56-1]);
+    // save_layer<qaint>(save_dir, "feature_half", filename, reference_feature_half, fpn_output_channels * height_2 * width_2, cout_shifts[conv_cnt-1]);
 
     if (n_measurement_frames == 0) return;
 
@@ -170,7 +170,7 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
     int act_out_cost_volume;
     cost_volume_fusion(reference_feature_half, n_measurement_frames, measurement_feature_halfs, warpings, cost_volume,
                        act_out_half, act_out_cost_volume);
-    save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
+    // save_layer<qaint>(save_dir, "cost_volume", filename, cost_volume, n_depth_levels * height_2 * width_2, cin_shifts[conv_cnt]);
 
     qaint skip0[hyper_channels * height_2 * width_2];
     qaint skip1[(hyper_channels * 2) * height_4 * width_4];
@@ -186,24 +186,24 @@ void predict(const qaint reference_image[3 * test_image_height * test_image_widt
                       skip0, skip1, skip2, skip3, bottom, filename,
                       act_out_half, act_out_quarter, act_out_one_eight, act_out_one_sixteen, act_out_cost_volume,
                       act_out_skip0, act_out_skip1, act_out_skip2, act_out_skip3, act_out_bottom);
-    save_layer<qaint>(save_dir, "skip0", filename, skip0, hyper_channels * height_2 * width_2, oout_shifts[39-1]);
-    save_layer<qaint>(save_dir, "skip1", filename, skip1, (hyper_channels * 2) * height_4 * width_4, oout_shifts[43-1]);
-    save_layer<qaint>(save_dir, "skip2", filename, skip2, (hyper_channels * 4) * height_8 * width_8, oout_shifts[47-1]);
-    save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
-    save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
+    // save_layer<qaint>(save_dir, "skip0", filename, skip0, hyper_channels * height_2 * width_2, oout_shifts[39-1]);
+    // save_layer<qaint>(save_dir, "skip1", filename, skip1, (hyper_channels * 2) * height_4 * width_4, oout_shifts[43-1]);
+    // save_layer<qaint>(save_dir, "skip2", filename, skip2, (hyper_channels * 4) * height_8 * width_8, oout_shifts[47-1]);
+    // save_layer<qaint>(save_dir, "skip3", filename, skip3, (hyper_channels * 8) * height_16 * width_16, oout_shifts[51-1]);
+    // save_layer<qaint>(save_dir, "bottom", filename, bottom, (hyper_channels * 16) * height_32 * width_32, oout_shifts[other_cnt-1]);
 
-    save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
-    save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
+    // save_layer<qaint>(save_dir, "cell_state_prev", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
+    // save_layer<qaint>(save_dir, "hidden_state_prev", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
     int act_out_hidden_state;
     int act_out_cell_state;
     LSTMFusion(bottom, hidden_state, cell_state, filename, act_out_bottom, act_out_hidden_state, act_out_cell_state);
-    save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
-    save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
+    // save_layer<qaint>(save_dir, "cell_state", filename, cell_state, hid_channels * height_32 * width_32, cellshift);
+    // save_layer<qaint>(save_dir, "hidden_state", filename, hidden_state, hid_channels * height_32 * width_32, oin_shifts[other_cnt]);
 
     int act_out_depth_full;
     CostVolumeDecoder(reference_image, skip0, skip1, skip2, skip3, hidden_state, depth_full,
                       act_in, act_out_skip0, act_out_skip1, act_out_skip2, act_out_skip3, act_out_hidden_state, act_out_depth_full);
-    save_layer<qaint>(save_dir, "depth_full", filename, depth_full, test_image_height * test_image_width, sigshift);
+    // save_layer<qaint>(save_dir, "depth_full", filename, depth_full, test_image_height * test_image_width, sigshift);
 }
 
 
@@ -293,7 +293,9 @@ int main() {
 
     ofstream ofs;
 
-    for (int f = 20; f < 25; f++) {
+    for (int f = 0; f < 20; f++) {
+        clock_t start = clock();
+
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -429,15 +431,18 @@ int main() {
 
         state_exists = true;
 
-        save_image(save_dir + image_filenames[f].substr(len_image_filedir), previous_depth);
+        clock_t end = clock();
+        cout << (double)(end - start) / CLOCKS_PER_SEC << " [s]\n";
 
-        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
-        for (int i = 0 ; i < test_image_height; i++) {
-            for (int j = 0; j < test_image_width-1; j++)
-                ofs << previous_depth[i][j] << " ";
-            ofs << previous_depth[i][test_image_width-1] << "\n";
-        }
-        ofs.close();
+        // save_image(save_dir + image_filenames[f].substr(len_image_filedir), previous_depth);
+
+        // ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        // for (int i = 0 ; i < test_image_height; i++) {
+        //     for (int j = 0; j < test_image_width-1; j++)
+        //         ofs << previous_depth[i][j] << " ";
+        //     ofs << previous_depth[i][test_image_width-1] << "\n";
+        // }
+        // ofs.close();
     }
 
     keyframe_buffer.close();
