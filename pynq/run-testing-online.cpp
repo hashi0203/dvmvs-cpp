@@ -64,7 +64,7 @@ int oout_shifts[n_others];
 int ln_cnt;
 
 
-// const string save_dir = "./results/";
+const string save_dir = "./results/";
 
 void set_idx(string filename, const int n_files, int* start_idx) {
     int n_params[n_files];
@@ -270,13 +270,13 @@ int main() {
     }
     // print1(n_poses);
 
-    const string image_filedir = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/";
+    const string image_filedir = "/home/nhsmt1123/master-thesis/dvmvs-cpp-qt2/images/";
     const int len_image_filedir = image_filedir.length();
     string image_filenames[n_test_frames];
     for (int i = 0; i < n_test_frames; i++) {
         ostringstream sout;
         sout << setfill('0') << setw(5) << i+3;
-        image_filenames[i] = image_filedir + sout.str() + ".png";
+        image_filenames[i] = image_filedir + sout.str();
     }
     print1(image_filenames[0]);
 
@@ -434,15 +434,15 @@ int main() {
         clock_t end = clock();
         cout << (double)(end - start) / CLOCKS_PER_SEC << " [s]\n";
 
-        // save_image(save_dir + image_filenames[f].substr(len_image_filedir), previous_depth);
+        // save_image(save_dir + image_filenames[f].substr(len_image_filedir) + ".png", previous_depth);
 
-        // ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
-        // for (int i = 0 ; i < test_image_height; i++) {
-        //     for (int j = 0; j < test_image_width-1; j++)
-        //         ofs << previous_depth[i][j] << " ";
-        //     ofs << previous_depth[i][test_image_width-1] << "\n";
-        // }
-        // ofs.close();
+        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        for (int i = 0 ; i < test_image_height; i++) {
+            for (int j = 0; j < test_image_width-1; j++)
+                ofs << previous_depth[i][j] << " ";
+            ofs << previous_depth[i][test_image_width-1] << "\n";
+        }
+        ofs.close();
     }
 
     keyframe_buffer.close();

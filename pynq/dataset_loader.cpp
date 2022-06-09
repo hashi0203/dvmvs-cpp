@@ -1,4 +1,4 @@
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 #include "config.h"
 #include "functional.h"
 
@@ -26,14 +26,15 @@ void apply_rgb(float*** org_image, float image[3][test_image_height][test_image_
 
 
 void load_image(const string image_filename, float reference_image[3 * test_image_height * test_image_width]) {
-    cv::Mat bgr = cv::imread(image_filename, -1);
-    cv::Mat rgb;
-    cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
+    ifstream ifs(image_filename);
+    unsigned char org_image[3 * org_image_height * org_image_width];
+    ifs.read((char*) org_image, sizeof(unsigned char) * 3 * org_image_height * org_image_width);
+    ifs.close();
 
     float ***org_reference_image = new float**[3];
     new_3d(org_reference_image, 3, org_image_height, org_image_width);
-    for (int i = 0; i < org_image_height; i++) for (int j = 0; j < org_image_width; j++) for (int k = 0; k < 3; k++)
-        org_reference_image[k][i][j] = rgb.data[540*3*i + 3*j + k];
+    for (int i = 0; i < 3; i++) for (int j = 0; j < org_image_height; j++) for (int k = 0; k < org_image_width; k++)
+        org_reference_image[i][j][k] = org_image[(i * org_image_height + j) * org_image_width + k];
 
     float image[3][test_image_height][test_image_width];
     apply_rgb(org_reference_image, image);
@@ -44,9 +45,9 @@ void load_image(const string image_filename, float reference_image[3 * test_imag
 }
 
 
-void save_image(const string image_filename, float depth[test_image_height][test_image_width]) {
-    cv::Mat gray(test_image_height, test_image_width, CV_8U);
-    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
-        gray.data[test_image_width*i + j] = depth[i][j] * 150;
-    cv::imwrite(image_filename, gray);
-}
+// void save_image(const string image_filename, float depth[test_image_height][test_image_width]) {
+//     cv::Mat gray(test_image_height, test_image_width, CV_8U);
+//     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+//         gray.data[test_image_width*i + j] = depth[i][j] * 150;
+//     cv::imwrite(image_filename, gray);
+// }
