@@ -72,10 +72,10 @@ class KeyframeBuffer:
         else:
             reference_pose, reference_image = buffer_array[-1]
 
-        n_requested_measurement_frames = min(n_requested_measurement_frames, len(buffer_array))
+        n_requested_measurement_frames = min(n_requested_measurement_frames, len(buffer_array) - 1)
 
         penalties = []
-        for i in range(len(buffer_array)):
+        for i in range(len(buffer_array) - 1):
             measurement_pose = buffer_array[i][0]
             combined_measure, R_measure, t_measure = pose_distance(reference_pose, measurement_pose)
             penalty = self.calculate_penalty(t_measure, R_measure)

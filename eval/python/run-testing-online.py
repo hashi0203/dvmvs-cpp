@@ -19,7 +19,7 @@ def compute_errors(gt, pred):
     pred = pred[valid]
 
     if len(gt) == 0:
-        return np.nan, np.nan
+        return np.nan, np.nan, np.nan
 
     differences = gt - pred
     squared_differences = np.square(differences)
@@ -63,6 +63,9 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
     # if os.path.isfile('%s/log.txt' % (save_path)):
     #     os.remove('%s/log.txt' % (save_path))
 
+    hidden_states = []
+    pool = torch.nn.AvgPool2d(2, 2)
+
     with torch.no_grad():
         preprocessor = PreprocessImage(K=K,
                                     old_width=Config.org_image_width,
@@ -72,7 +75,7 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
                                     distortion_crop=0,
                                     perform_crop=False)
 
-        for i in range(1):
+        for i in range(2):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -82,7 +85,7 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half)
 
 
-        for i in range(1, len(poses)):
+        for i in range(2, len(poses)):
             reference_pose = poses[i]
             reference_image = load_image(image_filenames[i])
 
@@ -151,6 +154,8 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
                                     estimated_current_depth=depth_estimation,
                                     camera_matrix=lstm_K_bottom)
 
+            hidden_states.append(pool(lstm_state[0]).cpu().numpy().squeeze())
+
             prediction = cost_volume_decoder(reference_image_torch, skip0, skip1, skip2, skip3, lstm_state[0])
 
             previous_depth = prediction.view(1, 1, Config.test_image_height, Config.test_image_width)
@@ -159,11 +164,11 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             prediction = prediction.cpu().numpy().squeeze()
 
             # cv2.imwrite('%s/results/%s' % (save_path, image_filenames[i].split("/")[-1]), (prediction * 10000).astype(np.uint16))
-            print(depth_filenames[i])
+
             reference_depth = cv2.imread(depth_filenames[i], -1).astype(float) / 10000.0
             reference_depth = cv2.resize(reference_depth, (Config.test_image_width, Config.test_image_height), interpolation=cv2.INTER_NEAREST)
             mse, rmse = compute_errors(reference_depth, prediction)
-            print('%s: %.3f, %.3f' % (image_filenames[i].split('/')[-1][:-4], mse, rmse))
+            print('%04d: %.3f, %.3f' % (i, mse, rmse))
             # with open('%s/log.txt' % (save_path), 'a') as f:
             #     f.write('%04d: %.18e, %.18e\n' % (i, mse, rmse))
             mses.append(mse)
@@ -228,19 +233,22 @@ if __name__ == '__main__':
 
     # method_name = "random"
 
-    mses, rmses, gts = {}, {}, {}
+    mses, rmses, gts = [], [], []
+    hidden_states = []
     for test_dataset_name in test_dataset_names:
         args = prepare(test_dataset_name)
         print("Predicting: %s" % test_dataset_name)
         mse, rmse, gt = predict(*args)
         print(test_dataset_name, "MSE", np.mean(mse))
         print(test_dataset_name, "RMSE", np.mean(rmse))
-        mses[test_dataset_name] = mse
-        rmses[test_dataset_name] = rmse
-        gts[test_dataset_name] = gt
+        mses.append(mse)
+        rmses.append(rmse)
+        gts.append(gt)
 
-    np.savez_compressed('mses', **mses)
-    np.savez_compressed('rmses', **rmses)
-    np.savez_compressed('gts', **gts)
+    rmses = np.array(rmses, dtype=object)
+    mses = np.array(mses, dtype=object)
+    gts = np.array(gts, dtype=object)
+
+    np.savez_compressed('data', mses = mses, rmses = rmses, gts = gts)
     # np.savez_compressed('npzs/%s' % method_name, rates = np.mean(rates, axis=1) * 100, mses = np.mean(mse_errors, axis=1), rmses = np.mean(rmse_errors, axis=1))
 
