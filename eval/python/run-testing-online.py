@@ -57,6 +57,7 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
     mses = []
     rmses = []
     gts = []
+    save_input = {}
 
     # save_path = "%s-%d/%s" % (method_name, param, test_dataset_name)
     # os.makedirs("%s/results" % save_path, exist_ok=True)
@@ -98,8 +99,24 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             lstm_K_bottom = full_K_torch.clone().cuda()
             lstm_K_bottom[:, 0:2, :] = lstm_K_bottom[:, 0:2, :] / 32.0
 
+            if "full_K" not in save_input:
+                save_input["full_K"] = full_K_torch.cpu().detach().numpy().copy()
+            if "half_K" not in save_input:
+                save_input["half_K"] = half_K_torch.cpu().detach().numpy().copy()
+            if "lstm_K" not in save_input:
+                save_input["lstm_K"] = lstm_K_bottom.cpu().detach().numpy().copy()
+
             reference_feature_half, reference_feature_quarter, \
             reference_feature_one_eight, reference_feature_one_sixteen = feature_shrinker(*feature_extractor(reference_image_torch))
+
+            if "reference_image" in save_input:
+                save_input["reference_image"] = np.vstack([save_input["reference_image"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["reference_image"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
+            if "reference_pose" in save_input:
+                save_input["reference_pose"] = np.vstack([save_input["reference_pose"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            else:
+                save_input["reference_pose"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
 
             measurement_poses_torch = []
             measurement_feature_halfs = []
@@ -169,7 +186,7 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             rmses.append(rmse)
             gts.append(reference_depth)
 
-    return mses, rmses, gts
+    return mses, rmses, gts, save_input
 
 def prepare(test_dataset_name):
     device = torch.device("cuda")
@@ -226,20 +243,22 @@ if __name__ == '__main__':
     test_dataset_names = ["chess-seq-01", "chess-seq-02", "fire-seq-01", "fire-seq-02", "heads-seq-02", "office-seq-01", "office-seq-03", "redkitchen-seq-01", "redkitchen-seq-07"]
 
     # method_name = "random"
+    base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
     mses, rmses, gts = {}, {}, {}
     for test_dataset_name in test_dataset_names:
         args = prepare(test_dataset_name)
         print("Predicting: %s" % test_dataset_name)
-        mse, rmse, gt = predict(*args)
+        mse, rmse, gt, save_input = predict(*args)
+        np.savez_compressed(base_dir / 'intrinsics/%s' % test_dataset_name, **save_input)
         print(test_dataset_name, "MSE", np.mean(mse))
         print(test_dataset_name, "RMSE", np.mean(rmse))
         mses[test_dataset_name] = mse
         rmses[test_dataset_name] = rmse
         gts[test_dataset_name] = gt
 
-    np.savez_compressed('mses', **mses)
-    np.savez_compressed('rmses', **rmses)
-    np.savez_compressed('gts', **gts)
+    np.savez_compressed(base_dir / 'mses', **mses)
+    np.savez_compressed(base_dir / 'rmses', **rmses)
+    np.savez_compressed(base_dir / 'gts', **gts)
     # np.savez_compressed('npzs/%s' % method_name, rates = np.mean(rates, axis=1) * 100, mses = np.mean(mse_errors, axis=1), rmses = np.mean(rmse_errors, axis=1))
 
