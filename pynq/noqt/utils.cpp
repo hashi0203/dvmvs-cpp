@@ -124,7 +124,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) for (int k = 0; k < 2; k++)
         projections[i][j][k] = round(projections_float[i][j][k]);
 
-    for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+    for (int i = 0; i < height_2; i++) for (int j = 0; j < width_2; j++)
         depth_hypothesis[0][i][j] = 0;
 
     for (int i = 0; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++) {
@@ -137,7 +137,7 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
 }
 
 
-void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width_32],
+void warp_frame_depth(const float image_src[hyper_channels * 16][height_32][width_32],
                      const float depth_dst[height_32][width_32],
                      const float trans[4][4],
                      const float camera_matrix[3][3],
