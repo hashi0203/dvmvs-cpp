@@ -1,8 +1,10 @@
 #pragma once
 #include "settings.h"
 
-constexpr int org_image_width = 540;
-constexpr int org_image_height = 360;
+// constexpr int org_image_width = 540;
+// constexpr int org_image_height = 360;
+constexpr int org_image_width = 320;
+constexpr int org_image_height = 256;
 // constexpr int test_image_width = 320;
 // constexpr int test_image_height = 256;
 
@@ -21,13 +23,15 @@ constexpr float test_optimal_R_measure = 0.0;
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
 // const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
 
-const string dataset_name = "hololens-dataset";
+// const string dataset_name = "hololens-dataset";
+const string dataset_name = "7scenes";
 const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_image_width) + "_" + to_string(test_image_height) + "_" + to_string(test_n_measurement_frames) + "_dvmvs_fusionnet_online";
 
-const string scene_folder = "../../params_eval";
+// const string scene_folder = "../../params_eval";
+const string scene_folder = "../../images/";
 const string scene = "000";
 
-constexpr int n_test_frames = 50;
+// constexpr int n_test_frames = 50;
 
 constexpr float scale_rgb = 255.0;
 constexpr float mean_rgb[3] = {0.485, 0.456, 0.406};

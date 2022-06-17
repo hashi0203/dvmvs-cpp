@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bits/stdc++.h>
+#include <dirent.h>
+#include <sys/stat.h>
 using namespace std;
 
 #define setwp setw(12) << setprecision(5)
