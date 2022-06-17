@@ -22,10 +22,12 @@ class Config:
     # train_seed = int(round(time.time()))
 
     # test settings
-    # org_image_width = 540
-    # org_image_height = 360
-    test_image_width = 320
-    test_image_height = 256
+    org_image_width = 320
+    org_image_height = 256
+    test_image_width = 96
+    test_image_height = 64
+    # test_image_width = 320
+    # test_image_height = 256
 
     # org_image_width = 128
     # org_image_height = 128

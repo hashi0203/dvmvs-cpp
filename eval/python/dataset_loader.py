@@ -330,23 +330,9 @@ class PreprocessImage:
     #     return resized_cropped_depth
 
     def apply_rgb(self, image, scale_rgb, mean_rgb, std_rgb, normalize_colors=True):
-        # raw_height, raw_width, _ = image.shape
-        # cropped_image = image[self.crop_y:raw_height - self.crop_y, self.crop_x:raw_width - self.crop_x, :]
-        # cropped_image = cv2.resize(cropped_image, (self.new_width, self.new_height), interpolation=cv2.INTER_LINEAR)
-        cropped_image = image
-
-        if normalize_colors:
-            cropped_image = cropped_image / scale_rgb
-            cropped_image[:, :, 0] = (cropped_image[:, :, 0] - mean_rgb[0]) / std_rgb[0]
-            cropped_image[:, :, 1] = (cropped_image[:, :, 1] - mean_rgb[1]) / std_rgb[1]
-            cropped_image[:, :, 2] = (cropped_image[:, :, 2] - mean_rgb[2]) / std_rgb[2]
-        return cropped_image
-
-    def apply_rgb_resize(self, image, scale_rgb, mean_rgb, std_rgb, normalize_colors=True):
         raw_height, raw_width, _ = image.shape
         cropped_image = image[self.crop_y:raw_height - self.crop_y, self.crop_x:raw_width - self.crop_x, :]
-        cropped_image = cv2.resize(cropped_image, (self.new_width // 2, self.new_height // 2), interpolation=cv2.INTER_LINEAR)
-        # cropped_image = cv2.resize(cropped_image, (self.new_width, self.new_height), interpolation=cv2.INTER_NEAREST)
+        cropped_image = cv2.resize(cropped_image, (self.new_width, self.new_height), interpolation=cv2.INTER_LINEAR)
 
         if normalize_colors:
             cropped_image = cropped_image / scale_rgb
