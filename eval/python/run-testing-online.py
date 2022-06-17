@@ -82,6 +82,10 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             reference_feature_half, _, _, _ = feature_shrinker(*feature_extractor(reference_image_torch))
             keyframe_buffer.add_new_keyframe(reference_pose, reference_feature_half)
 
+            save_input["reference_image"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
+            reference_pose_torch = torch.from_numpy(reference_pose).float().to(device).unsqueeze(0)
+            save_input["reference_pose"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
+
 
         for i in range(1, len(poses)):
             reference_pose = poses[i]
@@ -109,14 +113,9 @@ def predict(device, model, K, poses, image_filenames, depth_filenames, warp_grid
             reference_feature_half, reference_feature_quarter, \
             reference_feature_one_eight, reference_feature_one_sixteen = feature_shrinker(*feature_extractor(reference_image_torch))
 
-            if "reference_image" in save_input:
-                save_input["reference_image"] = np.vstack([save_input["reference_image"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
-            else:
-                save_input["reference_image"] = reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]
-            if "reference_pose" in save_input:
-                save_input["reference_pose"] = np.vstack([save_input["reference_pose"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
-            else:
-                save_input["reference_pose"] = reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]
+            save_input["reference_image"] = np.vstack([save_input["reference_image"], reference_image_torch.cpu().detach().numpy().copy()[np.newaxis]])
+            save_input["reference_pose"] = np.vstack([save_input["reference_pose"], reference_pose_torch.cpu().detach().numpy().copy()[np.newaxis]])
+
 
             measurement_poses_torch = []
             measurement_feature_halfs = []
