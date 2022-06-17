@@ -226,29 +226,29 @@ def prepare(test_dataset_name):
 if __name__ == '__main__':
     dataset_names = {}
     # dataset_names["train"] = ["chess-seq-01", "chess-seq-02", "fire-seq-01", "fire-seq-02", "heads-seq-02", "office-seq-01", "office-seq-03", "pumpkin-seq-03", "pumpkin-seq-06", "redkitchen-seq-01", "redkitchen-seq-07", "stairs-seq-02", "stairs-seq-06"]
-    dataset_names["train"] = ["redkitchen-seq-02", "redkitchen-seq-05", "redkitchen-seq-08", "chess-seq-04", "chess-seq-06", "office-seq-04", "office-seq-05", "office-seq-08", "pumpkin-seq-02", "pumpkin-seq-08", "stairs-seq-03", "stairs-seq-05"]
+    # dataset_names["train"] = ["redkitchen-seq-02", "redkitchen-seq-05", "redkitchen-seq-08", "chess-seq-04", "chess-seq-06", "office-seq-04", "office-seq-05", "office-seq-08", "pumpkin-seq-02", "pumpkin-seq-08", "stairs-seq-03", "stairs-seq-05"]
     # dataset_names["test"] = ["chess-seq-03", "fire-seq-03", "fire-seq-04", "heads-seq-01", "office-seq-02", "pumpkin-seq-01", "redkitchen-seq-03", "stairs-seq-01"]
+    # test_dataset_names = ["chess-seq-01", "chess-seq-02", "fire-seq-01", "fire-seq-02", "heads-seq-02", "office-seq-01", "office-seq-03", "pumpkin-seq-03", "pumpkin-seq-06", "redkitchen-seq-01", "redkitchen-seq-07", "stairs-seq-02", "stairs-seq-06"]
+    test_dataset_names = ["chess-seq-01", "chess-seq-02", "fire-seq-01", "fire-seq-02", "heads-seq-02", "office-seq-01", "office-seq-03", "redkitchen-seq-01", "redkitchen-seq-07"]
 
     # method_name = "random"
 
-    name = "train"
-
     mses, rmses, gts = [], [], []
     hidden_states = []
-    for test_dataset_name in dataset_names[name]:
+    for test_dataset_name in test_dataset_names:
         args = prepare(test_dataset_name)
         print("Predicting: %s" % test_dataset_name)
         mse, rmse, gt = predict(*args)
+        print(test_dataset_name, "MSE", np.mean(mse))
+        print(test_dataset_name, "RMSE", np.mean(rmse))
         mses.append(mse)
         rmses.append(rmse)
         gts.append(gt)
 
-    rmses = np.array(rmses)
-    mses = np.array(mses)
+    rmses = np.array(rmses, dtype=object)
+    mses = np.array(mses, dtype=object)
+    gts = np.array(gts, dtype=object)
 
-    np.savez_compressed('data' % name, mses = mses, rmses = rmses, gts = gts)
+    np.savez_compressed('data', mses = mses, rmses = rmses, gts = gts)
     # np.savez_compressed('npzs/%s' % method_name, rates = np.mean(rates, axis=1) * 100, mses = np.mean(mse_errors, axis=1), rmses = np.mean(rmse_errors, axis=1))
 
-    # print(method_name)
-    print("MSE", np.mean(mses, axis=1))
-    print("RMSE", np.mean(rmses, axis=1))
