@@ -68,7 +68,7 @@ const string save_dir = "./results/";
 
 void set_idx(string filename, const int n_files, int* start_idx) {
     int n_params[n_files];
-    ifstream ifs("../params_pynq/" + filename);
+    ifstream ifs("../../params_pynq/" + filename);
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
@@ -80,7 +80,7 @@ void set_idx(string filename, const int n_files, int* start_idx) {
 
 template<class T>
 void set_param(string filename, const int n_params, T* params) {
-    ifstream ifs("../params_pynq/" + filename);
+    ifstream ifs("../../params_pynq/" + filename);
     ifs.read((char*) params, sizeof(T) * n_params);
     ifs.close();
 }
@@ -270,7 +270,7 @@ int main() {
     }
     // print1(n_poses);
 
-    const string image_filedir = "/home/nhsmt1123/master-thesis/dvmvs-cpp-qt2/images/";
+    const string image_filedir = "../../images/";
     const int len_image_filedir = image_filedir.length();
     string image_filenames[n_test_frames];
     for (int i = 0; i < n_test_frames; i++) {
@@ -292,8 +292,11 @@ int main() {
     qaint cell_state[hid_channels * height_32 * width_32];
 
     ofstream ofs;
-
-    for (int f = 0; f < 20; f++) {
+    double min_time = 10000;
+    double max_time = 0;
+    double mean_time = 0;
+    int loops = 0;
+    for (int f = 0; f < n_test_frames; f++) {
         clock_t start = clock();
 
         float reference_pose[4 * 4];
@@ -432,7 +435,12 @@ int main() {
         state_exists = true;
 
         clock_t end = clock();
-        cout << (double)(end - start) / CLOCKS_PER_SEC << " [s]\n";
+        double time_cur = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << time_cur << " [s]\n";
+        min_time = min(min_time, time_cur);
+        max_time = max(max_time, time_cur);
+        mean_time += time_cur;
+        loops++;
 
         // save_image(save_dir + image_filenames[f].substr(len_image_filedir) + ".png", previous_depth);
 
@@ -443,9 +451,20 @@ int main() {
             ofs << previous_depth[i][test_image_width-1] << "\n";
         }
         ofs.close();
+
+        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".bin", ios::out|ios::binary|ios::trunc);
+        for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+            ofs.write((char*) &previous_depth[i][j], sizeof(float));
+        ofs.close();
+
     }
 
     keyframe_buffer.close();
+
+    print2("loops    :", loops);
+    print2("Min  time:", min_time);
+    print2("Max  time:", max_time);
+    print2("Mean time:", mean_time / loops);
 
     delete[] weights;
     delete[] biases;
