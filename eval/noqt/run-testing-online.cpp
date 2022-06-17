@@ -22,7 +22,7 @@ void read_params() {
     ifstream ifs;
 
     int n_params[n_files];
-    ifs.open("../../params_pynq/values");
+    ifs.open("../../params_eval/values");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
@@ -30,7 +30,7 @@ void read_params() {
     for (int i = 0; i < n_files; i++)
         start_idx[i+1] = start_idx[i] + n_params[i];
 
-    ifs.open("../../params_pynq/params");
+    ifs.open("../../params_eval/params");
     ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
     ifs.close();
 }

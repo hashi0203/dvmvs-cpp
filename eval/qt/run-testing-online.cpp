@@ -68,7 +68,7 @@ const string save_dir = "./results/";
 
 void set_idx(string filename, const int n_files, int* start_idx) {
     int n_params[n_files];
-    ifstream ifs("../../params_pynq/" + filename);
+    ifstream ifs("../../params_eval/" + filename);
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
@@ -80,7 +80,7 @@ void set_idx(string filename, const int n_files, int* start_idx) {
 
 template<class T>
 void set_param(string filename, const int n_params, T* params) {
-    ifstream ifs("../../params_pynq/" + filename);
+    ifstream ifs("../../params_eval/" + filename);
     ifs.read((char*) params, sizeof(T) * n_params);
     ifs.close();
 }
