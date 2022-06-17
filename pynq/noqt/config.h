@@ -1,8 +1,6 @@
 #pragma once
 #include "settings.h"
 
-#include <unordered_map>
-
 constexpr int org_image_width = 540;
 constexpr int org_image_height = 360;
 // constexpr int test_image_width = 320;
@@ -21,15 +19,15 @@ constexpr float test_optimal_R_measure = 0.0;
 
 // SET THESE: TESTING FOLDER LOCATIONS
 // for run-testing-online.py (evaluate a single scene, WITHOUT keyframe indices, online selection)
-const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
+// const string test_online_scene_path = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000";
 
 const string dataset_name = "hololens-dataset";
 const string system_name = "keyframe_" + dataset_name + "_" + to_string(test_image_width) + "_" + to_string(test_image_height) + "_" + to_string(test_n_measurement_frames) + "_dvmvs_fusionnet_online";
 
-const string scene_folder = test_online_scene_path;
+const string scene_folder = "../../params_pynq";
 const string scene = "000";
 
-constexpr int n_test_frames = 20;
+constexpr int n_test_frames = 50;
 
 constexpr float scale_rgb = 255.0;
 constexpr float mean_rgb[3] = {0.485, 0.456, 0.406};
@@ -105,11 +103,11 @@ void get_non_differentiable_rectangle_depth_estimation(const float reference_pos
                                                        const float full_K[3][3],
                                                        const float half_K[3][3],
                                                        float depth_hypothesis[1][height_2][width_2]);
-void warp_from_depth(const float image_src[hyper_channels * 16][height_32][width_32],
-                     const float depth_dst[height_32][width_32],
-                     const float trans[4][4],
-                     const float camera_matrix[3][3],
-                     float image_dst[hyper_channels * 16][height_32][width_32]);
+void warp_frame_depth(const float image_src[hyper_channels * 16][height_32][width_32],
+                      const float depth_dst[height_32][width_32],
+                      const float trans[4][4],
+                      const float camera_matrix[3][3],
+                      float image_dst[hyper_channels * 16][height_32][width_32]);
 bool is_pose_available(const float pose[4 * 4]);
 
 // keyframe_buffer

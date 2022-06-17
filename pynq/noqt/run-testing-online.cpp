@@ -16,11 +16,13 @@ float* params = new float[2725512 + 62272 + 8990848 + 18874368 + 4066277];
 int start_idx[n_files + 1];
 int param_cnt;
 
+const string save_dir = "./results/";
+
 void read_params() {
     ifstream ifs;
 
     int n_params[n_files];
-    ifs.open("params/values");
+    ifs.open("../../params_pynq/values");
     ifs.read((char*) n_params, sizeof(int) * n_files);
     ifs.close();
 
@@ -28,7 +30,7 @@ void read_params() {
     for (int i = 0; i < n_files; i++)
         start_idx[i+1] = start_idx[i] + n_params[i];
 
-    ifs.open("params/params");
+    ifs.open("../../params_pynq/params");
     ifs.read((char*) params, sizeof(float) * start_idx[n_files]);
     ifs.close();
 }
@@ -171,13 +173,13 @@ int main() {
     }
     // print1(n_poses);
 
-    const string image_filedir = "/home/nhsmt1123/master-thesis/deep-video-mvs/sample-data/hololens-dataset/000/images/";
+    const string image_filedir = "../../images/";
     const int len_image_filedir = image_filedir.length();
     string image_filenames[n_test_frames];
     for (int i = 0; i < n_test_frames; i++) {
         ostringstream sout;
         sout << setfill('0') << setw(5) << i+3;
-        image_filenames[i] = image_filedir + sout.str() + ".png";
+        image_filenames[i] = image_filedir + sout.str();
     }
     print1(image_filenames[0]);
 
@@ -192,7 +194,14 @@ int main() {
     float hidden_state[hid_channels * height_32 * width_32];
     float cell_state[hid_channels * height_32 * width_32];
 
+    ofstream ofs;
+    double min_time = 10000;
+    double max_time = 0;
+    double mean_time = 0;
+    int loops = 0;
     for (int f = 0; f < n_test_frames; f++) {
+        clock_t start = clock();
+
         float reference_pose[4 * 4];
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) reference_pose[i * 4 + j] = poses[f][i * 4 + j];
 
@@ -297,7 +306,7 @@ int main() {
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 in_hidden_state[i][j][k] = hidden_state[(i * height_32 + j) * width_32 + k];
             float out_hidden_state[hid_channels][height_32][width_32];
-            warp_from_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
+            warp_frame_depth(in_hidden_state, depth_estimation[0], trans, lstm_K_bottom, out_hidden_state);
 
             for (int i = 0; i < hid_channels; i++) for (int j = 0; j < height_32; j++) for (int k = 0; k < width_32; k++)
                 hidden_state[(i * height_32 + j) * width_32 + k] = (depth_estimation[0][j][k] <= 0.01) ? 0.0 : out_hidden_state[i][j][k];
@@ -320,17 +329,38 @@ int main() {
 
         state_exists = true;
 
-        save_image("./results-hw/" + image_filenames[f].substr(len_image_filedir), previous_depth);
+        clock_t end = clock();
+        double time_cur = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << time_cur << " [s]\n";
+        min_time = min(min_time, time_cur);
+        max_time = max(max_time, time_cur);
+        mean_time += time_cur;
+        loops++;
 
-        ofstream ofs("./results-hw/" + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
+        // save_image(save_dir + image_filenames[f].substr(len_image_filedir) + ".png", previous_depth);
+
+        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".txt");
         for (int i = 0 ; i < test_image_height; i++) {
             for (int j = 0; j < test_image_width-1; j++)
                 ofs << previous_depth[i][j] << " ";
             ofs << previous_depth[i][test_image_width-1] << "\n";
         }
+        ofs.close();
+
+        ofs.open(save_dir + image_filenames[f].substr(len_image_filedir, 5) + ".bin", ios::out|ios::binary|ios::trunc);
+        for (int i = 0 ; i < test_image_height; i++) for (int j = 0; j < test_image_width; j++)
+            ofs.write((char*) &previous_depth[i][j], sizeof(float));
+        ofs.close();
+
     }
 
     keyframe_buffer.close();
 
+    print2("loops    :", loops);
+    print2("Min  time:", min_time);
+    print2("Max  time:", max_time);
+    print2("Mean time:", mean_time / loops);
+
+    delete[] params;
     return 0;
 }
