@@ -29,7 +29,6 @@ if __name__ == '__main__':
         mses_npz, rmses_npz = {}, {}
         for test_dataset_name in test_dataset_names:
             files = sorted((base_dir / name / 'results' / test_dataset_name).files("*.bin"))
-            # files = sorted(glob.glob(os.path.join(base_dir, os.path.join(name, "results/*.bin"))))
             predictions = []
             for file in files:
                 data = []
@@ -42,8 +41,8 @@ if __name__ == '__main__':
                 predictions.append(np.array(data).reshape(64, 96))
 
             gts = np.load(base_dir / "python/gts.npz")[test_dataset_name]
-            assert len(predictions) == len(gts)
             print(name + "/" + test_dataset_name)
+            assert len(predictions) == len(gts)
 
             mses, rmses = [], []
             for i, prediction in enumerate(predictions):
@@ -53,11 +52,36 @@ if __name__ == '__main__':
                 mses.append(mse)
                 rmses.append(rmse)
 
-            print(test_dataset_name, "MSE", np.mean(mse))
-            print(test_dataset_name, "RMSE", np.mean(rmse))
+            print(test_dataset_name, "MSE", np.mean(mses))
+            print(test_dataset_name, "RMSE", np.mean(rmses))
 
             mses_npz[test_dataset_name] = mses
             rmses_npz[test_dataset_name] = rmses
 
         np.savez_compressed(base_dir / (name + '-mses'), **mses_npz)
         np.savez_compressed(base_dir / (name + '-rmses'), **rmses_npz)
+
+    mses_npz, rmses_npz = {}, {}
+    for test_dataset_name in test_dataset_names:
+        files = base_dir / 'depths' / test_dataset_name + ".npz"
+        predictions = np.load(files)['depths'][:,0,0,:,:]
+
+        gts = np.load(base_dir / "python/gts.npz")[test_dataset_name]
+        assert len(predictions) == len(gts)
+
+        mses, rmses = [], []
+        for i, prediction in enumerate(predictions):
+            mse, rmse = compute_errors(gts[i], prediction)
+            print('%3d: %.3f, %.3f' % (i, mse, rmse))
+
+            mses.append(mse)
+            rmses.append(rmse)
+
+        print(test_dataset_name, "MSE", np.mean(mses))
+        print(test_dataset_name, "RMSE", np.mean(rmses))
+
+        mses_npz[test_dataset_name] = mses
+        rmses_npz[test_dataset_name] = rmses
+
+    np.savez_compressed(base_dir / ('pynq-mses'), **mses_npz)
+    np.savez_compressed(base_dir / ('pynq-rmses'), **rmses_npz)
